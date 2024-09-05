@@ -1,0 +1,14 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.3.5
+_src_path: https://github.com/jupyterlab/extension-template
+author_email: boxchenfei@gmail.com
+author_name: Fei Chen
+has_binder: true
+has_settings: false
+kind: frontend
+labextension_name: chaldene
+project_short_description: Visual Programming in JupyterLab for Image Processing
+python_name: chaldene
+repository: https://github.com/c3di/chaldene.git
+test: true
+
