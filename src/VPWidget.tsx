@@ -4,30 +4,32 @@ import { ReactWidget } from '@jupyterlab/apputils';
 import { CodeEditor } from '@jupyterlab/codeeditor';
 import { VPEditor, type Graph, type EditorContext } from 'chaldene_vpe';
 import 'chaldene_vpe/dist/style.css';
+import { INotebookTracker, NotebookActions } from '@jupyterlab/notebook';
 
 type ISharedText = any;
 
 export class VPWidget extends ReactWidget {
-  constructor(id: string, model: CodeEditor.IModel) {
+  constructor(id: string, model: CodeEditor.IModel, tracker: INotebookTracker, fileBrowser: any) {
     super();
     this.id = id;
     this.node.style.width = '100%';
     this.node.style.height = '100%';
+  
+    this.node.addEventListener('focusout', e => {
+      e.preventDefault();
+      if (this._focused) {
+        e.stopPropagation();
+      }
+    });
+
     this.node.addEventListener('contextmenu', e => {
       e.preventDefault();
       e.stopPropagation();
     });
-    this.node.addEventListener('focusout', e => {
-      //todo: cleanup
-      // e.preventDefault();
-      // const nextFocusedElement = e.relatedTarget as HTMLElement;
-      // const isElementChild = this.contains(nextFocusedElement);
-      // const isMenu = nextFocusedElement?.classList[0].includes('Mui');
-      // if (nextFocusedElement && (isElementChild || isMenu)) {
-      //   e.stopPropagation();
-      // }
-    });
+
     this._model = model;
+    this._tracker = tracker;
+    this._fileBrowser = fileBrowser;
   }
 
   get sharedModel(): ISharedText {
@@ -56,32 +58,57 @@ export class VPWidget extends ReactWidget {
 
   setContext(context: EditorContext): void {
     this._context = context;
-    this._context.addGraphChangeListener(() => {
-      this.setContent(JSON.stringify(this._context?.graph));
-    });
-  }
 
-  closeMenu(): void {
-    this._context?.closeMenu();
+    this._context.addGraphChangeListener((new_graph) => {
+      this.setContent(JSON.stringify(new_graph));
+    });
+
+    this._context.onLiveExecution = this.run.bind(this);
+
+    this._context.onFocus = () => {
+      this._focused = true;
+      this.node.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    };
+    this._context.onBlur = () => {
+      this._focused = false;
+      this.node.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    };
+
+    this._context.parentContext = {openFileDialog: openFileDialog};
   }
 
   get hasFocus(): boolean {
-    return this._editor_activated;
+    return this._focused;
   }
 
-  focus(): void {
-    if (!this._editor_activated) {
-      this.closeMenu();
-      this.update();
-    }
+  onStartRun(): void {
+    if (this._context) 
+      this._context.notifyExecuteStart();
+    
   }
 
-  blur(): void {
-    if (this._editor_activated) {
-      this._editor_activated = false;
-      this.closeMenu();
-      this.update();
+  onEndRun(): void {
+    console.log('Execution ended');
+    if (this._context) 
+      this._context.notifyExecuteEnd();
+  }
+
+  updateInspection(id: string, imageData: string) {
+    this._context?.action('graph').updateInspection(id, imageData);
+  }
+
+  run(): void {
+    const inWhichPanel = this._tracker.currentWidget;
+    if (inWhichPanel) {
+      const {content, context, sessionDialogs, translator} = inWhichPanel as any;
+      NotebookActions.run(
+          content,
+          context.sessionContext,
+          sessionDialogs,
+          translator
+        );
     }
+    else console.error('No active notebook panel found');
   }
 
   render(): JSX.Element {
@@ -93,14 +120,15 @@ export class VPWidget extends ReactWidget {
       />
     );
   }
-
-  private _editor_activated = false;
+  private _fileBrowser: any;
+  private _focused = false;
   private _model: CodeEditor.IModel;
   private _context: EditorContext | null = null;
+  private _tracker: INotebookTracker;
 }
 
-export function createVPWidget(id: string, model: any, host: HTMLElement): any {
-  const editor = new VPWidget(id, model);
+export function createVPWidget(id: string, model: any, host: HTMLElement, tracker: INotebookTracker,  fileBrowser: any): VPWidget {
+  const editor = new VPWidget(id, model, tracker, fileBrowser);
   host.style.height = '300px';
   host.style.overflow = 'auto';
   host.style.resize = 'vertical';
@@ -113,3 +141,14 @@ export function createVPWidget(id: string, model: any, host: HTMLElement): any {
   return editor;
 }
 
+
+
+import { FileDialog } from '@jupyterlab/filebrowser';
+async function openFileDialog(fileBrowser: any): Promise<string | null> {
+  // cleanup find the manager, use fileBrowser to replace fileDialog
+  await fileBrowser.model.refresh();
+  const result = await FileDialog.getOpenFiles({manager: fileBrowser.model.manager});
+  if (result.button.accept && result.value) 
+    return result.value[0].path;
+  return null;
+}

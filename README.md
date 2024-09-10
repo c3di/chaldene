@@ -39,6 +39,8 @@ The `jlpm` command is JupyterLab's pinned version of
 ```bash
 # Clone the repo to your local environment
 # Change directory to the chaldene directory
+# Install frontend dependencies. delete yarn.lock
+yarn install
 # Install package in development mode
 pip install -e "."
 # Link your development version of the extension with JupyterLab

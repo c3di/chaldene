@@ -4,7 +4,6 @@ import { OutputArea } from '@jupyterlab/outputarea';
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 import { JSONObject } from '@lumino/coreutils';
 
-
 /**
  * Execute a cell given a client session.
  */
@@ -16,39 +15,20 @@ export default async function executeCodeCell(
   const model = cell.model;
   const isVisualCode = model.getMetadata('code type') === 'visual code';
   let code = '';
+
   const currentKernel: any = sessionContext.session?.kernel;
   currentKernel?.registerCommTarget('capture_image', (comm: any, msg: any) => {
     comm.onMsg = (msg: any) => {
-      // Base64-encoded image data
-      const imageDomId: string = msg.content.data.image_dom_id;
+      const id: string = msg.content.data.handle_id;
       const imageData = msg.content.data.image_data;
-      const imageElement = document.getElementById(
-        imageDomId
-      ) as HTMLImageElement;
-      if (imageElement) {
-        imageElement.src = `data:image/png;base64,${imageData}`;
-      } else {
-        console.error(
-          `image element ${imageDomId} not found, cannot set display intermediate image`
-        );
-      }
+      console.log('Received image data:', imageData);
+      (cell.editor as any).updataInspection(id, `data:image/png;base64,${imageData}`);
     };
   });
 
   if (isVisualCode && cell.editor) {
-    const result = (cell.editor as any).editor.getCode();
-    if (result.hasError) {
-      cell.outputArea.model.clear();
-      cell.outputArea.model.add({
-        output_type: 'error',
-        ename: 'Error',
-        evalue: result.result,
-        traceback: []
-      });
-      return;
-    } else {
-      code = result.code;
-    }
+    code = (cell.editor as any).getCode();
+    
   } else {
     code = model.sharedModel.getSource();
   }
@@ -145,4 +125,3 @@ export default async function executeCodeCell(
     throw e;
   }
 }
-

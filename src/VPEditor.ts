@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
 import { CodeEditor } from '@jupyterlab/codeeditor';
 import { UUID } from '@lumino/coreutils';
 import { Signal } from '@lumino/signaling';
@@ -16,9 +15,16 @@ export class VPEditor implements CodeEditor.IEditor {
 
     this._uuid = options.uuid ?? UUID.uuid4();
     this._model = options.model;
-    this._editor = createVPWidget(this._uuid, this._model, host);
+    this._editor = createVPWidget(this._uuid, this._model, host, options.notebookTracker, options.fileBrowser);
+  }
+  
+  getCode(): string {
+    return this.editor.getCode() ?? '';
   }
 
+  updateInspection(id: string, imageData: string) {
+    this.editor.updateInspection(id, imageData);
+  }
   /**
    * A signal emitted when either the top or bottom edge is requested.
    */
@@ -216,7 +222,7 @@ export class VPEditor implements CodeEditor.IEditor {
       top: 0,
       left: 0,
       bottom: 0,
-      right: 0,
+      right: 0
     };
   }
 

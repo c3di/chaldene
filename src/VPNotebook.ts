@@ -1,32 +1,12 @@
 import { Notebook as NB } from '@jupyterlab/notebook';
-import { EDITOR_CLASS, VPEditor } from './VPEditor';
+import { EDITOR_CLASS } from './VPEditor';
 import { ArrayExt } from '@lumino/algorithm';
-import { Widget } from '@lumino/widgets';
 
 const NB_CELL_CLASS = 'jp-Notebook-cell';
 
 export class VPNotebook extends NB {
   isVisualCodeCell(widget: any): boolean {
     return widget.node.querySelectorAll(`.${EDITOR_CLASS}`).length > 0;
-  }
-
-  activate(): void {
-    super.activate();
-    this.closeMenus();
-  }
-
-  protected onResize(msg: Widget.ResizeMessage): void {
-    super.onResize(msg);
-    this.closeMenus();
-  }
-
-  closeMenus(): void {
-    for (let i = 0; i < this.widgets.length; i++) {
-      const widget = this.widgets[i];
-      if (this.isVisualCodeCell(widget)) {
-        (widget.editor as VPEditor).editor.closeMenu();
-      }
-    }
   }
 
   handleEvent(event: Event): void {
@@ -37,7 +17,6 @@ export class VPNotebook extends NB {
       case 'mousedown':
         if (event.eventPhase === Event.CAPTURING_PHASE) {
           this.evtMouseDownCapture(event as MouseEvent);
-          this.closeMenus();
         } else {
           super.handleEvent(event);
         }
