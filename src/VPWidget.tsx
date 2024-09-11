@@ -105,6 +105,19 @@ export class VPWidget extends ReactWidget {
     this._context?.action('graph').updateInspection(id, imageData);
   }
 
+  listenToInspectResult(currentKernel: any): void {
+    currentKernel?.registerCommTarget(
+      'capture_image',
+      (comm: any, msg: any) => {
+        comm.onMsg = (msg: any) => {
+          const id: string = msg.content.data.handle_id;
+          const imageData = msg.content.data.image_data;
+          this?.updateInspection(id, `data:image/png;base64,${imageData}`);
+        };
+      }
+    );
+  }
+
   run(): void {
     const inWhichPanel = this._tracker.currentWidget;
     if (inWhichPanel) {
@@ -124,7 +137,7 @@ export class VPWidget extends ReactWidget {
   render(): JSX.Element {
     return (
       <VPEditor
-        id={this.id}
+        id={'v' + this.id.split('-')[0]}
         graph={this.content}
         onInitialized={this.setContext.bind(this)}
       />
@@ -145,7 +158,7 @@ export function createVPWidget(
   fileBrowser: any
 ): VPWidget {
   const editor = new VPWidget(id, model, tracker, fileBrowser);
-  host.style.height = '300px';
+  host.style.height = '500px';
   host.style.overflow = 'auto';
   host.style.resize = 'vertical';
 

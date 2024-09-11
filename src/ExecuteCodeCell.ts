@@ -17,18 +17,12 @@ export default async function executeCodeCell(
   let code = '';
 
   const currentKernel: any = sessionContext.session?.kernel;
-  currentKernel?.registerCommTarget('capture_image', (comm: any, msg: any) => {
-    comm.onMsg = (msg: any) => {
-      const id: string = msg.content.data.handle_id;
-      const imageData = msg.content.data.image_data;
-      console.log('Received image data:', imageData);
-      (cell.editor as any).updataInspection(id, `data:image/png;base64,${imageData}`);
-    };
-  });
+  if (currentKernel && isVisualCode) {
+    (cell.editor as any).editor.listenToInspectResult(currentKernel);
+  }
 
   if (isVisualCode && cell.editor) {
     code = (cell.editor as any).getCode();
-    
   } else {
     code = model.sharedModel.getSource();
   }

@@ -22,9 +22,6 @@ export class VPEditor implements CodeEditor.IEditor {
     return this.editor.getCode() ?? '';
   }
 
-  updateInspection(id: string, imageData: string) {
-    this.editor.updateInspection(id, imageData);
-  }
   /**
    * A signal emitted when either the top or bottom edge is requested.
    */
