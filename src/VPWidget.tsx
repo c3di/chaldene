@@ -4,7 +4,8 @@ import { ReactWidget } from '@jupyterlab/apputils';
 import { CodeEditor } from '@jupyterlab/codeeditor';
 import { VPEditor, type Graph, type EditorContext } from 'chaldene_vpe';
 import 'chaldene_vpe/dist/style.css';
-import { INotebookTracker, NotebookActions } from '@jupyterlab/notebook';
+import { NotebookActions } from '@jupyterlab/notebook';
+import { PathExt } from '@jupyterlab/coreutils';
 
 type ISharedText = any;
 
@@ -12,7 +13,7 @@ export class VPWidget extends ReactWidget {
   constructor(
     id: string,
     model: CodeEditor.IModel,
-    tracker: INotebookTracker,
+    hostNotebookPanel: any,
     fileBrowser: any
   ) {
     super();
@@ -33,7 +34,7 @@ export class VPWidget extends ReactWidget {
     });
 
     this._model = model;
-    this._tracker = tracker;
+    this._hostNotebookPanel = hostNotebookPanel;
     this._fileBrowser = fileBrowser;
   }
 
@@ -80,7 +81,11 @@ export class VPWidget extends ReactWidget {
     };
 
     this._context.parentContext = {
-      openFileDialog: () => openFileDialog(this._fileBrowser)
+      openFileDialog: () =>
+        openFileDialog(
+          this._fileBrowser,
+          PathExt.dirname(this._hostNotebookPanel.context.path)
+        )
     };
   }
 
@@ -119,10 +124,9 @@ export class VPWidget extends ReactWidget {
   }
 
   run(): void {
-    const inWhichPanel = this._tracker.currentWidget;
-    if (inWhichPanel) {
+    if (this._hostNotebookPanel) {
       const { content, context, sessionDialogs, translator } =
-        inWhichPanel as any;
+        this._hostNotebookPanel;
       NotebookActions.run(
         content,
         context.sessionContext,
@@ -147,17 +151,17 @@ export class VPWidget extends ReactWidget {
   private _focused = false;
   private _model: CodeEditor.IModel;
   private _context: EditorContext | null = null;
-  private _tracker: INotebookTracker;
+  private _hostNotebookPanel: any;
 }
 
 export function createVPWidget(
   id: string,
   model: any,
   host: HTMLElement,
-  tracker: INotebookTracker,
+  hostNotebookPanel: any,
   fileBrowser: any
 ): VPWidget {
-  const editor = new VPWidget(id, model, tracker, fileBrowser);
+  const editor = new VPWidget(id, model, hostNotebookPanel, fileBrowser);
   host.style.height = '500px';
   host.style.overflow = 'auto';
   host.style.resize = 'vertical';
@@ -171,14 +175,33 @@ export function createVPWidget(
 }
 
 import { FileDialog } from '@jupyterlab/filebrowser';
-async function openFileDialog(fileBrowser: any): Promise<string | null> {
-  // cleanup find the manager, use fileBrowser to replace fileDialog
+async function openFileDialog(
+  fileBrowser: any,
+  defaultPath: string = ''
+): Promise<string | null> {
+  // cleanup find the manager
+
   await fileBrowser.model.refresh();
+
   const result = await FileDialog.getOpenFiles({
-    manager: fileBrowser.model.manager
+    defaultPath: defaultPath,
+    manager: fileBrowser.model.manager,
+    title: 'Select an image',
+    filter: (value: any) => {
+      if (value.type === 'directory') {
+        return true;
+      }
+      return (
+        value.path.endsWith('.png') ||
+        value.path.endsWith('.jpg') ||
+        value.path.endsWith('.jpeg')
+      );
+    }
   });
   if (result.button.accept && result.value) {
-    return result.value[0].path;
+    const path = result.value[0].path;
+    const relativePath = PathExt.relative(defaultPath, path);
+    return relativePath;
   }
   return null;
 }

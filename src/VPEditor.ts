@@ -15,9 +15,15 @@ export class VPEditor implements CodeEditor.IEditor {
 
     this._uuid = options.uuid ?? UUID.uuid4();
     this._model = options.model;
-    this._editor = createVPWidget(this._uuid, this._model, host, options.notebookTracker, options.fileBrowser);
+    this._editor = createVPWidget(
+      this._uuid,
+      this._model,
+      host,
+      options.notebookTracker.currentWidget,
+      options.fileBrowser
+    );
   }
-  
+
   getCode(): string {
     return this.editor.getCode() ?? '';
   }
