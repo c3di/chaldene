@@ -1,3 +1,8 @@
+/*
+ * CodeCell Focus management or Cell Edit/Command Mode
+ * - focusin focusout events bubbling up from inner focusable elements. Make sure the inner elements are focusable
+ * - focus() blur() methods to control by keyboard
+ */
 import React from 'react';
 import { Widget } from '@lumino/widgets';
 import { ReactWidget } from '@jupyterlab/apputils';
@@ -24,6 +29,7 @@ export class VPWidget extends ReactWidget {
     this.node.addEventListener('focusout', e => {
       e.preventDefault();
       if (this._focused) {
+        // Prevent the focus from leaving the cell
         e.stopPropagation();
       }
     });
@@ -33,9 +39,40 @@ export class VPWidget extends ReactWidget {
       e.stopPropagation();
     });
 
+    this.node.addEventListener(
+      'wheel',
+      e => {
+        if (!this._focused) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      },
+      { capture: true }
+    );
+
+    this.node.addEventListener('keydown', e => {
+      if (this._focused) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+
     this._model = model;
     this._hostNotebookPanel = hostNotebookPanel;
     this._fileBrowser = fileBrowser;
+  }
+
+  get hasFocus(): boolean {
+    return this._focused;
+  }
+
+  // control by keyboard
+  focus(): void {
+    this._context?.focus();
+  }
+  // control by keyboard
+  blur(): void {
+    this._context?.blur();
   }
 
   get sharedModel(): ISharedText {
@@ -71,13 +108,12 @@ export class VPWidget extends ReactWidget {
 
     this._context.onLiveExecution = this.run.bind(this);
 
+    // Update the focus state from the inner editor
     this._context.onFocus = () => {
       this._focused = true;
-      this.node.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
     };
     this._context.onBlur = () => {
       this._focused = false;
-      this.node.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
     };
 
     this._context.parentContext = {
@@ -87,10 +123,6 @@ export class VPWidget extends ReactWidget {
           PathExt.dirname(this._hostNotebookPanel.context.path)
         )
     };
-  }
-
-  get hasFocus(): boolean {
-    return this._focused;
   }
 
   onStartRun(): void {
