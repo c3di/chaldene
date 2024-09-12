@@ -190,6 +190,7 @@ export class VPEditor implements CodeEditor.IEditor {
    * Explicitly blur the editor.
    */
   blur(): void {
+    this._editor.blur();
     this._editor.contentDOM.blur();
   }
 
