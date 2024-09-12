@@ -199,6 +199,9 @@ async function openFileDialog(
     }
   });
   if (result.button.accept && result.value) {
+    if (result.value[0].type === 'directory') {
+      return null;
+    }
     const path = result.value[0].path;
     const relativePath = PathExt.relative(defaultPath, path);
     return relativePath;
