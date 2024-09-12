@@ -16,12 +16,17 @@ import createCellTypeItem from './CreateCellTypeItem';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { defaultNodeSpecs } from './grain';
 
-
 const chaldeneVPCell: JupyterFrontEndPlugin<void> = {
   id: 'Chaldene: Add VP Cell',
   description: 'Visual Programming in JupyterLab for Image Processing',
   autoStart: true,
-  requires: [IToolbarWidgetRegistry, IEditorServices, INotebookWidgetFactory, INotebookTracker, IFileBrowserFactory],
+  requires: [
+    IToolbarWidgetRegistry,
+    IEditorServices,
+    INotebookWidgetFactory,
+    INotebookTracker,
+    IFileBrowserFactory
+  ],
   activate: activateChaldeneVPCell
 };
 
@@ -31,7 +36,7 @@ function activateChaldeneVPCell(
   editorServices: IEditorServices,
   notebookWidgetFactory: any,
   notebookTracker: INotebookTracker,
-  fileBrowserFactory:IFileBrowserFactory
+  fileBrowserFactory: IFileBrowserFactory
 ) {
   // Add a new cell type to the toolbar
   const FACTORY = 'Notebook';
@@ -46,8 +51,10 @@ function activateChaldeneVPCell(
 
   CodeCell.execute = executeCodeCell;
 
-  const fileBrowser = fileBrowserFactory.createFileBrowser('file-input', {restore: false});
-  
+  const fileBrowser = fileBrowserFactory.createFileBrowser('file-input', {
+    restore: false
+  });
+
   (Cell.prototype as any).getEditorOptions = function (): any {
     return {
       config: { ...this._editorConfig },
@@ -60,10 +67,6 @@ function activateChaldeneVPCell(
   defaultNodeSpecs();
 }
 
-
-const plugins: Array<JupyterFrontEndPlugin<any>> = [
-  chaldeneVPCell,
-  
-];
+const plugins: Array<JupyterFrontEndPlugin<any>> = [chaldeneVPCell];
 
 export default plugins;
