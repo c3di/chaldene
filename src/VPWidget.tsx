@@ -43,7 +43,6 @@ export class VPWidget extends ReactWidget {
       'wheel',
       e => {
         if (!this._focused) {
-          e.preventDefault();
           e.stopPropagation();
         }
       },
