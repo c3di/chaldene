@@ -1,0 +1,112 @@
+:root {
+  /* Box Shadows */
+  --vpl-shadow-base-lightness: 0;
+  --vpl-shadow-umbra-color: rgba(
+    var(--vpl-shadow-base-lightness),
+    var(--vpl-shadow-base-lightness),
+    var(--vpl-shadow-base-lightness),
+    0.2
+  );
+  --vpl-shadow-penumbra-color: rgba(
+    var(--vpl-shadow-base-lightness),
+    var(--vpl-shadow-base-lightness),
+    var(--vpl-shadow-base-lightness),
+    0.14
+  );
+  --vpl-shadow-ambient-color: rgba(
+    var(--vpl-shadow-base-lightness),
+    var(--vpl-shadow-base-lightness),
+    var(--vpl-shadow-base-lightness),
+    0.12
+  );
+  --vpl-box-shadow-1: 0 2px 1px -1px var(--vpl-shadow-umbra-color),
+    0 1px 1px 0 var(--vpl-shadow-penumbra-color),
+    0 1px 3px 0 var(--vpl-shadow-ambient-color);
+  --vpl-box-shadow-2: 0 3px 1px -2px var(--vpl-shadow-umbra-color),
+    0 2px 2px 0 var(--vpl-shadow-penumbra-color),
+    0 1px 5px 0 var(--vpl-shadow-ambient-color);
+  --vpl-box-shadow-4: 0 2px 4px -1px var(--vpl-shadow-umbra-color),
+    0 4px 5px 0 var(--vpl-shadow-penumbra-color),
+    0 1px 10px 0 var(--vpl-shadow-ambient-color);
+  --vpl-box-shadow-5: 0 3px 5px -1px var(--vpl-shadow-umbra-color),
+    0 6px 10px 0 var(--vpl-shadow-penumbra-color),
+    0 1px 18px 0 var(--vpl-shadow-ambient-color);
+  --vpl-box-shadow-6: 0 5px 5px -3px var(--vpl-shadow-umbra-color),
+    0 8px 10px 1px var(--vpl-shadow-penumbra-color),
+    0 3px 14px 2px var(--vpl-shadow-ambient-color);
+  --vpl-box-shadow-12: 0 7px 8px -4px var(--vpl-shadow-umbra-color),
+    0 12px 17px 2px var(--vpl-shadow-penumbra-color),
+    0 5px 22px 4px var(--vpl-shadow-ambient-color);
+  --vpl-box-shadow-16: 0 8px 10px -5px var(--vpl-shadow-umbra-color),
+    0 16px 24px 2px var(--vpl-shadow-penumbra-color),
+    0 6px 30px 5px var(--vpl-shadow-ambient-color);
+  --vpl-box-shadow-20: 0 10px 13px -6px var(--vpl-shadow-umbra-color),
+    0 20px 31px 3px var(--vpl-shadow-penumbra-color),
+    0 8px 38px 7px var(--vpl-shadow-ambient-color);
+  --vpl-box-shadow-24: 0 11px 15px -7px var(--vpl-shadow-umbra-color),
+    0 24px 38px 3px var(--vpl-shadow-penumbra-color),
+    0 9px 46px 8px var(--vpl-shadow-ambient-color);
+
+  /* Borders */
+  --vpl-border-color1: var(--md-grey-400, #bdbdbd);
+  --vpl-border-color2: var(--md-grey-300, #e0e0e0);
+  --vpl-border-color3: var(--md-grey-200, #eee);
+  --vpl-border-light: var(--md-grey-100, #e2e8f0);
+  --vpl-border-radius: 2px;
+
+  /* UI Fonts */
+  --vpl-ui-font-size0: 0.83333em;
+  --vpl-ui-font-size1: 12px;
+  /* Base font size */
+  --vpl-ui-font-size2: 1.2em;
+  --vpl-ui-font-size3: 1.44em;
+  --vpl-ui-font-header: sans-serif;
+  --vpl-ui-font-family: system-ui, -apple-system, blinkmacsystemfont, 'Segoe UI',
+    helvetica, arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol';
+
+  /*Font Colors*/
+  --vpl-ui-font-color0: rgba(0, 0, 0, 1);
+  --vpl-ui-font-color1: rgba(0, 0, 0, 0.87);
+  --vpl-ui-font-color2: rgba(0, 0, 0, 0.54);
+  --vpl-ui-font-color3: rgba(0, 0, 0, 0.38);
+  --vpl-ui-font-color4: rgba(0, 0, 0, 0.12);
+
+  /* Layout Colors */
+  --vpl-gray-1: var(--md-grey-600, #757575);
+  --vpl-gray-2: var(--md-grey-400, #bdbdbd);
+  --vpl-gray-3: var(--md-grey-200, #eee);
+
+  --vpl-blue-gray-1: #54617b;
+  --vpl-blue-gray-2: #718096;
+  --vpl-blue-gray-3: #cbd5e0;
+  --vpl-blue-gray-4: #ebf2fa;
+
+  --vpl-scrollbar-color: #cbd5e0 #ffffff;
+
+  --vpl-blue-0: var(--md-blue-900, #0d47a1);
+  --vpl-blue-1: var(--md-blue-700, #1976d2);
+  --vpl-blue-2: var(--md-blue-300, #64b5f6);
+  --vpl-blue-3: var(--md-blue-100, #bbdefb);
+  --vpl-blue-4: var(--md-blue-50, #e3f2fd);
+  --vpl-green-0: var(--md-green-900, #1b5e20);
+  --vpl-green-1: var(--md-green-700, #388e3c);
+  --vpl-green-2: var(--md-green-300, #81c784);
+  --vpl-green-3: var(--md-green-100, #c8e6c9);
+
+  --vpl-orange-0: var(--md-orange-900, #e65100);
+  --vpl-orange-1: var(--md-orange-700, #f57c00);
+  --vpl-orange-2: var(--md-orange-300, #ffb74d);
+  --vpl-orange-3: var(--md-orange-100, #ffe0b2);
+  --vpl-red-0: var(--md-red-900, #b71c1c);
+  --vpl-red-1: var(--md-red-700, #d32f2f);
+  --vpl-red-2: var(--md-red-300, #e57373);
+  --vpl-red-3: var(--md-red-100, #ffcdd2);
+  --vpl-cyan-0: var(--md-cyan-900, #006064);
+  --vpl-cyan-1: var(--md-cyan-700, #0097a7);
+  --vpl-cyan-2: var(--md-cyan-300, #4dd0e1);
+  --vpl-cyan-3: var(--md-cyan-100, #b2ebf2);
+
+  /* Menu Item */
+  --vpl-menu-item-height: 32px;
+}

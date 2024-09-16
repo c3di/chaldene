@@ -1,0 +1,29 @@
+.ContextMenu {
+  position: absolute;
+  z-index: 9999;
+  background: white;
+  color: var(--vpl-ui-font-color1);
+  border: 1px solid var(--vpl-border-color1);
+  font-family: var(--vpl-ui-font-family);
+  font-size: var(--vpl-ui-font-size1);
+  box-shadow: var(--vpl-box-shadow-4);
+  border-radius: var(--vpl-border-radius);
+  padding: 4px 0;
+  min-width: 200px;
+  max-width: 300px;
+  max-height: 401px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: nowrap;
+  outline: none;
+  user-select: none;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--vpl-scrollbar-color);
+}
+
+.ContextMenu-content {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}

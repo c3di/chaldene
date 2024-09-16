@@ -1,0 +1,47 @@
+/* Slider.css */
+input[type='range'] {
+  width: calc(100% - 16px);
+  height: 20px;
+  appearance: none;
+  outline: none;
+  border-radius: 4px;
+  border: 1px solid var(--vpl-border-light);
+  margin-right: 8px;
+}
+
+.common-input-style {
+  background-color: var(--vpl-blue-gray-4);
+  border: 1px solid var(--vpl-border-light);
+  border-radius: var(--vpl-border-radius);
+  padding: 0px 8px;
+  width: calc(100% - 16px);
+  height: 20px;
+  font-size: var(--vpl-ui-font-size1);
+  outline: none;
+  box-shadow: none;
+  margin-right: 8px;
+}
+
+/* Hide the thumb on WebKit browsers (e.g., Chrome, Safari) */
+input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+/* Hide the thumb on Mozilla browsers (e.g., Firefox) */
+input[type='range']::-moz-range-thumb {
+  appearance: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+/* Hide the thumb on Microsoft browsers (e.g., IE, Edge) */
+input[type='range']::-ms-thumb {
+  appearance: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}

@@ -3,3 +3,24 @@
 
     https://jupyterlab.readthedocs.io/en/stable/developer/css.html
 */
+
+.react-flow__nodesselection-rect {
+  display: none;
+}
+
+.image-cropper-wrapper {
+  width: 100%; /* Fit the parent width */
+  height: 100%; /* Fit the parent height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform-origin: top left;
+  overflow: hidden; /* Hide overflow to avoid large scaling issues */
+}
+
+/* Adjust max-width and max-height or aspect ratio depending on requirements */
+.react-cropper-container {
+  max-width: 100%; /* Fit within the parent's width */
+  max-height: 100%; /* Fit within the parent's height */
+  object-fit: contain; /* Ensures proper aspect ratio is maintained */
+}

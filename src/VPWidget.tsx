@@ -3,12 +3,11 @@
  * - focusin focusout events bubbling up from inner focusable elements. Make sure the inner elements are focusable
  * - focus() blur() methods to control by keyboard
  */
-import React from 'react';
+
 import { Widget } from '@lumino/widgets';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { CodeEditor } from '@jupyterlab/codeeditor';
-import { VPEditor, type Graph, type EditorContext } from 'chaldene_vpe';
-import 'chaldene_vpe/dist/style.css';
+import { VPEditor, type Graph, type EditorContext } from './ReactVP';
 import { NotebookActions } from '@jupyterlab/notebook';
 import { PathExt } from '@jupyterlab/coreutils';
 

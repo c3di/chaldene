@@ -1,0 +1,145 @@
+.search-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: hidden;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.search-menu-container {
+  width: 100%;
+  max-width: 300px;
+  overflow-y: hidden;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.search-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: #888;
+}
+
+.search-input {
+  width: 100%;
+  background-color: var(--vpl-blue-gray-4);
+  padding: 5px 25px;
+  border-radius: 5px;
+  box-sizing: border-box;
+  outline: none;
+  border: none;
+}
+
+.clear-search {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--vpl-blue-gray-2);
+}
+
+.accordion-item {
+  border-bottom: 1px solid var(--vpl-border-color2);
+}
+
+.accordion-item:last-child {
+  border-bottom: none;
+}
+
+.accordion-button {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--vpl-ui-font-color1);
+  transition: color 0.2s ease;
+  position: relative;
+}
+
+.accordion-button::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  background-color: transparent;
+}
+
+.accordion-button:hover::after {
+  background-color: var(--vpl-blue-1);
+}
+
+.accordion-button:focus {
+  outline: none;
+}
+
+.accordion-icon {
+  font-size: var(--vpl-ui-font-size1);
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease;
+  color: var(--vpl-ui-font-color2);
+}
+
+.accordion-button:hover .accordion-icon {
+  color: var(--vpl-blue-1);
+}
+
+.accordion-button[aria-expanded='true'] .accordion-icon {
+  transform: rotate(180deg);
+}
+
+.accordion-panel {
+  padding: 0 10px 10px;
+}
+
+.node-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.node-item {
+  padding: 8px;
+  cursor: pointer;
+  border-radius: var(--vpl-border-radius);
+  font-size: var(--vpl-ui-font-size1);
+  color: var(--vpl-blue-gray-1);
+}
+
+.node-item:hover {
+  color: var(--vpl-blue-1);
+}

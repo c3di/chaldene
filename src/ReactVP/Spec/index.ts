@@ -1,0 +1,65 @@
+import type NodeSpec from './NodeSpec';
+import { ComputeNode } from '../Components';
+import { type Node, type Position } from '../Type';
+import type EditorContext from '../EditorContext';
+import { spec2ComputeNode } from './ComputeNodeSpec';
+import { NodeSpecConfigRegistry } from './NodeSpecRegistry';
+import type { NodeSpecConfig } from './NodeSpec';
+import { type NodeCodeGeenerator } from '../CodeGeneration';
+
+export type { NodeSpecConfig } from './NodeSpec';
+export type { default as computeNodeSpec } from './ComputeNodeSpec';
+
+export const nodeSpecRegistry = new NodeSpecConfigRegistry();
+
+export function registerNodeSpecConfig(
+  name: string,
+  config: NodeSpecConfig
+): string {
+  return nodeSpecRegistry.register(name, config);
+}
+
+// Allow Node Spec for ComputeNode to be registered for user
+export function registerNodeSpec(spec: NodeSpec): string {
+  return registerNodeSpecConfig(spec.name, {
+    spec,
+    spec2Node: spec2ComputeNode,
+    visualNodeType: ComputeNode
+  });
+}
+
+export function Spec2Node(
+  specName: string,
+  nodeId: string,
+  position: Position,
+  editorContext?: EditorContext
+): Node {
+  const {
+    spec,
+    spec2Node: spec2NodeData,
+    visualNodeType
+  } = nodeSpecRegistry.get(specName);
+  return spec2NodeData({
+    specName,
+    spec,
+    visualNodeType,
+    nodeId,
+    position,
+    editorContext
+  });
+}
+
+export function getCodeGenerator(
+  specName?: string,
+  language?: string
+): NodeCodeGeenerator | null {
+  if (!specName || !language) {
+    return null;
+  }
+
+  const { spec } = nodeSpecRegistry.get(specName);
+  if (!spec || !('codeGenerators' in spec)) {
+    return null;
+  }
+  return spec.codeGenerators[language];
+}

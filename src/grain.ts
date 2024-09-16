@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/restrict-plus-operands */
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
-import { registerNodeSpec, type computeNodeSpec } from 'chaldene_vpe';
+import { registerNodeSpec, type computeNodeSpec } from './ReactVP';
 
 export const readImageNodeSpec: computeNodeSpec = {
   name: 'read_image',

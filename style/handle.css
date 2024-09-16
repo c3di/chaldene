@@ -1,0 +1,29 @@
+.flex-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.label {
+  font-family: var(--vpl-ui-font-family);
+  font-weight: 400;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.widget-container {
+  margin-left: auto;
+}
+
+.handle-container {
+  position: absolute;
+  left: 0px;
+}
+
+.react-flow__handle.handle-style {
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border: 1.5px solid var(--vpl-blue-1);
+  border-radius: 50%;
+}

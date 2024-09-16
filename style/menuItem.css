@@ -1,0 +1,76 @@
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  color: var(--vpl-ui-font-color0);
+  font-size: var(--vpl-ui-font-size1);
+  user-select: none;
+  cursor: pointer;
+}
+
+.menu-item:not(.has-widget):hover {
+  background-color: var(--vpl-blue-gray-4);
+}
+
+.menu-item.has-widget {
+  cursor: default;
+}
+
+.menu-item.selected {
+  background-color: var(--vpl-blue-gray-3);
+}
+
+.menu-item.disabled {
+  color: var(--vpl-ui-font-color3);
+  cursor: not-allowed;
+}
+
+.menu-item-main-content {
+  display: flex;
+  align-items: center;
+  min-height: var(--vpl-menu-item-height);
+  white-space: nowrap;
+}
+
+.menu-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0 4px 0 0;
+  height: 100%;
+}
+
+.menu-item-label {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  text-align: left;
+  padding: 0 8px 0 0;
+  text-wrap: nowrap;
+  min-height: var(--vpl-menu-item-height);
+}
+
+.menu-item-shortcut {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  color: var(--vpl-ui-font-color2);
+  text-align: right;
+  padding-left: 8px;
+  text-wrap: nowrap;
+}
+
+.menu-item-widget {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 0 0 8px;
+}
+
+.menu-item-main-content:has(.menu-item-icon) {
+  padding-left: 4px;
+}
+
+.menu-item-main-content:not(:has(.menu-item-icon)):has(.menu-item-label) {
+  padding-left: 25px;
+}
