@@ -402,7 +402,7 @@ in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 gradient = filters.sobel(in_im.raw_image)
 markers = ndi.label(gradient < ${inputs.granularity})[0]
 ${outputs.segments} = segmentation.watershed(gradient, markers)
-${outputs.vis} = IM(segmentation.mark_boundaries(in_im.raw_image, ed1_7_out0), {**in_im.metadata, 'color_channel': 'rgb', 'channel_order': 'channel last'})`;
+${outputs.vis} = IM(segmentation.mark_boundaries(in_im.raw_image, ${outputs.segments}), {**in_im.metadata, 'color_channel': 'rgb', 'channel_order': 'channel last'})`;
     }
   }
 };
