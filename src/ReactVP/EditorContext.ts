@@ -13,7 +13,7 @@ export default class EditorContext {
   // Only be updated by the editor that is currently rendered.
   public graph?: Graph = undefined;
   public graphChangeListeners: Array<(graph: Graph) => void> = [];
-  public onLiveExecution?: (code: string) => void = undefined;
+  public onLiveExecution?: () => void = undefined;
   public focused: boolean = false;
   public onFocus?: () => void = undefined;
   public onBlur?: () => void = undefined;
@@ -79,9 +79,7 @@ export default class EditorContext {
 
   public setIsLiveExecution = (isLiveExecution: boolean): void => {
     this.isLiveExecution = isLiveExecution;
-    if (isLiveExecution) {
-      this.triggerLiveExection();
-    }
+    this.triggerLiveExecution();
   };
 
   public newGraphInput = (graph: Graph): void => {
@@ -105,7 +103,7 @@ export default class EditorContext {
     this.graphChangeListeners.forEach(listener => {
       listener(graphWithoutEditorContext(graph));
     });
-    this.triggerLiveExection();
+    this.triggerLiveExecution();
   };
 
   public registAction = (name: string, action: any): void => {
@@ -133,12 +131,9 @@ export default class EditorContext {
     this.graphChangeListeners.push(listener);
   };
 
-  public triggerLiveExection = (): void => {
+  public triggerLiveExecution = (): void => {
     if (this.isLiveExecution) {
-      const code = this.code();
-      if (code && this.onLiveExecution) {
-        this.onLiveExecution(code);
-      }
+      this.onLiveExecution?.();
     }
   };
 
