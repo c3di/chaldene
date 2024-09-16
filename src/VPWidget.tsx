@@ -130,7 +130,6 @@ export class VPWidget extends ReactWidget {
   }
 
   onEndRun(): void {
-    console.log('Execution ended');
     if (this._context) {
       this._context.notifyExecuteEnd();
     }
@@ -157,12 +156,15 @@ export class VPWidget extends ReactWidget {
     if (this._hostNotebookPanel) {
       const { content, context, sessionDialogs, translator } =
         this._hostNotebookPanel;
+      this.onStartRun();
       NotebookActions.run(
         content,
         context.sessionContext,
         sessionDialogs,
         translator
-      );
+      ).then(() => {
+        this.onEndRun();
+      });
     } else {
       console.error('No active notebook panel found');
     }

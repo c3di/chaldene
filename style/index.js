@@ -1,8 +1,7 @@
 import './base.css';
-import './ExecuteInProcess.css';
-import './Handle.css';
-import './Input.css';
-import './MenuItem.css';
-import './SearchMenu.css';
+import './handle.css';
+import './input.css';
+import './menuItem.css';
+import './searchMenu.css';
 import './style.css';
-import './ContextMenu.css';
+import './contextMenu.css';
