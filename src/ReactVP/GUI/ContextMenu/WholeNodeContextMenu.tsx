@@ -49,7 +49,7 @@ export default function WholeNodeContextMenu({
         icon: <UnlinkIcon />,
         displayLabel: 'Break all connection(s)',
         description: 'Break all connections of the selected node(s)',
-        onClick: graphActions?.disconnectNode,
+        onClick: (event: any, node: any) => graphActions?.disconnectNode(node),
         disabled: (node: any) => !graphActions?.isNodeConnected(node)
       }
     ];

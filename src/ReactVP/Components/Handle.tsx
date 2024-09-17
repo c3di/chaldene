@@ -15,7 +15,8 @@ export function InputHandle({
   description,
   widget,
   defaultValue,
-  editorContext
+  editorContext,
+  connections
 }: IHandleProps): JSX.Element {
   const Widget = useWidget(
     'inputs',
@@ -24,6 +25,7 @@ export function InputHandle({
     editorContext,
     identifier
   );
+
   return (
     <div className="flex-container" title={description}>
       {!Widget && (
@@ -33,7 +35,11 @@ export function InputHandle({
             type="target"
             position={Position.Left}
             isConnectable={true}
-            className="handle-style"
+            className={
+              connections && connections > 0
+                ? 'handle-style connected'
+                : 'handle-style disconnected'
+            }
           />
         </div>
       )}
@@ -57,7 +63,8 @@ export function OutputHandle({
   displayLabel,
   description,
   widget,
-  editorContext
+  editorContext,
+  connections
 }: IHandleProps): JSX.Element {
   const Widget = useWidget(
     'outputs',
@@ -87,7 +94,11 @@ export function OutputHandle({
       </span>
       <div className="handle-container" style={{ right: '0px', left: 'auto' }}>
         <RCHandle
-          className="handle-style"
+          className={
+            connections && connections > 0
+              ? 'handle-style connected'
+              : 'handle-style disconnected'
+          }
           id={id}
           type="source"
           position={Position.Right}
