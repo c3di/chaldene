@@ -26,7 +26,7 @@ export default class EditorContext {
   public onChangeForCodeGeneration?: (startNodeID: string) => void = undefined;
   public readonly editorID: string = '';
   private readonly executeLanguage: string;
-  private prevExecGraph: Graph | null = null;
+  private prevExecGraph?: Graph = undefined;
   private isLiveExecution: boolean = false;
   private nextNodeId: number = 0;
   private nextEdgeId: number = 0;
@@ -131,12 +131,6 @@ export default class EditorContext {
     this.graphChangeListeners.push(listener);
   };
 
-  public triggerLiveExecution = (): void => {
-    if (this.isLiveExecution) {
-      this.onLiveExecution?.();
-    }
-  };
-
   /*
    * @param identifier: string - editorID_nodeID_handleID
    */
@@ -145,21 +139,33 @@ export default class EditorContext {
     this.action('graph').updateInspection(handleID, value);
   };
 
+  public getGraphToBeExecuted = (increment: boolean = true): Graph | null => {
+    if (!this.graph || !this.codeGeneratorRegistry) {
+      return null;
+    }
+
+    return increment
+      ? findCodeChangedGraph(this.prevExecGraph, this.graph)
+      : this.graph;
+  };
+
+  public triggerLiveExecution = (): void => {
+    if (this.isLiveExecution && this.getGraphToBeExecuted()) {
+      this.onLiveExecution?.();
+    }
+  };
+
   /*
+   * There are two modes for retrieving code:
+   * 1. **Not Live**: Code is retrieved manually, either from the context menu or by clicking the run button.
+   * 2. **Live**: Code is generated automatically during live execution. It can be triggered when live execution
+   *  is toggled or as the execution runs.
+   * so, getGraphToBeExecuted to be called here again
+   *
    * @param increment: whether to return code on the changed part of the graph or the whole graph.
    */
   public code = (increment: boolean = true): string | null => {
-    if (!this.graph) {
-      return null;
-    }
-
-    if (!this.checkExecutionReadiness()) {
-      return null;
-    }
-
-    const graphToBeExecuted = increment
-      ? findCodeChangedGraph(this.prevExecGraph, this.graph)
-      : this.graph;
+    const graphToBeExecuted = this.getGraphToBeExecuted(increment);
     if (!graphToBeExecuted) {
       return null;
     }

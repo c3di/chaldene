@@ -126,7 +126,7 @@ function isSameCode(
 }
 
 export function findCodeChangeNodes(
-  prevGraph: Graph | null,
+  prevGraph: Graph | undefined,
   nextGraph: Graph
 ): Node[] {
   if (!prevGraph) {
@@ -212,7 +212,7 @@ export function findConnectedSubgraph(
 }
 
 export function findCodeChangedGraph(
-  prevGraph: Graph | null,
+  prevGraph: Graph | undefined,
   nextGraph: Graph
 ): Graph | null {
   const nodes = findCodeChangeNodes(prevGraph, nextGraph);
