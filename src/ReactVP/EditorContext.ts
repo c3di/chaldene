@@ -91,7 +91,7 @@ export default class EditorContext {
     this.nextEdgeId =
       1 + Math.max(0, ...graph.edges.map(edge => parseInt(edge.id, 10)));
     if (Number.isNaN(this.nextEdgeId)) {
-      this.nextNodeId = 0;
+      this.nextEdgeId = 0;
     }
     this.action('graph').newGraphInput(graph);
   };
