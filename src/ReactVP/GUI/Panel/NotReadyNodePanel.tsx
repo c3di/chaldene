@@ -1,14 +1,14 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import type EditorContext from '../../EditorContext';
 
-export interface NotReadyNodePanelProps {
+export interface INotReadyNodePanelProps {
   // Node key and inputs that are not ready for execution
   notReadyNodes: Record<string, string[]>;
   editorContext?: EditorContext;
   style?: CSSProperties;
 }
 
-interface IconButtonProps {
+interface IIconButtonProps {
   onClick: () => void;
   title: string;
   children: React.ReactNode;
@@ -20,7 +20,7 @@ function IconButton({
   title,
   children,
   style
-}: IconButtonProps): JSX.Element {
+}: IIconButtonProps): JSX.Element {
   return (
     <button
       onClick={onClick}
@@ -47,7 +47,7 @@ function IconButton({
 export default function NotReadyNodePanel({
   editorContext,
   notReadyNodes
-}: NotReadyNodePanelProps): JSX.Element {
+}: INotReadyNodePanelProps): JSX.Element {
   const [notReady, setNotReady] =
     useState<Record<string, string[]>>(notReadyNodes);
 
@@ -97,13 +97,13 @@ export default function NotReadyNodePanel({
             }}
             style={{
               cursor: 'pointer',
-              color: '#2196F3',
+              color: 'black',
               transition: 'color 0.3s',
               fontSize: '1.0em',
               marginRight: '10px'
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#1565C0')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#2196F3')}
+            onMouseEnter={e => (e.currentTarget.style.color = '#2c3e50')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'black')}
           >
             {editorContext?.action('graph').getNodeByID(nodeID).data
               .displayLabel ?? nodeID}
@@ -196,8 +196,9 @@ export default function NotReadyNodePanel({
         ) : (
           <div
             style={{
-              color: '#4CAF50',
-              fontWeight: 'bold',
+              color: 'black',
+              fontFamily: 'Arial, sans-serif',
+              fontSize: '13px',
               textAlign: 'center'
             }}
           >
