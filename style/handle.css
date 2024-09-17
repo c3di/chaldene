@@ -31,7 +31,16 @@
 .react-flow__handle.handle-style {
   width: 10px;
   height: 10px;
+  border-radius: 50%;
+}
+
+.react-flow__handle.handle-style.disconnected {
   background: #fff;
   border: 1.5px solid var(--vpl-blue-1);
-  border-radius: 50%;
+}
+
+
+.react-flow__handle.handle-style.connected {
+  background: var(--vpl-blue-1);
+  border: 1.5px solid var(--vpl-blue-2);
 }
