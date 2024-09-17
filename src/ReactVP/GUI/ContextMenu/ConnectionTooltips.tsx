@@ -7,14 +7,7 @@ import ContextMenu, {
 } from './ContextMenu';
 import { CheckReadinessIcon, ReplaceIcon, RejectIcon } from '../../Style/icons';
 
-interface ITooltipMenuProps extends IContextMenuProps {
-  offset?: { x: number; y: number };
-}
-
-const TooltipMenu: React.FC<ITooltipMenuProps> = ({
-  offset = { x: 0, y: -10 },
-  ...props
-}) => {
+const TooltipMenu: React.FC<IContextMenuProps> = ({ ...props }) => {
   const [adjustedPosition, setAdjustedPosition] = useState(
     props.clientPosition
   );
@@ -23,8 +16,8 @@ const TooltipMenu: React.FC<ITooltipMenuProps> = ({
   useEffect(() => {
     if (menuRef.current) {
       const rect = menuRef.current.getBoundingClientRect();
-      const newY = props.clientPosition.y - rect.height - 10; // Position above cursor
-      const newX = props.clientPosition.x - rect.width / 2; // Center horizontally
+      const newY = props.clientPosition.y - rect.height - 15; // Position above cursor
+      const newX = props.clientPosition.x - rect.width + 10;
       setAdjustedPosition({ x: newX, y: newY });
     }
   }, [props.clientPosition]);
@@ -73,7 +66,6 @@ export default function ConnectionTooltips({
       items={items}
       clientPosition={clientPosition}
       editorContext={editorContext}
-      offset={{ x: 0, y: -10 }}
     />
   );
 }
