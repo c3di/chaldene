@@ -5,7 +5,7 @@
     height: 24px !important;
     width: 24px !important;
     padding: 2px !important;
-    margin: 0 2px !important;
+    margin: 0 2.4px !important;
     border: none !important;
     background-color: transparent !important;
     border-bottom: none !important;
@@ -20,7 +20,7 @@
 }
 
 .control-panel .react-flow__controls-button svg {
-    width: 16px !important;
-    height: 16px !important;
+    width: 18px !important;
+    height: 18px !important;
     fill: currentColor !important;
 }

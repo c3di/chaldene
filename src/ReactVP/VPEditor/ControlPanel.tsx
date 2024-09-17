@@ -20,7 +20,7 @@ export default function ControlPanel({
         top: '12px',
         backgroundColor: 'transparent',
         boxShadow: 'none',
-        margin: '10px 5px'
+        margin: '10px 3px'
       }}
     >
       <ControlButton
