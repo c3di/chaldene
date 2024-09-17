@@ -16,7 +16,8 @@ import {
   addEdge,
   type NodeChange,
   type EdgeChange,
-  type Connection
+  type Connection,
+  EdgeRemoveChange
 } from '@xyflow/react';
 import StateActions from './StateActions';
 import {
@@ -152,20 +153,22 @@ export default class GraphActions extends StateActions {
   public remove = (): void => {
     console.log('removeSelectedElements');
     this.stateAction((currentGraph: Graph) => {
-      const nodeChanges: NodeChange[] = currentGraph.nodes
-        .filter(n => n.selected)
-        .map(n => ({
-          id: n.id,
-          type: 'remove'
-        }));
+      const removedNodes = currentGraph.nodes.filter(n => n.selected);
+      const nodeChanges: NodeChange[] = removedNodes.map(n => ({
+        id: n.id,
+        type: 'remove'
+      }));
       const edgeChanges: EdgeChange[] = currentGraph.edges
         .filter(e => e.selected)
         .map(e => ({
           id: e.id,
           type: 'remove'
         }));
+
+      let nodes = applyNodeChanges(nodeChanges, currentGraph.nodes);
+      nodes = this.updateOnNodeRemoved(removedNodes, nodes);
       return {
-        nodes: applyNodeChanges(nodeChanges, currentGraph.nodes),
+        nodes: this.updateOnEdgeChanges(edgeChanges, nodes),
         edges: applyEdgeChanges(edgeChanges, currentGraph.edges)
       };
     });
@@ -333,7 +336,8 @@ export default class GraphActions extends StateActions {
       changes: NodeChange[],
       nodes: Node[]
     ): Node[] => {
-      return applyNodeChanges(changes, nodes).map(n => ({
+      const nds = this.updateOnNodeChanges(changes, nodes);
+      return applyNodeChanges(changes, nds).map(n => ({
         ...n,
         data: {
           ...n.data,
@@ -351,7 +355,7 @@ export default class GraphActions extends StateActions {
   public applyEdgeChanges = (changes: EdgeChange[]): void => {
     console.log('onEdgesChange', changes);
     this.stateAction((currentGraph: Graph) => ({
-      ...currentGraph,
+      nodes: this.updateOnEdgeChanges(changes, currentGraph.nodes),
       edges: applyEdgeChanges(changes, currentGraph.edges)
     }));
   };
@@ -389,13 +393,24 @@ export default class GraphActions extends StateActions {
   public onConnectNode = (connection: Connection): void => {
     console.log('onConnect', connection);
     this.stateAction((currentGraph: Graph) => {
+      const replacedEdges = currentGraph.edges.filter(
+        edge =>
+          edge.target === connection.target &&
+          edge.targetHandle === connection.targetHandle
+      );
+      const changes: EdgeChange[] = replacedEdges.map(e => ({
+        id: e.id,
+        type: 'remove'
+      }));
+      const nodes = this.updateOnEdgeChanges(changes, currentGraph.nodes);
+
       const edges = currentGraph.edges.filter(
         edge =>
           edge.target !== connection.target ||
           edge.targetHandle !== connection.targetHandle
       );
       return {
-        ...currentGraph,
+        nodes: this.updateOnEdgeChange(connection, nodes, true),
         edges: addEdge(connection, edges)
       };
     });
@@ -524,18 +539,98 @@ export default class GraphActions extends StateActions {
 
   public disconnectHandle = (identifier: HandleIdentifier): void => {
     this.stateAction((currentGraph: Graph) => {
-      const changes: EdgeChange[] = this.getConnecedEdges(identifier).map(
-        e => ({
-          id: e.id,
-          type: 'remove'
-        })
-      );
+      const edges = this.getConnecedEdges(identifier);
+      const changes: EdgeChange[] = edges.map(e => ({
+        id: e.id,
+        type: 'remove'
+      }));
+
       return {
-        ...currentGraph,
+        nodes: this.updateOnEdgeChanges(changes, currentGraph.nodes),
         edges: applyEdgeChanges(changes, currentGraph.edges)
       };
     });
   };
+
+  public updateOnNodeChanges = (
+    changes: NodeChange[],
+    nodes: Node[]
+  ): Node[] => {
+    let nds = nodes;
+    for (const change of changes) {
+      if (change.type === 'remove') {
+        const node = nodes.find(n => n.id === change.id);
+        if (node) {
+          nds = this.updateOnNodeRemoved([node], nodes);
+        }
+      }
+    }
+    return nds;
+  };
+
+  public updateOnNodeRemoved = (
+    removedNodes: Node[],
+    nodes: Node[]
+  ): Node[] => {
+    let nds = nodes;
+    for (const n of removedNodes) {
+      const edgeChanges = this.graph?.edges
+        .filter(edge => edge.source === n.id || edge.target === n.id)
+        .map(
+          e =>
+            ({
+              id: e.id,
+              type: 'remove'
+            }) as EdgeRemoveChange
+        );
+      if (edgeChanges) {
+        nds = this.updateOnEdgeChanges(edgeChanges, nds);
+      }
+    }
+    return nds;
+  };
+
+  public updateOnEdgeChanges = (
+    edgeChanges: EdgeChange[],
+    nodes: Node[]
+  ): Node[] => {
+    let nds = nodes;
+    for (const change of edgeChanges) {
+      if (change.type === 'remove') {
+        const edge = this.graph?.edges.find(e => e.id === change.id);
+        nds = this.updateOnEdgeChange(edge!, nds, false);
+      }
+    }
+    return nds;
+  };
+
+  public updateOnEdgeChange(
+    edge: Edge | Connection,
+    nodes: Node[],
+    isConnected: boolean
+  ): Node[] {
+    for (const node of nodes) {
+      if (node.id === edge!.source) {
+        node.data.outputs = node.data.outputs?.map(output => {
+          if (output.id === edge!.sourceHandle) {
+            output.connections =
+              (output.connections ?? 0) + (isConnected ? 1 : -1);
+          }
+          return output;
+        });
+      }
+      if (node.id === edge!.target) {
+        node.data.inputs = node.data.inputs?.map(input => {
+          if (input.id === edge!.targetHandle) {
+            input.connections =
+              (input.connections ?? 0) + (isConnected ? 1 : -1);
+          }
+          return input;
+        });
+      }
+    }
+    return nodes;
+  }
 
   public isNodeConnected = (node: any): boolean => {
     return (
@@ -555,7 +650,7 @@ export default class GraphActions extends StateActions {
           type: 'remove'
         }));
       return {
-        ...currentGraph,
+        nodes: this.updateOnEdgeChanges(changes, currentGraph.nodes),
         edges: applyEdgeChanges(changes, currentGraph.edges)
       };
     });

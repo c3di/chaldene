@@ -10,6 +10,7 @@ export interface Handle {
   description?: string;
   widget?: { type: string; [key: string]: any };
   defaultValue?: any;
+  connections?: number;
 }
 
 export interface HandleIdentifier {
