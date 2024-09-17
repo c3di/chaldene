@@ -140,7 +140,7 @@ export default class EditorContext {
   };
 
   public getGraphToBeExecuted = (increment: boolean = true): Graph | null => {
-    if (!this.graph || !this.codeGeneratorRegistry) {
+    if (!this.graph || !this.checkExecutionReadiness()) {
       return null;
     }
 
