@@ -1,0 +1,26 @@
+.control-panel .react-flow__controls-button {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    height: 24px !important;
+    width: 24px !important;
+    padding: 2px !important;
+    margin: 0 2px !important;
+    border: none !important;
+    background-color: transparent !important;
+    border-bottom: none !important;
+    color: var(--vpl-ui-font-color1, rgba(0, 0, 0, 0.87)) !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    border-radius: 0 !important;
+}
+
+.control-panel .react-flow__controls-button:hover {
+    background-color: var(--vpl-gray-3, #eee) !important;
+}
+
+.control-panel .react-flow__controls-button svg {
+    width: 16px !important;
+    height: 16px !important;
+    fill: currentColor !important;
+}

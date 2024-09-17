@@ -10,7 +10,7 @@ import { SceneActions } from '../Actions';
 import { type Graph } from '../Type';
 import type EditorContext from '../EditorContext';
 
-export interface FlowEditorProps {
+export interface IFlowEditorProps {
   id: string;
   graph?: Graph;
   editorContext: EditorContext;
@@ -22,7 +22,7 @@ export default function FlowEditor({
   graph,
   editorContext,
   focused
-}: FlowEditorProps): JSX.Element {
+}: IFlowEditorProps): JSX.Element {
   const menuActions = editorContext.action('menu');
   const graphActions = editorContext.action('graph');
   console.log('Flow Editor render once');

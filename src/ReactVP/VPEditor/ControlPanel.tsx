@@ -3,29 +3,34 @@ import type EditorContext from '../EditorContext';
 import ExecuteModeSwitch from './ExecuteModeSwitch';
 import { AutoLayoutIcon } from '../Style';
 
-export interface ControlPanelProps {
+export interface IControlPanelProps {
   editorContext: EditorContext;
 }
 
 export default function ControlPanel({
   editorContext
-}: ControlPanelProps): JSX.Element {
+}: IControlPanelProps): JSX.Element {
   return (
-    <>
-      <RcControls
-        position="top-right"
-        style={{ flexDirection: 'row' }}
-        showInteractive={false}
+    <RcControls
+      position="top-right"
+      showInteractive={false}
+      className="control-panel"
+      style={{
+        flexDirection: 'row',
+        top: '10px',
+        backgroundColor: 'transparent',
+        boxShadow: 'none',
+        margin: '10px 6px'
+      }}
+    >
+      <ControlButton
+        onClick={(): void => {
+          editorContext.action('scene').autoLayout();
+        }}
       >
-        <ControlButton
-          onClick={(): void => {
-            editorContext.action('scene').autoLayout();
-          }}
-        >
-          <AutoLayoutIcon />
-        </ControlButton>
-        <ExecuteModeSwitch editorContext={editorContext} />
-      </RcControls>
-    </>
+        <AutoLayoutIcon />
+      </ControlButton>
+      <ExecuteModeSwitch editorContext={editorContext} />
+    </RcControls>
   );
 }
