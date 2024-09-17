@@ -17,10 +17,10 @@ export default function ControlPanel({
       className="control-panel"
       style={{
         flexDirection: 'row',
-        top: '10px',
+        top: '12px',
         backgroundColor: 'transparent',
         boxShadow: 'none',
-        margin: '10px 6px'
+        margin: '10px 5px'
       }}
     >
       <ControlButton
