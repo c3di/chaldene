@@ -1,24 +1,24 @@
-import { type Position } from '../Type';
+import { type IPosition } from '../Type';
 import type EditorContext from '../EditorContext';
 
-export default interface NodeSpec {
+export default interface INodeSpec {
   name: string;
   displayLabel?: string;
   description?: string;
   category?: string;
 }
 
-export interface NodeSpecConfig {
+export interface INodeSpecConfig {
   spec: any; // todo? NodeSpec or others
-  spec2Node: (p: Spec2NodeDataParams) => any;
+  spec2Node: (p: ISpec2NodeDataParams) => any;
   visualNodeType: any;
 }
 
-export interface Spec2NodeDataParams {
+export interface ISpec2NodeDataParams {
   specName: string;
-  spec: NodeSpec;
+  spec: INodeSpec;
   visualNodeType: any;
   nodeId: string;
-  position: Position;
+  position: IPosition;
   editorContext?: EditorContext;
 }

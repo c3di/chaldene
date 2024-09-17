@@ -74,3 +74,65 @@
 .menu-item-main-content:not(:has(.menu-item-icon)):has(.menu-item-label) {
   padding-left: 25px;
 }
+
+.tooltip-menu {
+  position: absolute;
+  background-color: #f9f9f9;
+  color: #333;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  max-width: 300px;
+  z-index: 1000;
+}
+
+.tooltip-menu::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #f9f9f9 transparent transparent transparent;
+}
+
+.tooltip-menu .ContextMenu {
+  background: none;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+}
+
+.tooltip-menu .ContextMenu .menu-item {
+  cursor: default !important;
+  pointer-events: none;
+  padding: 0;
+  background: none;
+}
+
+.tooltip-menu .ContextMenu .menu-item:hover {
+  background-color: transparent !important;
+}
+
+.tooltip-menu .ContextMenu .menu-item-main-content {
+  min-height: auto;
+}
+
+.tooltip-menu .ContextMenu .menu-item-icon {
+  padding-right: 8px;
+}
+
+.tooltip-menu .ContextMenu .menu-item-label {
+  padding: 0;
+  font-weight: normal;
+}
+
+.tooltip-menu .ContextMenu .menu-item {
+  cursor: default !important;
+  pointer-events: none;
+}
+
+.tooltip-menu .ContextMenu .menu-item:hover {
+  background-color: transparent !important;
+}

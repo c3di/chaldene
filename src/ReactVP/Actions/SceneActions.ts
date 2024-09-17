@@ -1,4 +1,4 @@
-import { isInputViaConnection, type Position } from '../Type';
+import { isInputViaConnection, type IPosition } from '../Type';
 import Actions from './Actions';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import { type ReactFlowInstance } from '@xyflow/react';
@@ -35,7 +35,7 @@ export default class SceneActions extends Actions {
     await this.reactFlowInstance.fitView();
   };
 
-  public clientToScenePosition = ({ x, y }: Position): Position => {
+  public clientToScenePosition = ({ x, y }: IPosition): IPosition => {
     const scenePosition = this.reactFlowInstance.screenToFlowPosition({
       x,
       y

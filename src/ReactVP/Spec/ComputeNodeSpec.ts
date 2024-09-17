@@ -1,10 +1,10 @@
-import type NodeSpec from './NodeSpec';
+import type INodeSpec from './NodeSpec';
 import type { Handle, Node } from '../Type';
-import type { Spec2NodeDataParams } from './NodeSpec';
+import type { ISpec2NodeDataParams } from './NodeSpec';
 import type { NodeCodeGenerators } from '../CodeGeneration';
 
 // todo: rename data strucute Node to compute Node, keep consistent
-export default interface ComputeNodeSpec extends NodeSpec {
+export default interface IComputeNodeSpec extends INodeSpec {
   inputs?: Array<Omit<Handle, 'id' | 'identifier'>>;
   outputs?: Array<Omit<Handle, 'id' | 'identifier'>>;
   codeGenerators?: NodeCodeGenerators;
@@ -17,7 +17,7 @@ export function spec2ComputeNode({
   nodeId,
   position,
   editorContext
-}: Spec2NodeDataParams & { spec: ComputeNodeSpec }): Node {
+}: ISpec2NodeDataParams & { spec: IComputeNodeSpec }): Node {
   const { displayLabel, description, inputs, outputs } = spec;
   const node = {
     id: nodeId,
@@ -28,7 +28,7 @@ export function spec2ComputeNode({
       displayLabel,
       description,
       inputs: (inputs ?? []).map((input, index) => ({
-        id: `in${index}`, // avoid any sperator
+        id: `in${index}`,
         ...input
       })),
       outputs: (outputs ?? []).map((output, index) => ({

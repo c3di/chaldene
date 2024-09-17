@@ -1,8 +1,8 @@
 import { Registry } from '../Type';
 import { type NodeTypes } from '../Components';
-import { type NodeSpecConfig } from './NodeSpec';
+import { type INodeSpecConfig } from './NodeSpec';
 
-export class NodeSpecConfigRegistry extends Registry<NodeSpecConfig> {
+export class NodeSpecConfigRegistry extends Registry<INodeSpecConfig> {
   private readonly visualNodetypes: NodeTypes = {};
 
   get allVisualNodeTypes(): NodeTypes {
@@ -15,7 +15,7 @@ export class NodeSpecConfigRegistry extends Registry<NodeSpecConfig> {
 
   public register(
     name: string,
-    { spec, spec2Node, visualNodeType }: NodeSpecConfig
+    { spec, spec2Node, visualNodeType }: INodeSpecConfig
   ): string {
     const typeID = this.registVisualNodeType(name, visualNodeType);
     const config = {

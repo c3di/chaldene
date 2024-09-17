@@ -1,20 +1,20 @@
 import type NodeSpec from './NodeSpec';
 import { ComputeNode } from '../Components';
-import { type Node, type Position } from '../Type';
+import { type Node, type IPosition } from '../Type';
 import type EditorContext from '../EditorContext';
 import { spec2ComputeNode } from './ComputeNodeSpec';
 import { NodeSpecConfigRegistry } from './NodeSpecRegistry';
-import type { NodeSpecConfig } from './NodeSpec';
+import type { INodeSpecConfig } from './NodeSpec';
 import { type NodeCodeGeenerator } from '../CodeGeneration';
 
-export type { NodeSpecConfig } from './NodeSpec';
+export type { INodeSpecConfig } from './NodeSpec';
 export type { default as computeNodeSpec } from './ComputeNodeSpec';
 
 export const nodeSpecRegistry = new NodeSpecConfigRegistry();
 
 export function registerNodeSpecConfig(
   name: string,
-  config: NodeSpecConfig
+  config: INodeSpecConfig
 ): string {
   return nodeSpecRegistry.register(name, config);
 }
@@ -31,7 +31,7 @@ export function registerNodeSpec(spec: NodeSpec): string {
 export function Spec2Node(
   specName: string,
   nodeId: string,
-  position: Position,
+  position: IPosition,
   editorContext?: EditorContext
 ): Node {
   const {

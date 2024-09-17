@@ -1,5 +1,5 @@
-interface ConnectionStatus {
+interface IConnectionStatus {
   status: 'accept' | 'replace' | 'reject';
   message: string;
 }
-export default ConnectionStatus;
+export default IConnectionStatus;

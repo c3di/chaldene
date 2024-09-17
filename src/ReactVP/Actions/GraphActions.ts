@@ -4,11 +4,11 @@ import {
   isUsedAsInput,
   type Edge,
   type Node,
-  type Position,
+  type IPosition,
   type Identifier,
   type ValueCategory,
   type Handle,
-  type ConnecteStatus
+  type ConnectionStatus
 } from '../Type';
 import {
   applyNodeChanges,
@@ -98,7 +98,7 @@ export default class GraphActions extends StateActions {
     });
   };
 
-  public addNodeFromSpec = (specName: string, position: Position): void => {
+  public addNodeFromSpec = (specName: string, position: IPosition): void => {
     const node = Spec2Node(
       specName,
       this.editorContext!.getNodeId(),
@@ -111,7 +111,7 @@ export default class GraphActions extends StateActions {
     }));
   };
 
-  public add(graph: Graph, leftTopPosition: Position): void {
+  public add(graph: Graph, leftTopPosition: IPosition): void {
     const { nodes, edges } = graph;
     if (nodes.length === 0 && edges.length === 0) {
       return;
@@ -192,7 +192,7 @@ export default class GraphActions extends StateActions {
       });
   };
 
-  public paste = (position: Position): void => {
+  public paste = (position: IPosition): void => {
     navigator.clipboard
       .readText()
       .then(text => {
@@ -415,10 +415,10 @@ export default class GraphActions extends StateActions {
 
   private readonly validateConnection = (
     connection: Connection
-  ): ConnecteStatus => {
+  ): ConnectionStatus => {
     const { source, target } = connection;
     if (source === target) {
-      return { status: 'reject', message: 'Cannot connect to the same node' };
+      return { status: 'reject', message: 'Cannot connect to same node' };
     }
 
     const sourceHandle = this.getHandle({
@@ -432,7 +432,7 @@ export default class GraphActions extends StateActions {
       type: 'target'
     });
     if (!sourceHandle || !targetHandle) {
-      return { status: 'reject', message: 'Directions are not compatible.' };
+      return { status: 'reject', message: 'Directions not compatible.' };
     }
 
     if (
@@ -440,7 +440,7 @@ export default class GraphActions extends StateActions {
       !sourceHandle.type &&
       !targetHandle.type
     ) {
-      return { status: 'reject', message: 'Types are not compatible.' };
+      return { status: 'reject', message: 'Types not compatible.' };
     }
 
     const cycle = findCycle({
@@ -458,12 +458,12 @@ export default class GraphActions extends StateActions {
         type: 'target'
       }) > 0
     ) {
-      return { status: 'replace', message: 'Replace the existing connection' };
+      return { status: 'replace', message: 'Replace existing connection' };
     }
 
     return {
       status: 'accept',
-      message: 'Connection is valid'
+      message: 'Connection valid'
     };
   };
 
