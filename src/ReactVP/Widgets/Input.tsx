@@ -108,10 +108,7 @@ export function Slider({
   const percentage = ((value - min) / (max - min)) * 100;
 
   return (
-    <div
-      className="slider-container"
-      style={{ position: 'relative', width: '100%' }}
-    >
+    <div className="slider-container">
       <input
         className="nodrag"
         type="range"
@@ -204,18 +201,11 @@ export function FileInputFromServer({
   editorContext
 }: WidgetProps): JSX.Element {
   return (
-    <div style={{ display: 'flex', alignItems: 'center' }}>
-      <Text
-        forWhom={forWhom}
-        value={value}
-        placeholder=""
-        setValue={setValue}
-      />
+    <div className="file-input-container">
       {editorContext?.parentContext?.openFileDialog && (
-        <FaFile
+        <button
+          className="file-input-button"
           title="Open file dialog"
-          size={12}
-          style={{ color: '#718096', cursor: 'pointer' }}
           onClick={() => {
             editorContext?.parentContext
               ?.openFileDialog()
@@ -225,8 +215,16 @@ export function FileInputFromServer({
                 }
               });
           }}
-        />
+        >
+          <FaFile size={12} />
+        </button>
       )}
+      <Text
+        forWhom={forWhom}
+        value={value}
+        placeholder=""
+        setValue={setValue}
+      />
     </div>
   );
 }

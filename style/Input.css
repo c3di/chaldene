@@ -19,6 +19,9 @@
   outline: none;
   box-shadow: none;
   margin-right: 5px;
+  display: flex;
+  align-items: center;
+  position: relative;
 }
 
 /* Hide the thumb on WebKit browsers (e.g., Chrome, Safari) */
@@ -55,4 +58,43 @@ input[type="range"]::-ms-thumb {
   width: 100%;
   height: 20px;
   margin-right: 5px;
+  position: relative;
+}
+
+.file-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.file-input-container .common-input-style {
+  padding-left: 30px;
+  width: 100%;
+}
+
+.file-input-button {
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  bottom: 1px;
+  width: 28px;
+  border: none;
+  border-right: 1px solid var(--vpl-border-light);
+  border-radius: var(--vpl-border-radius) 0 0 var(--vpl-border-radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  z-index: 1;
+  background-color: var(--vpl-blue-gray-4);
+}
+
+.file-input-button:hover {
+  background-color: var(--vpl-blue-gray-3);
+}
+
+.file-input-button svg {
+  color: #718096;
 }
