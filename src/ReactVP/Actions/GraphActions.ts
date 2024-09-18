@@ -701,7 +701,7 @@ export default class GraphActions extends StateActions {
       }
       for (const input of node.data.inputs) {
         if (input.widget?.type) {
-          if (input.defaultValue === undefined && input.defaultValue === null) {
+          if (input.defaultValue === undefined || input.defaultValue === null) {
             notReadyNodes[node.id] = [
               ...(notReadyNodes[node.id] ?? []),
               input.name
