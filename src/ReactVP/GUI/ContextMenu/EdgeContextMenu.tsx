@@ -16,7 +16,7 @@ export default function EdgeContextMenu({
         displayLabel: 'Delete',
         description: 'Delete selected edge(s)',
         shortcut: 'Del',
-        onClick: graphActions?.remove
+        onClick: graphActions?.removeSelected
       }
     ];
   }, [editorContext, forWhom]);

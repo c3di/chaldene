@@ -22,7 +22,7 @@ export default function WholeNodeContextMenu({
         displayLabel: 'Delete',
         description: 'Delete selected element(s)',
         shortcut: 'Del',
-        onClick: graphActions?.remove
+        onClick: graphActions?.removeSelected
       },
       {
         icon: <CopyIcon />,
