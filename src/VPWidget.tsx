@@ -115,10 +115,11 @@ export class VPWidget extends ReactWidget {
     };
 
     this._context.parentContext = {
-      openFileDialog: () =>
+      openFileDialog: (fileExtensions?: string[]) =>
         openFileDialog(
           this._fileBrowser,
-          PathExt.dirname(this._hostNotebookPanel.context.path)
+          PathExt.dirname(this._hostNotebookPanel.context.path),
+          fileExtensions
         )
     };
   }
@@ -209,7 +210,8 @@ export function createVPWidget(
 import { FileDialog } from '@jupyterlab/filebrowser';
 async function openFileDialog(
   fileBrowser: any,
-  defaultPath: string = ''
+  defaultPath: string = '',
+  fileExtensions?: string[]
 ): Promise<string | null> {
   // cleanup find the manager
 
@@ -220,14 +222,20 @@ async function openFileDialog(
     manager: fileBrowser.model.manager,
     title: 'Select an image',
     filter: (value: any) => {
-      if (value.type === 'directory') {
-        return true;
+      if (
+        value.type === 'directory' ||
+        !fileExtensions ||
+        fileExtensions.length === 0
+      ) {
+        return { score: 1 };
       }
-      return (
-        value.path.endsWith('.png') ||
-        value.path.endsWith('.jpg') ||
-        value.path.endsWith('.jpeg')
-      );
+
+      for (const extension of fileExtensions) {
+        if (value.path.endsWith(extension)) {
+          return { score: 1 };
+        }
+      }
+      return null;
     }
   });
   if (result.button.accept && result.value) {
