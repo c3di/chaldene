@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import type EditorContext from '../../EditorContext';
-import { CrossIcon, FreshIcon } from '../../Style';
+import { CloseIcon, RefreshIcon } from '../../Style';
 
 export interface INotReadyNodePanelProps {
   // Node key and inputs that are not ready for execution
@@ -88,8 +88,8 @@ export default function NotReadyNodePanel({
         <div
           style={{
             display: 'flex',
-            alignItems: 'baseline',
-            justifyContent: 'space-between'
+            flexDirection: 'column',
+            alignItems: 'flex-start'
           }}
         >
           <strong
@@ -98,21 +98,26 @@ export default function NotReadyNodePanel({
             }}
             style={{
               cursor: 'pointer',
-              color: 'black',
+              color: '#D32F2F',
               transition: 'color 0.3s',
-              fontSize: '1.0em',
-              marginRight: '10px'
+              fontSize: '14px',
+              marginBottom: '4px'
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#2c3e50')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'black')}
+            onMouseEnter={e => (e.currentTarget.style.color = '#8a0303')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#D32F2F')}
           >
             {editorContext?.action('graph').getNodeByID(nodeID).data
               .displayLabel ?? nodeID}
           </strong>
-          <span style={{ color: '#D32F2F', fontSize: '0.7em' }}>
-            {`${inputs.join(', ')} ${
-              inputs.length > 1 ? 'are' : 'is'
-            } not connected or specified.`}
+          <span
+            style={{
+              color: 'black',
+              fontSize: '12px',
+              wordWrap: 'break-word'
+            }}
+          >
+            <strong>{inputs.join(', ')}</strong>
+            {` ${inputs.length > 1 ? 'are' : 'is'} not connected or specified.`}
           </span>
         </div>
       </div>
@@ -125,21 +130,27 @@ export default function NotReadyNodePanel({
         padding: '8px 12px',
         border: '1px solid #e0e0e0',
         borderRadius: '8px',
-        maxWidth: '400px',
+        maxWidth: '300px',
+        maxHeight: '200px',
+        width: '100%',
         backgroundColor: 'white',
         boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
         fontFamily: 'Arial, sans-serif',
         position: 'absolute',
         top: '55px',
         right: '10px',
-        zIndex: 5
+        zIndex: 5,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}
     >
       <div
         style={{
           position: 'relative',
           height: '24px',
-          marginBottom: '4px'
+          marginBottom: '4px',
+          flexShrink: 0
         }}
       >
         <IconButton
@@ -151,7 +162,7 @@ export default function NotReadyNodePanel({
             left: '-10px'
           }}
         >
-          <FreshIcon />
+          <RefreshIcon />
         </IconButton>
         <IconButton
           onClick={handleClose}
@@ -162,11 +173,17 @@ export default function NotReadyNodePanel({
             right: '-10px'
           }}
         >
-          <CrossIcon />
+          <CloseIcon />
         </IconButton>
       </div>
       <div
-        style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '8px' }}
+        style={{
+          overflowY: 'auto',
+          marginBottom: '8px',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'var(--vpl-scrollbar-color)',
+          flexGrow: 1
+        }}
       >
         {Object.keys(notReady).length > 0 ? (
           Object.entries(notReady).map(([nodeID, inputs]) =>
