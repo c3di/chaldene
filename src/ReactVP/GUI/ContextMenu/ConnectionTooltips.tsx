@@ -5,7 +5,7 @@ import ContextMenu, {
   type ContextMenuElement,
   IContextMenuProps
 } from './ContextMenu';
-import { CheckReadinessIcon, ReplaceIcon, RejectIcon } from '../../Style/icons';
+import { CheckReadinessIcon, RejectIcon } from '../../Style/icons';
 
 const TooltipMenu: React.FC<IContextMenuProps> = ({ ...props }) => {
   const [adjustedPosition, setAdjustedPosition] = useState(
@@ -47,13 +47,7 @@ export default function ConnectionTooltips({
     return [
       {
         icon:
-          status.status === 'accept' ? (
-            <CheckReadinessIcon />
-          ) : status.status === 'replace' ? (
-            <ReplaceIcon />
-          ) : (
-            <RejectIcon />
-          ),
+          status.status === 'replace' ? <CheckReadinessIcon /> : <RejectIcon />,
         displayLabel: status.message,
         onClick: undefined
       }

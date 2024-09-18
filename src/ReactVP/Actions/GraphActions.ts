@@ -596,6 +596,10 @@ export default class GraphActions extends StateActions {
 
   public isValidConnection = (connection: Connection): boolean => {
     const status = this.validateConnection(connection);
+    if (status.status === 'accept') {
+      return true;
+    }
+
     if (this.connectFrom) {
       const isFromSource = this.connectFrom.handleType === 'source';
       const connectTo = getHandleRef(
@@ -613,7 +617,7 @@ export default class GraphActions extends StateActions {
           .open('connection', centerPosition, { status });
       }
     }
-    return status.status === 'accept' || status.status === 'replace';
+    return status.status !== 'reject';
   };
 
   public setValue = (
