@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import ContextMenu from './ContextMenu';
 import type { GUIElementProps } from '../GUIElement';
-import { type HandleIdentifier } from '../../Type';
+import { type IHandleIdentifier } from '../../Type';
 import { UnlinkIcon } from '../../Style';
 
 export default function HandleContextMenu({
@@ -16,7 +16,7 @@ export default function HandleContextMenu({
         icon: <UnlinkIcon />,
         displayLabel: 'Break all connection(s)',
         description: 'Break all connections of this handle',
-        onClick: (event: any, forwhom: HandleIdentifier) =>
+        onClick: (event: any, forwhom: IHandleIdentifier) =>
           graphActions?.disconnectHandle(forwhom),
         disabled: (forwhom: any) => !graphActions?.isHandleConnected(forwhom)
       }

@@ -1,6 +1,6 @@
 import {
   type HandleUsageType,
-  type HandleIdentifier,
+  type IHandleIdentifier,
   type Graph
 } from './Type';
 
@@ -14,7 +14,7 @@ export function isClickOnHandle(
 
 export function getHandleIdentifier(
   event: MouseEvent | React.MouseEvent<Element, MouseEvent> | undefined
-): HandleIdentifier | null {
+): IHandleIdentifier | null {
   const id = (event?.target as HTMLElement).dataset?.id;
   if (!id) {
     return null;

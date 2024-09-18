@@ -1,4 +1,4 @@
-import { type HandleIdentifier } from './Handle';
+import { type IHandleIdentifier } from './Handle';
 
 export { findCodeChangedGraph, topologicalSortDAG, findCycle } from './Utils';
 export { type Edge } from './Edge';
@@ -9,16 +9,16 @@ export type { default as BoundingBox } from './BoundingBox';
 export type { default as ExecuteStatus } from './ExecuteStatus';
 export type { default as ConnectionStatus } from './ConnectionStatus';
 export {
-  type Handle,
-  type HandleIdentifier,
+  type IHandle,
+  type IHandleIdentifier,
   type HandleUsageType,
   isInputViaConnection
 } from './Handle';
-export type { Node, NodeData as BasicNodeData, ValueCategory } from './Node';
+export type { Node, INodeData as BasicNodeData, ValueCategory } from './Node';
 
 export interface IPosition {
   x: number;
   y: number;
 }
 
-export type Identifier = HandleIdentifier;
+export type Identifier = IHandleIdentifier;

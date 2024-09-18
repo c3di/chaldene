@@ -1,5 +1,5 @@
 import { type NodeProps as RcNodeProps } from '@xyflow/react';
-import { type Handle, type Node as nodeType } from '../Type';
+import { type IHandle, type Node as nodeType } from '../Type';
 import { OutputHandle, InputHandle } from './Handle';
 
 export type NodeProps = RcNodeProps<nodeType>;
@@ -12,7 +12,7 @@ export default function ComputeNode({
   const { displayLabel, description, inputs, outputs, editorContext } = data;
 
   const _inputs = inputs ?? [];
-  const inputHandles = _inputs.map((handle: Handle) => (
+  const inputHandles = _inputs.map((handle: IHandle) => (
     <InputHandle
       {...handle}
       key={handle.id}
@@ -22,7 +22,7 @@ export default function ComputeNode({
   ));
 
   const _outputs = outputs ?? [];
-  const outputHandles = _outputs.map((handle: Handle) => (
+  const outputHandles = _outputs.map((handle: IHandle) => (
     <OutputHandle
       {...handle}
       key={handle.id}

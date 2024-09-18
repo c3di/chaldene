@@ -1,5 +1,5 @@
 import {
-  type HandleIdentifier,
+  type IHandleIdentifier,
   type Graph,
   isUsedAsInput,
   type Edge,
@@ -7,7 +7,7 @@ import {
   type IPosition,
   type Identifier,
   type ValueCategory,
-  type Handle,
+  type IHandle,
   type ConnectionStatus
 } from '../Type';
 import {
@@ -364,7 +364,7 @@ export default class GraphActions extends StateActions {
     return this.graph?.nodes.find(node => node.id === nodeID);
   };
 
-  public getHandle = (identifier: HandleIdentifier): Handle | undefined => {
+  public getHandle = (identifier: IHandleIdentifier): IHandle | undefined => {
     const { nodeID, id } = identifier;
     const node = this.getNodeByID(nodeID);
     if (!node) {
@@ -375,7 +375,7 @@ export default class GraphActions extends StateActions {
       : node.data.outputs?.find(output => output.id === id);
   };
 
-  public getConnectionCount = (identity: HandleIdentifier): number => {
+  public getConnectionCount = (identity: IHandleIdentifier): number => {
     const { nodeID, id } = identity;
     const node = this.getNodeByID(nodeID);
     if (!node) {
@@ -505,7 +505,7 @@ export default class GraphActions extends StateActions {
     return status.status === 'accept' || status.status === 'replace';
   };
 
-  public getConnecedEdges = (identifier: HandleIdentifier): Edge[] => {
+  public getConnecedEdges = (identifier: IHandleIdentifier): Edge[] => {
     const { nodeID, id: handleID, type } = identifier;
     if (type === 'target') {
       return (
@@ -521,7 +521,7 @@ export default class GraphActions extends StateActions {
     );
   };
 
-  public isHandleConnected = (identifier: HandleIdentifier): boolean => {
+  public isHandleConnected = (identifier: IHandleIdentifier): boolean => {
     const { nodeID, id: handleID, type } = identifier;
     if (type === 'target') {
       return (
@@ -537,7 +537,7 @@ export default class GraphActions extends StateActions {
     );
   };
 
-  public disconnectHandle = (identifier: HandleIdentifier): void => {
+  public disconnectHandle = (identifier: IHandleIdentifier): void => {
     this.stateAction((currentGraph: Graph) => {
       const edges = this.getConnecedEdges(identifier);
       const changes: EdgeChange[] = edges.map(e => ({

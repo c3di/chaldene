@@ -2,7 +2,7 @@ import { type HandleType } from '@xyflow/react';
 
 export type HandleUsageType = HandleType;
 
-export interface Handle {
+export interface IHandle {
   id: string;
   name: string;
   type?: string;
@@ -13,14 +13,14 @@ export interface Handle {
   connections?: number;
 }
 
-export interface HandleIdentifier {
+export interface IHandleIdentifier {
   nodeID: string;
   id: string;
   type: HandleUsageType | string;
 }
 
 export function isUsedAsInput(
-  identifier: HandleIdentifier | { type: string }
+  identifier: IHandleIdentifier | { type: string }
 ): boolean {
   // 'source' for output, 'target' for input
   return identifier.type === 'target';
@@ -34,6 +34,6 @@ export function uniqueHandleName(
   return `${editorID}_${nodeID}_${handleID}`;
 }
 
-export function isInputViaConnection(handle: Handle): boolean {
+export function isInputViaConnection(handle: IHandle): boolean {
   return !handle.widget;
 }

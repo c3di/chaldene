@@ -1,12 +1,12 @@
 import type INodeSpec from './NodeSpec';
-import type { Handle, Node } from '../Type';
+import type { IHandle, Node } from '../Type';
 import type { ISpec2NodeDataParams } from './NodeSpec';
 import type { NodeCodeGenerators } from '../CodeGeneration';
 
 // todo: rename data strucute Node to compute Node, keep consistent
 export default interface IComputeNodeSpec extends INodeSpec {
-  inputs?: Array<Omit<Handle, 'id' | 'identifier'>>;
-  outputs?: Array<Omit<Handle, 'id' | 'identifier'>>;
+  inputs?: Array<Omit<IHandle, 'id' | 'identifier'>>;
+  outputs?: Array<Omit<IHandle, 'id' | 'identifier'>>;
   codeGenerators?: NodeCodeGenerators;
 }
 
