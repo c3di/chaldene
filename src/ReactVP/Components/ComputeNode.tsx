@@ -62,7 +62,7 @@ export default function ComputeNode({
       >
         {displayLabel}
       </div>
-      <div className="node__body" style={{ padding: '12px' }}>
+      <div className="node__body" style={{ padding: '15px 3px 12px 12px' }}>
         <div className="vp-node-handles-container">{inputHandles}</div>
         <div className="vp-node-handles-container">{outputHandles}</div>
       </div>

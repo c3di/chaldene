@@ -46,8 +46,7 @@ export function InputHandle({
       <span
         className="label"
         style={{
-          marginRight: '12px',
-          marginLeft: '2px'
+          marginRight: '12px'
         }}
       >
         {displayLabel}
@@ -64,7 +63,8 @@ export function OutputHandle({
   description,
   widget,
   editorContext,
-  connections
+  connections,
+  type
 }: IHandleProps): JSX.Element {
   const Widget = useWidget(
     'outputs',
@@ -73,6 +73,9 @@ export function OutputHandle({
     editorContext,
     identifier
   );
+
+  const showLabel = !(type === 'image' && widget?.type === 'ImageViewer');
+
   return (
     <div
       className="flex-container"
@@ -80,18 +83,24 @@ export function OutputHandle({
       title={description}
     >
       {Widget && (
-        <div className="widget-container" style={{ marginRight: 'auto' }}>
+        <div
+          className={`widget-container ${
+            !showLabel ? 'widget-container-no-label' : ''
+          }`}
+        >
           {Widget}
         </div>
       )}
-      <span
-        className="label"
-        style={{
-          marginRight: '2px'
-        }}
-      >
-        {displayLabel}
-      </span>
+      {showLabel && (
+        <span
+          className="label"
+          style={{
+            marginRight: '8px'
+          }}
+        >
+          {displayLabel}
+        </span>
+      )}
       <div className="handle-container" style={{ right: '0px', left: 'auto' }}>
         <RCHandle
           className={

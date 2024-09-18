@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { type WidgetProps } from './Widget';
 import CanvasImage from './CanvasImage';
 
-export interface ImageViewerProps extends WidgetProps {
+export interface IImageViewerProps extends WidgetProps {
   value: string; // base64 image
 }
 
@@ -40,7 +40,7 @@ export default function ImageViewer({ value }: WidgetProps): JSX.Element {
   return (
     <div
       className="common-input-style"
-      style={{ padding: 0, height: 'auto', marginBottom: '8px' }}
+      style={{ padding: 0, height: 'auto', marginBottom: '0', width: '100%' }}
     >
       <div
         style={{
@@ -48,7 +48,8 @@ export default function ImageViewer({ value }: WidgetProps): JSX.Element {
           overflow: 'hidden',
           display: 'flex',
           justifyContent: 'center',
-          alignItems: 'center'
+          alignItems: 'center',
+          width: '100%'
         }}
       >
         <CanvasImage

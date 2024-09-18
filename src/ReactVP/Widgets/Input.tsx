@@ -123,7 +123,7 @@ export function Slider({
           setValue?.(forWhom, parseFloat(e.target.value));
         }}
         style={{
-          background: `linear-gradient(to right, #0466c8 ${percentage}%, #ebf2fa ${percentage}%)`
+          background: `linear-gradient(to right, var(--vpl-blue-3) ${percentage}%, var(--vpl-blue-gray-4) ${percentage}%)`
         }}
       />
       <div
@@ -135,7 +135,9 @@ export function Slider({
           transform: 'translateY(-50%)',
           fontSize: '12px',
           textAlign: 'center',
-          whiteSpace: 'nowrap'
+          whiteSpace: 'nowrap',
+          cursor: 'default',
+          pointerEvents: 'none'
         }}
       >
         {value}
@@ -187,7 +189,7 @@ export function Dropdown({
       }}
     >
       {options.map(option => (
-        <option key={option} value={option} style={{ marginLeft: '8px' }}>
+        <option key={option} value={option}>
           {option}
         </option>
       ))}
