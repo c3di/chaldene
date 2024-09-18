@@ -48,13 +48,6 @@ export class VPWidget extends ReactWidget {
       { capture: true }
     );
 
-    this.node.addEventListener('keydown', e => {
-      if (this._focused) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    });
-
     this._model = model;
     this._hostNotebookPanel = hostNotebookPanel;
     this._fileBrowser = fileBrowser;
