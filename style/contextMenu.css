@@ -9,8 +9,7 @@
   box-shadow: var(--vpl-box-shadow-4);
   border-radius: var(--vpl-border-radius);
   padding: 4px 0;
-  width: calc(100% + 16px);
-  min-width: 200px;
+  min-width: 180px;
   max-width: 300px;
   max-height: 401px;
   overflow-y: auto;
