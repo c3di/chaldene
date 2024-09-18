@@ -17,5 +17,13 @@ dependencies:
   - nodejs >=18,<19
   - pip
   - wheel
+  - pip:
+      - git+https://github.com/c3di/im2im.git
+      - numpy
+      - pillow
+      - pandas
+      - scikit-image
+      - scipy
+      - comm
   # additional packages for demos
   # - ipywidgets

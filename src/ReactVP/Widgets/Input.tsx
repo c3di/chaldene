@@ -198,7 +198,8 @@ export function FileInputFromServer({
   forWhom,
   value,
   setValue,
-  editorContext
+  editorContext,
+  extensions
 }: WidgetProps): JSX.Element {
   return (
     <div className="file-input-container">
@@ -208,7 +209,7 @@ export function FileInputFromServer({
           title="Open file dialog"
           onClick={() => {
             editorContext?.parentContext
-              ?.openFileDialog()
+              ?.openFileDialog(extensions)
               .then((path: string) => {
                 if (path !== null) {
                   setValue?.(forWhom, path);
