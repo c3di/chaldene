@@ -12,7 +12,7 @@ export const readImageNodeSpec: computeNodeSpec = {
     {
       name: 'path',
       type: 'string',
-      displayLabel: 'file name',
+      displayLabel: 'file',
       description: 'path(str) - path of the JPEG or PNG image.',
       widget: {
         type: 'FileInputFromServer'
@@ -461,7 +461,7 @@ export const saveToCsvNodeSpec: computeNodeSpec = {
     {
       name: 'file',
       type: 'string',
-      displayLabel: 'file name',
+      displayLabel: 'file',
       description: 'Save to this file.',
       widget: {
         type: 'String'
