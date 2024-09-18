@@ -479,7 +479,7 @@ export const saveToCsvNodeSpec: computeNodeSpec = {
       const import1 = 'import pandas as pd';
 
       return `${import1}
-pd.DataFrame(${inputs.data}).to_csv(${inputs.filename}, index=False)`;
+pd.DataFrame(${inputs.data}).to_csv(${inputs.file}, index=False)`;
     }
   }
 };
