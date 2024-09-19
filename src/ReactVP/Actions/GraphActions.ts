@@ -564,8 +564,8 @@ export default class GraphActions extends StateActions {
 
     if (
       sourceHandle.type !== targetHandle.type &&
-      !sourceHandle.type &&
-      !targetHandle.type
+      !!sourceHandle.type &&
+      !!targetHandle.type
     ) {
       return { status: 'reject', message: 'Types not compatible.' };
     }
