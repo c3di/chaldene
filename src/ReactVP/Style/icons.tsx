@@ -4,6 +4,26 @@
 
 export { FaUnlink as UnlinkIcon } from 'react-icons/fa';
 
+export const FolderIcon = (): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" viewBox="0 0 24 24">
+    <path
+      fill="#616161"
+      d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8z"
+      className="jp-icon3 jp-icon-selectable"
+    />
+  </svg>
+);
+
+export const FileIcon = (): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" viewBox="0 0 22 22">
+    <path
+      fill="#616161"
+      d="m19.3 8.2-5.5-5.5c-.3-.3-.7-.5-1.2-.5H3.9c-.8.1-1.6.9-1.6 1.8v14.1c0 .9.7 1.6 1.6 1.6h14.2c.9 0 1.6-.7 1.6-1.6V9.4c.1-.5-.1-.9-.4-1.2m-5.8-3.3 3.4 3.6h-3.4zm3.9 12.7H4.7c-.1 0-.2 0-.2-.2V4.7c0-.2.1-.3.2-.3h7.2v4.4s0 .8.3 1.1 1.1.3 1.1.3h4.3v7.2s-.1.2-.2.2"
+      className="jp-icon3 jp-icon-selectable"
+    />
+  </svg>
+);
+
 export const CopyIcon = (): JSX.Element => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" viewBox="0 0 18 18">
     <path

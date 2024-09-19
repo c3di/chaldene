@@ -10,7 +10,6 @@ import {
   Number,
   Slider,
   Dropdown,
-  FileInput,
   FileInputFromServer
 } from './Input';
 
@@ -37,5 +36,4 @@ registerWidget('BoundingBox', BoundingBoxInput);
 registerWidget('CanvasImage', CanvasImage);
 registerWidget('ImageCropper', ImageCropper);
 registerWidget('ImageViewer', ImageViewer);
-registerWidget('File', FileInput, 'file');
 registerWidget('FileInputFromServer', FileInputFromServer, 'string');

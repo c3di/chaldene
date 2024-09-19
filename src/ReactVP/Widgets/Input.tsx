@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { type WidgetProps } from './Widget';
-import { FaFile } from 'react-icons/fa';
+import { FileIcon, FolderIcon } from '../Style';
 
 export function Text({
   forWhom,
@@ -201,6 +201,7 @@ export function FileInputFromServer({
   editorContext,
   extensions
 }: WidgetProps): JSX.Element {
+  const isSelectFolder = extensions && extensions.length === 0;
   return (
     <div className="file-input-container">
       {editorContext?.parentContext?.openFileDialog && (
@@ -217,7 +218,7 @@ export function FileInputFromServer({
               });
           }}
         >
-          <FaFile size={12} />
+          {isSelectFolder ? <FolderIcon /> : <FileIcon />}
         </button>
       )}
       <Text
@@ -226,65 +227,6 @@ export function FileInputFromServer({
         placeholder=""
         setValue={setValue}
       />
-    </div>
-  );
-}
-
-export function FileInput({
-  forWhom,
-  value,
-  setValue
-}: WidgetProps): JSX.Element {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ): void => {
-    const file = event.target.files ? event.target.files[0] : null;
-    if (file) {
-      setValue?.(forWhom, file.name);
-    }
-  };
-
-  const handleClick = (): void => {
-    inputRef.current?.click();
-  };
-
-  return (
-    <div
-      className="common-input-style"
-      style={{ padding: 0, cursor: 'pointer' }}
-      onClick={handleClick}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        hidden
-        accept=".png, .jpg, .jpeg"
-        onChange={handleFileChange}
-      />
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          height: '100%',
-          padding: '0 8px'
-        }}
-      >
-        <FaFile size={12} style={{ marginRight: '8px', color: '#718096' }} />
-        <span
-          style={{
-            fontSize: '12px',
-            color: '#718096',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {value || 'Click to select an image'}
-        </span>
-      </div>
     </div>
   );
 }
