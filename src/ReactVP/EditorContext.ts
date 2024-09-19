@@ -27,7 +27,7 @@ export default class EditorContext {
   public readonly editorID: string = '';
   private readonly executeLanguage: string;
   private prevExecGraph?: Graph = undefined;
-  private isLiveExecution: boolean = false;
+  private isLiveExecution: boolean = true;
   private nextNodeId: number = 0;
   private nextEdgeId: number = 0;
   // for jupyterlab
