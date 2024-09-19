@@ -151,18 +151,38 @@ export function NumberInput({
   max,
   step
 }: INumberProps): JSX.Element {
+  const [localValue, setLocalValue] = useState(value);
+  const debounceTimeout = useRef<number | null>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const newValue = parseFloat(e.target.value);
+    setLocalValue(newValue > max ? max : newValue < min ? min : newValue);
+
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+
+    debounceTimeout.current = window.setTimeout(() => {
+      setValue?.(forWhom, newValue);
+    }, 400);
+  };
+
+  useEffect(() => {
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+    setLocalValue(value);
+  }, [value]);
+
   return (
     <input
       className="nodrag common-input-style"
       type="number"
-      value={value}
+      value={localValue}
       min={min}
       max={max}
       step={step}
-      onChange={e => {
-        const v = parseFloat(e.target.value);
-        setValue?.(forWhom, v > max ? max : v < min ? min : v);
-      }}
+      onChange={handleInputChange}
     />
   );
 }
