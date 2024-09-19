@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import type { GUIElementProps } from '../GUIElement';
 import type { ConnectionStatus } from '../../Type';
 import ContextMenu, {
@@ -8,31 +8,16 @@ import ContextMenu, {
 import { CheckReadinessIcon, RejectIcon } from '../../Style/icons';
 
 const TooltipMenu: React.FC<IContextMenuProps> = ({ ...props }) => {
-  const [adjustedPosition, setAdjustedPosition] = useState(
-    props.clientPosition
-  );
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (menuRef.current) {
-      const rect = menuRef.current.getBoundingClientRect();
-      const newY = props.clientPosition.y - rect.height - 15; // Position above cursor
-      const newX = props.clientPosition.x - rect.width + 10;
-      setAdjustedPosition({ x: newX, y: newY });
-    }
-  }, [props.clientPosition]);
-
   return (
     <div
-      ref={menuRef}
       className="tooltip-menu"
       style={{
         position: 'absolute',
-        left: adjustedPosition.x,
-        top: adjustedPosition.y
+        left: props.clientPosition.x,
+        top: props.clientPosition.y
       }}
     >
-      <ContextMenu {...props} clientPosition={adjustedPosition} />
+      <ContextMenu {...props} />
     </div>
   );
 };

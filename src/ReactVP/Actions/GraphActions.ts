@@ -611,10 +611,16 @@ export default class GraphActions extends StateActions {
         const centerPosition = getCenterPosition(connectTo);
         if (!centerPosition) {
           console.error('centerPosition is null', connectTo);
+        } else {
+          this.editorContext?.action('menu').open(
+            'connection',
+            {
+              clientX: centerPosition.clientX + 20,
+              clientY: centerPosition.clientY
+            },
+            { status }
+          );
         }
-        this.editorContext
-          ?.action('menu')
-          .open('connection', centerPosition, { status });
       }
     }
     return status.status !== 'reject';
