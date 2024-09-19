@@ -2,9 +2,9 @@
 
 **1.png** [3] shows the Glass beads.
 
+**retina.jpg** from scikit-image library.
+
 References:
 [1] L.M. Rothleutner, “Influence of Reheat Temperature and Holding Time on the Interaction of V, Al, and N in Air-cooled Forging Steels,” Thesis, Colorado School of Mines, 2012.
 [2] https://thermalprocessing.com/determining-austenite-grain-size/
-
 [3] [Particle Size Analysis - MicroVision Labs](https://microvisionlabs.com/image-galleries/particle-size-analysis-images/)
-
