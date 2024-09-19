@@ -486,7 +486,6 @@ pd.DataFrame(${inputs.data}).to_csv(${inputs.file}, index=False)`;
 
 export function defaultNodeSpecs(): void {
   registerNodeSpec(readImageNodeSpec);
-  registerNodeSpec(cropNodeSpec);
   registerNodeSpec(thresholdNodeSpec);
   registerNodeSpec(dilationNodeSpec);
   registerNodeSpec(erosionNodeSpec);
