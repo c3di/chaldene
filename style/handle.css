@@ -4,6 +4,7 @@
   margin-top: 4px;
   margin-bottom: 8px;
   width: 100%;
+  position: relative;
 }
 
 .label {
@@ -14,27 +15,32 @@
 }
 
 .widget-container {
-  width: 100%;
   flex-grow: 1;
   margin-right: 10px;
+  width: 100%;
 }
-
 
 .widget-container-no-label {
-  width: 100%;
   margin-right: 8px;
+  width: 100%;
 }
 
-.handle-container {
+.handle-container-input {
   position: absolute;
-  left: 0px;
+  left: -19px;
 }
 
+.handle-container-output {
+  position: absolute;
+  right: -10px;
+}
 
 .react-flow__handle.handle-style {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  position: relative;
+  transform: none !important;
 }
 
 .react-flow__handle.handle-style.disconnected {
@@ -42,8 +48,12 @@
   border: 1.5px solid var(--vpl-blue-1);
 }
 
-
 .react-flow__handle.handle-style.connected {
   background: var(--vpl-blue-1);
   border: 1.5px solid var(--vpl-blue-2);
+}
+
+.react-flow__handle.handle-style.connectingto {
+  transform: scale(1.2) !important;
+  transform-origin: center;
 }

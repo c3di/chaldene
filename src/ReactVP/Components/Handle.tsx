@@ -1,4 +1,9 @@
-import { Handle as RCHandle, Position } from '@xyflow/react';
+import { useEffect, useRef } from 'react';
+import {
+  Handle as RCHandle,
+  Position,
+  useUpdateNodeInternals
+} from '@xyflow/react';
 import { type IHandleIdentifier, type IHandle } from '../Type';
 import useWidget from './UseWidget';
 import type EditorContext from '../EditorContext';
@@ -26,10 +31,27 @@ export function InputHandle({
     identifier
   );
 
+  const updateNodeInternals = useUpdateNodeInternals();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      updateNodeInternals(id);
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [id, updateNodeInternals]);
+
   return (
-    <div className="flex-container" title={description}>
+    <div ref={containerRef} className="flex-container" title={description}>
       {!Widget && (
-        <div className="handle-container">
+        <div className="handle-container-input">
           <RCHandle
             id={id}
             type="target"
@@ -75,9 +97,26 @@ export function OutputHandle({
   );
 
   const showLabel = !(type === 'image' && widget?.type === 'ImageViewer');
+  const updateNodeInternals = useUpdateNodeInternals();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      updateNodeInternals(id);
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [id, updateNodeInternals]);
 
   return (
     <div
+      ref={containerRef}
       className="flex-container"
       style={{ justifyContent: 'flex-end' }}
       title={description}
@@ -101,7 +140,7 @@ export function OutputHandle({
           {displayLabel}
         </span>
       )}
-      <div className="handle-container" style={{ right: '0px', left: 'auto' }}>
+      <div className="handle-container-output">
         <RCHandle
           className={
             connections && connections > 0

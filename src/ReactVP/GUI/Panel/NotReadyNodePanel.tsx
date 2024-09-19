@@ -37,7 +37,7 @@ function IconButton({
         transition: 'transform 0.2s',
         ...style
       }}
-      onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.1)')}
+      onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.2)')}
       onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
     >
       {children}
