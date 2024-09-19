@@ -446,7 +446,7 @@ print(f"Total Labels: {total_labels}")
 print(f"Average Area: {average_area}")
 print(f"Average Number of Pixels: {average_num_pixels}")
 pd.set_option('display.max_rows', len(data))
-display(data)`;
+display(data.style.hide(axis='index'))`;
     }
   }
 };
