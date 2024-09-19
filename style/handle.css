@@ -53,7 +53,7 @@
   border: 1.5px solid var(--vpl-blue-2);
 }
 
-.react-flow__handle.handle-style.connectingto {
+.react-flow__handle.handle-style:hover {
   transform: scale(1.2) !important;
   transform-origin: center;
 }
