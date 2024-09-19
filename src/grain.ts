@@ -434,13 +434,17 @@ export const regionpropsNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      const import1 = 'from skimage import measure';
-
-      return `${import1}
-${outputs.summary} = measure.regionprops_table(${inputs.segments}, properties=['label', 'area'])
+      return `from skimage import measure
 import pandas as pd
 from IPython.display import display
+${outputs.summary} = measure.regionprops_table(${inputs.segments}, properties=['label', 'area', 'num_pixels'])
 data = pd.DataFrame(${outputs.summary})
+total_labels = len(data['label'])
+average_area = data['area'].mean()
+average_num_pixels = data['num_pixels'].mean()
+print(f"Total Labels: {total_labels}")
+print(f"Average Area: {average_area}")
+print(f"Average Number of Pixels: {average_num_pixels}")
 pd.set_option('display.max_rows', len(data))
 display(data)`;
     }
