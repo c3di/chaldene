@@ -25,5 +25,6 @@ dependencies:
       - scikit-image
       - scipy
       - comm
+      - opencv-python
   # additional packages for demos
   # - ipywidgets
