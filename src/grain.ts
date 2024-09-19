@@ -279,7 +279,7 @@ ${outputs.outputImage} = IM(morphology.opening(in_im.raw_image), in_im.metadata)
 
 export const denoiseBilateralNodeSpec: computeNodeSpec = {
   name: 'denoise_bilateral',
-  displayLabel: 'denoise_bilateral',
+  displayLabel: 'denoise bilateral',
   description:
     'Applies bilateral denoising to reduce noise while preserving edges.',
   category: 'Image Processing',
@@ -356,7 +356,7 @@ ${outputs.image} = IM(util.invert(in_im.raw_image), in_im.metadata)`;
 
 export const watersheedNodeSpec: computeNodeSpec = {
   name: 'watershed',
-  displayLabel: 'watershed_segmentation',
+  displayLabel: 'watershed segmentation',
   description: 'Applies watershed segmentation to the input image.',
   category: 'Image Processing',
   inputs: [
@@ -379,7 +379,7 @@ export const watersheedNodeSpec: computeNodeSpec = {
   outputs: [
     {
       name: 'segments',
-      type: 'any',
+      type: 'segments',
       displayLabel: 'segments',
       description: 'The label map produced by watershed segmentation.'
     },
@@ -416,7 +416,7 @@ export const regionpropsNodeSpec: computeNodeSpec = {
   inputs: [
     {
       name: 'segments',
-      type: 'any',
+      type: 'segments',
       displayLabel: 'segments',
       description: 'The labeled regions of the image.'
     }
@@ -449,7 +449,7 @@ display(data)`;
 
 export const saveToCsvNodeSpec: computeNodeSpec = {
   name: 'save_to_csv',
-  displayLabel: 'save_to_csv',
+  displayLabel: 'save to csv',
   description: 'Save the input data to a CSV file.',
   category: 'Image Processing',
   inputs: [
@@ -484,6 +484,54 @@ pd.DataFrame(${inputs.data}).to_csv(${inputs.file}, index=False)`;
   }
 };
 
+
+export const saveImageNodeSpec: computeNodeSpec = {
+  name: 'save_image',
+  displayLabel: 'save image',
+  description: 'Save the image data to a file.',
+  category: 'Image Processing',
+  inputs: [
+    {
+      name: 'image',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'The image to save.'
+    },
+    {
+      name: 'name',
+      type: 'string',
+      displayLabel: 'name',
+      description: 'PNG File to save the image.',
+      defaultValue: 'image.png',
+      widget: {
+        type: 'String',
+      }
+    },
+    {
+      name: 'destination',
+      type: 'string',
+      displayLabel: 'destination',
+      description: 'Save to this file.',
+      widget: {
+        type: 'FileInputFromServer',
+        extensions: []
+      }
+    }
+  ],
+  outputs: [],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `from skimage import io
+from os.path import join
+in_im = im2im(${inputs.image}, 'numpy.uint8')
+io.imsave(join(${inputs.destination}, ${inputs.name}), in_im.raw_image)`;
+    }
+  }
+};
+
 export function defaultNodeSpecs(): void {
   registerNodeSpec(readImageNodeSpec);
   registerNodeSpec(thresholdNodeSpec);
@@ -495,4 +543,5 @@ export function defaultNodeSpecs(): void {
   registerNodeSpec(watersheedNodeSpec);
   registerNodeSpec(regionpropsNodeSpec);
   registerNodeSpec(saveToCsvNodeSpec);
+  registerNodeSpec(saveImageNodeSpec);
 }
