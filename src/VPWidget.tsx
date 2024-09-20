@@ -151,6 +151,16 @@ export class VPWidget extends ReactWidget {
       const { content, context, sessionDialogs, translator } =
         this._hostNotebookPanel;
       this.onStartRun();
+      // avoid jump to edit mode of cell
+      Object.defineProperty(this._hostNotebookPanel.content, 'mode', {
+        get: function () {
+          return this._mode;
+        },
+        set: function () {
+          // no-op
+        },
+        configurable: true
+      });
       NotebookActions.run(
         content,
         context.sessionContext,
@@ -162,6 +172,8 @@ export class VPWidget extends ReactWidget {
         })
         .finally(() => {
           this.onEndRun();
+          // back to original mode setting
+          delete this._hostNotebookPanel.content.mode;
         });
     } else {
       console.error('No active notebook panel found');
