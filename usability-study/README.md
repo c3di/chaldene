@@ -1,6 +1,6 @@
-**0.png** [1] shows a specimen of modified 15V41 that was forced-air cooled from forging temperature, held for 30 minutes at 700°C, then quenched to room temperature and etched using 2 percent nital [2]. 
+**grain.png** [1] shows a specimen of modified 15V41 that was forced-air cooled from forging temperature, held for 30 minutes at 700°C, then quenched to room temperature and etched using 2 percent nital [2]. 
 
-**1.png** [3] shows the Glass beads.
+**particle.png** [3] shows the Glass beads.
 
 **retina.jpg** from scikit-image library.
 
