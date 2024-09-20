@@ -226,7 +226,7 @@ async function openFileDialog(
 
   await fileBrowser.model.refresh();
 
-  const result = await FileDialog.getOpenFiles({
+  const dialog = FileDialog.getOpenFiles({
     defaultPath: defaultPath,
     manager: fileBrowser.model.manager,
     title: 'Select an image',
@@ -247,10 +247,39 @@ async function openFileDialog(
       return null;
     }
   });
+
+  const observer = preventItemDoubleClickInFileBrowser();
+  observer.observe(document.body, { childList: true, subtree: true });
+  const result = await dialog;
+  observer.disconnect();
   if (result.button.accept && result.value) {
     const path = result.value[0].path;
     const relativePath = PathExt.relative(defaultPath, path);
     return relativePath;
   }
   return null;
+}
+
+function preventItemDoubleClickInFileBrowser(): MutationObserver {
+  const observer = new MutationObserver((mutationsList, observer) => {
+    const dialogElement = document.getElementById(
+      'filtered-file-browser-dialog'
+    );
+    if (!dialogElement) {
+      return;
+    }
+    const dialogItems = dialogElement.querySelectorAll('.jp-DirListing-item');
+    if (!dialogItems || dialogItems.length === 0) {
+      return;
+    }
+
+    dialogItems.forEach(item => {
+      item.addEventListener('dblclick', event => {
+        event.preventDefault();
+        event.stopPropagation();
+      });
+    });
+    observer.disconnect();
+  });
+  return observer;
 }
