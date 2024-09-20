@@ -156,9 +156,13 @@ export class VPWidget extends ReactWidget {
         context.sessionContext,
         sessionDialogs,
         translator
-      ).then(() => {
-        this.onEndRun();
-      });
+      )
+        .catch((error: Error) => {
+          console.error('Error while running cell:', error);
+        })
+        .finally(() => {
+          this.onEndRun();
+        });
     } else {
       console.error('No active notebook panel found');
     }

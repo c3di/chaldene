@@ -150,7 +150,7 @@ export default class EditorContext {
   };
 
   public triggerLiveExecution = (): void => {
-    if (this.isLiveExecution && this.getGraphToBeExecuted()) {
+    if (this.focused && this.isLiveExecution && this.getGraphToBeExecuted()) {
       this.onLiveExecution?.();
     }
   };
