@@ -316,7 +316,6 @@ ${outputs.outputImage} = IM(restoration.denoise_bilateral(in_im.raw_image), in_i
   }
 };
 
-
 export const CLAHENodeSpec: computeNodeSpec = {
   name: 'CLAHE',
   displayLabel: 'CLAHE',
@@ -345,7 +344,7 @@ export const CLAHENodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      const import1 = 'from skimage.exposure import equalize_adapthist'
+      const import1 = 'from skimage.exposure import equalize_adapthist';
       const import2 = 'from im2im import Image as IM';
 
       return `${import1}
@@ -359,8 +358,7 @@ ${outputs.outputImage} = IM(equalize_adapthist(in_im.raw_image), in_im.metadata)
 export const CannyNodeSpec: computeNodeSpec = {
   name: 'Canny Edge Detection',
   displayLabel: 'canny edge detection',
-  description:
-    'Edge filter an image using the Canny algorithm.',
+  description: 'Edge filter an image using the Canny algorithm.',
   category: 'Image Processing',
   inputs: [
     {
@@ -374,7 +372,7 @@ export const CannyNodeSpec: computeNodeSpec = {
     {
       name: 'outputImage',
       type: 'image',
-      displayLabel: 'image',
+      displayLabel: 'image'
     }
   ],
 
@@ -383,7 +381,7 @@ export const CannyNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      const import1 = 'from skimage.feature import canny'
+      const import1 = 'from skimage.feature import canny';
       const import2 = 'from im2im import Image as IM';
 
       return `${import1}
@@ -393,7 +391,6 @@ ${outputs.outputImage} = IM(canny(in_im.raw_image), in_im.metadata)`;
     }
   }
 };
-
 
 export const invertNodeSpec: computeNodeSpec = {
   name: 'Invert',
@@ -491,14 +488,16 @@ ${outputs.vis} = IM(segmentation.mark_boundaries(in_im.raw_image, ${outputs.segm
 export const regionpropsNodeSpec: computeNodeSpec = {
   name: 'regionprops',
   displayLabel: 'summary',
-  description: 'Extract region properties from labeled regions of an image.',
+  description:
+    'Extract properties from segments of an image after applying segmentation algorithms.',
   category: 'Image Processing',
   inputs: [
     {
       name: 'segments',
       type: 'segments',
       displayLabel: 'segments',
-      description: 'The labeled regions of the image.'
+      description:
+        'The segments of the image after applying segmentation algorithms.'
     }
   ],
   outputs: [
@@ -538,16 +537,27 @@ export const saveToCsvNodeSpec: computeNodeSpec = {
       name: 'data',
       type: 'summary',
       displayLabel: 'data',
-      description: 'The data to save as a CSV.'
+      description: 'The data(including summary and ...) to save as a CSV.'
     },
     {
-      name: 'file',
+      name: 'name',
       type: 'string',
-      displayLabel: 'file',
-      description: 'Save to this file.',
+      displayLabel: 'name',
+      description: 'CSV File to save the data.',
+      defaultValue: 'export.csv',
+      widget: {
+        type: 'String',
+        placeholder: 'for example: export.csv'
+      }
+    },
+    {
+      name: 'destination',
+      type: 'string',
+      displayLabel: 'destination',
+      description: 'The folder where the file will be saved.',
       widget: {
         type: 'FileInputFromServer',
-        extensions: ['.csv']
+        extensions: []
       }
     }
   ],
@@ -557,14 +567,12 @@ export const saveToCsvNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      const import1 = 'import pandas as pd';
-
-      return `${import1}
-pd.DataFrame(${inputs.data}).to_csv(${inputs.file}, index=False)`;
+      return `import pandas as pd
+from os.path import join
+pd.DataFrame(${inputs.data}).to_csv(join(${inputs.destination}, ${inputs.name}), index=False)`;
     }
   }
 };
-
 
 export const saveImageNodeSpec: computeNodeSpec = {
   name: 'save_image',
@@ -593,7 +601,7 @@ export const saveImageNodeSpec: computeNodeSpec = {
       name: 'destination',
       type: 'string',
       displayLabel: 'destination',
-      description: 'Save to this file.',
+      description: 'The folder where the image file will be saved.',
       widget: {
         type: 'FileInputFromServer',
         extensions: []
@@ -613,7 +621,6 @@ io.imsave(join(${inputs.destination}, ${inputs.name}), in_im.raw_image)`;
     }
   }
 };
-
 
 export function defaultNodeSpecs(): void {
   registerNodeSpec(readImageNodeSpec);
