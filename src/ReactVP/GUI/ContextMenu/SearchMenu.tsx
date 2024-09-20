@@ -138,6 +138,7 @@ const SearchMenu: React.FC<ISearchMenuProps> = ({
                           onSelectNodeSpec(spec);
                         }}
                         className="node-item"
+                        title={spec.description}
                       >
                         {spec.displayLabel}
                       </li>
