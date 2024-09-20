@@ -1,26 +1,8 @@
 import { useMemo } from 'react';
 import type { GUIElementProps } from '../GUIElement';
 import type { ConnectionStatus } from '../../Type';
-import ContextMenu, {
-  type ContextMenuElement,
-  IContextMenuProps
-} from './ContextMenu';
+import ContextMenu, { type ContextMenuElement } from './ContextMenu';
 import { CheckReadinessIcon, RejectIcon } from '../../Style/icons';
-
-const TooltipMenu: React.FC<IContextMenuProps> = ({ ...props }) => {
-  return (
-    <div
-      className="tooltip-menu"
-      style={{
-        position: 'absolute',
-        left: props.clientPosition.x,
-        top: props.clientPosition.y
-      }}
-    >
-      <ContextMenu {...props} />
-    </div>
-  );
-};
 
 export default function ConnectionTooltips({
   forWhom,
@@ -40,7 +22,7 @@ export default function ConnectionTooltips({
   }, [editorContext, forWhom, status]);
 
   return (
-    <TooltipMenu
+    <ContextMenu
       forWhom={forWhom}
       items={items}
       clientPosition={clientPosition}
