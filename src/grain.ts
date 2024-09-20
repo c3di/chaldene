@@ -522,11 +522,8 @@ data = pd.DataFrame(${outputs.summary})
 total_labels = len(data['label'])
 average_area = data['area'].mean()
 average_num_pixels = data['num_pixels'].mean()
-print(f"Total Labels: {total_labels}")
-print(f"Average Area: {average_area}")
-print(f"Average Number of Pixels: {average_num_pixels}")
-pd.set_option('display.max_rows', len(data))
-display(data.style.hide(axis='index'))`;
+print(f"Number of particles: {total_labels}")
+print(f"Average particle size: {average_area}")`;
     }
   }
 };
