@@ -36,6 +36,7 @@ export default function FlowEditor({
             'scene',
             new SceneActions(reactFlowInstance)
           );
+          reactFlowInstance.fitView();
         }}
         // for rendering
         nodeTypes={editorContext.nodeTypes}
