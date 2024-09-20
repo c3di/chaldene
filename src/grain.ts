@@ -372,7 +372,8 @@ export const watersheedNodeSpec: computeNodeSpec = {
       description: 'The granularity parameter for watershed segmentation.',
       defaultValue: 0.1,
       widget: {
-        type: 'Number'
+        type: 'Number',
+        step: 0.1
       }
     }
   ],
@@ -424,7 +425,7 @@ export const regionpropsNodeSpec: computeNodeSpec = {
   outputs: [
     {
       name: 'summary',
-      type: 'any',
+      type: 'summary',
       displayLabel: 'summary',
       description: 'The region properties of the labeled regions.'
     }
@@ -459,7 +460,7 @@ export const saveToCsvNodeSpec: computeNodeSpec = {
   inputs: [
     {
       name: 'data',
-      type: 'any',
+      type: 'summary',
       displayLabel: 'data',
       description: 'The data to save as a CSV.'
     },
@@ -509,6 +510,7 @@ export const saveImageNodeSpec: computeNodeSpec = {
       defaultValue: 'image.png',
       widget: {
         type: 'String',
+        placeholder: 'for example: image.png'
       }
     },
     {
@@ -535,6 +537,7 @@ io.imsave(join(${inputs.destination}, ${inputs.name}), in_im.raw_image)`;
     }
   }
 };
+
 
 export function defaultNodeSpecs(): void {
   registerNodeSpec(readImageNodeSpec);
