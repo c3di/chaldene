@@ -316,6 +316,85 @@ ${outputs.outputImage} = IM(restoration.denoise_bilateral(in_im.raw_image), in_i
   }
 };
 
+
+export const CLAHENodeSpec: computeNodeSpec = {
+  name: 'CLAHE',
+  displayLabel: 'CLAHE',
+  description:
+    'Contrast Limited Adaptive Histogram Equalization (CLAHE) for local contrast enhancement.',
+  category: 'Image Processing',
+  inputs: [
+    {
+      name: 'image',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'Input image.'
+    }
+  ],
+  outputs: [
+    {
+      name: 'outputImage',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'The local contrast image.'
+    }
+  ],
+
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      const import1 = 'from skimage.exposure import equalize_adapthist'
+      const import2 = 'from im2im import Image as IM';
+
+      return `${import1}
+${import2}
+in_im = im2im(${inputs.image}, 'numpy.float64(0to1)')
+${outputs.outputImage} = IM(equalize_adapthist(in_im.raw_image), in_im.metadata)`;
+    }
+  }
+};
+
+export const CannyNodeSpec: computeNodeSpec = {
+  name: 'Canny Edge Detection',
+  displayLabel: 'canny edge detection',
+  description:
+    'Edge filter an image using the Canny algorithm.',
+  category: 'Image Processing',
+  inputs: [
+    {
+      name: 'image',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'Input image.'
+    }
+  ],
+  outputs: [
+    {
+      name: 'outputImage',
+      type: 'image',
+      displayLabel: 'image',
+    }
+  ],
+
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      const import1 = 'from skimage.feature import canny'
+      const import2 = 'from im2im import Image as IM';
+
+      return `${import1}
+${import2}
+in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
+${outputs.outputImage} = IM(canny(in_im.raw_image), in_im.metadata)`;
+    }
+  }
+};
+
+
 export const invertNodeSpec: computeNodeSpec = {
   name: 'Invert',
   displayLabel: 'invert',
@@ -546,6 +625,8 @@ export function defaultNodeSpecs(): void {
   registerNodeSpec(erosionNodeSpec);
   registerNodeSpec(openingNodeSpec);
   registerNodeSpec(denoiseBilateralNodeSpec);
+  registerNodeSpec(CLAHENodeSpec);
+  registerNodeSpec(CannyNodeSpec);
   registerNodeSpec(invertNodeSpec);
   registerNodeSpec(watersheedNodeSpec);
   registerNodeSpec(regionpropsNodeSpec);
