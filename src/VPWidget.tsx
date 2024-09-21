@@ -82,7 +82,12 @@ export class VPWidget extends ReactWidget {
 
   setContent(newContent: string) {
     if (this.sharedModel.getSource() !== newContent) {
-      this.sharedModel.setSource(newContent);
+      // Insert content in chunks to avoid large transactions that report invalid string length
+      const CHUNK_SIZE = 20000;
+      for (let i = 0; i < newContent.length; i += CHUNK_SIZE) {
+        const chunk = newContent.substring(i, i + CHUNK_SIZE);
+        this.sharedModel.updateSource(i, i + CHUNK_SIZE, chunk);
+      }
     }
   }
 
