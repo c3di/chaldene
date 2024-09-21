@@ -105,19 +105,22 @@ export function Slider({
   max = 100,
   step = 1
 }: INumberProps): JSX.Element {
-  const percentage = ((value - min) / (max - min)) * 100;
-
+  const [localValue, setLocalValue] = useState(value);
+  const percentage = ((localValue - min) / (max - min)) * 100;
   return (
     <div className="slider-container">
       <input
         className="nodrag"
         type="range"
-        value={value}
+        value={localValue}
         min={min}
         max={max}
         step={step}
         onChange={e => {
-          setValue?.(forWhom, parseFloat(e.target.value));
+          setLocalValue(parseFloat(e.target.value));
+        }}
+        onMouseUp={e => {
+          setValue?.(forWhom, localValue);
         }}
         style={{
           background: `linear-gradient(to right, var(--vpl-blue-3) ${percentage}%, var(--vpl-blue-gray-4) ${percentage}%)`
@@ -137,7 +140,7 @@ export function Slider({
           pointerEvents: 'none'
         }}
       >
-        {value}
+        {localValue}
       </div>
     </div>
   );
