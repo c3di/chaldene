@@ -7,11 +7,12 @@ import ImageViewer from './ImageViewer';
 import {
   Text,
   Boolean,
-  Number,
+  NumericInput,
   Slider,
   Dropdown,
   FileInputFromServer
 } from './Input';
+import Tuple2Input from './Tuple2Input';
 
 export { type default as Widget } from './Widget';
 export { type WidgetProps, NotFoundWidget } from './Widget';
@@ -29,9 +30,10 @@ export function registerWidget(
 
 registerWidget('String', Text, 'string');
 registerWidget('Boolean', Boolean, 'boolean');
-registerWidget('Number', Number, 'number');
+registerWidget('Number', NumericInput, 'number');
 registerWidget('Slider', Slider, 'number');
 registerWidget('Dropdown', Dropdown, 'enum');
+registerWidget('Tuple2', Tuple2Input, 'tuple2');
 registerWidget('BoundingBox', BoundingBoxInput);
 registerWidget('CanvasImage', CanvasImage);
 registerWidget('ImageCropper', ImageCropper);

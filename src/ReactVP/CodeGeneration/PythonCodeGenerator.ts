@@ -30,6 +30,10 @@ export default class PythonCodeGenerator extends CodeGenerator {
     if (value === null || value === undefined) {
       return 'None';
     }
+
+    if (type === 'tuple2') {
+      return `(${value[0]}, ${value[1]})`;
+    }
     return value;
   }
 }

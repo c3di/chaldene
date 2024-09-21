@@ -60,12 +60,12 @@ export function Boolean({
 }
 
 interface INumberProps extends WidgetProps {
-  min: number;
-  max: number;
-  step: number;
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
-export function Number({
+export function NumericInput({
   forWhom,
   value,
   setValue,
@@ -150,15 +150,18 @@ export function NumberInput({
   forWhom,
   value,
   setValue,
-  min,
-  max,
+  defaultValue = 0,
+  min = -Infinity,
+  max = Infinity,
   step
 }: INumberProps): JSX.Element {
   const [localValue, setLocalValue] = useState(value);
   const debounceTimeout = useRef<number | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const newValue = parseFloat(e.target.value);
+    const inputValue = parseFloat(e.target.value);
+    const newValue = Number.isNaN(inputValue) ? defaultValue : inputValue;
+
     setLocalValue(newValue > max ? max : newValue < min ? min : newValue);
 
     if (debounceTimeout.current) {
