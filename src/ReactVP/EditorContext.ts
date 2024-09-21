@@ -32,6 +32,7 @@ export default class EditorContext {
   private nextEdgeId: number = 0;
   // for jupyterlab
   public parentContext?: any = undefined;
+  private runningInProcessCount: number = 0;
 
   constructor(
     editorID: string,
@@ -120,11 +121,17 @@ export default class EditorContext {
   };
 
   public notifyExecuteStart = (): void => {
-    this.action('panels').open('executeInProcess', {}, {});
+    if (this.runningInProcessCount === 0) {
+      this.action('panels').open('executeInProcess', {}, {});
+    }
+    this.runningInProcessCount++;
   };
 
   public notifyExecuteEnd = (): void => {
-    this.action('panels').close('executeInProcess');
+    this.runningInProcessCount--;
+    if (this.runningInProcessCount === 0) {
+      this.action('panels').close('executeInProcess');
+    }
   };
 
   public addGraphChangeListener = (listener: (graph: Graph) => void): void => {
