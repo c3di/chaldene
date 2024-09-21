@@ -279,12 +279,19 @@ function preventItemDoubleClickInFileBrowser(): MutationObserver {
     }
 
     dialogItems.forEach(item => {
+      const isDir = item.getAttribute('data-isdir') === 'true';
+      if (isDir) {
+        return;
+      }
+      if (item.getAttribute('dbclick-prevented') === 'true') {
+        return;
+      }
       item.addEventListener('dblclick', event => {
         event.preventDefault();
         event.stopPropagation();
       });
+      item.setAttribute('dbclick-prevented', 'true');
     });
-    observer.disconnect();
   });
   return observer;
 }
