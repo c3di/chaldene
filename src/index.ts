@@ -14,7 +14,7 @@ import executeCodeCell from './ExecuteCodeCell';
 import { ContentFactory } from './ContentFactory';
 import createCellTypeItem from './CreateCellTypeItem';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
-import { defaultNodeSpecs } from './grain';
+import { defaultNodeSpecs } from './NodeSpec';
 
 const chaldeneVPCell: JupyterFrontEndPlugin<void> = {
   id: 'Chaldene: Add VP Cell',
