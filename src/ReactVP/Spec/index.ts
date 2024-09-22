@@ -9,7 +9,6 @@ import { type NodeCodeGeenerator } from '../CodeGeneration';
 
 export type { INodeSpecConfig } from './NodeSpec';
 export type { default as computeNodeSpec } from './ComputeNodeSpec';
-
 export const nodeSpecRegistry = new NodeSpecConfigRegistry();
 
 export function registerNodeSpecConfig(
@@ -20,11 +19,14 @@ export function registerNodeSpecConfig(
 }
 
 // Allow Node Spec for ComputeNode to be registered for user
-export function registerNodeSpec(spec: NodeSpec): string {
-  return registerNodeSpecConfig(spec.name, {
-    spec,
-    spec2Node: spec2ComputeNode,
-    visualNodeType: ComputeNode
+export function registerNodeSpec(spec: NodeSpec | NodeSpec[]): void {
+  const toRegister: NodeSpec[] = Array.isArray(spec) ? spec : [spec];
+  toRegister.forEach(s => {
+    registerNodeSpecConfig(s.name, {
+      spec: s,
+      spec2Node: spec2ComputeNode,
+      visualNodeType: ComputeNode
+    });
   });
 }
 

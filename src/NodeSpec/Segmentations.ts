@@ -41,11 +41,8 @@ export const watershedNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      const import1 = 'from skimage import segmentation, filters';
-      const import2 = 'from scipy import ndimage as ndi';
-
-      return `${import1}
-${import2}
+      return `from skimage import segmentation, filters
+from scipy import ndimage as ndi
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 gradient = filters.sobel(in_im.raw_image)
 markers = ndi.label(gradient < ${inputs.granularity})[0]

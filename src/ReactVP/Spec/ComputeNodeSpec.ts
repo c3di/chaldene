@@ -1,5 +1,5 @@
 import type INodeSpec from './NodeSpec';
-import type { IHandle, Node } from '../Type';
+import { IHandle, Node, isImageType } from '../Type';
 import type { ISpec2NodeDataParams } from './NodeSpec';
 import type { NodeCodeGenerators } from '../CodeGeneration';
 
@@ -35,7 +35,7 @@ export function spec2ComputeNode({
         id: `out${index}`,
         ...output,
         widget:
-          output.type === 'image' && !output.widget
+          isImageType(output.type) && !output.widget
             ? { type: 'ImageViewer' }
             : output.widget
       })),

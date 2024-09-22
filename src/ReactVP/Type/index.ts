@@ -23,3 +23,15 @@ export interface IPosition {
 }
 
 export type Identifier = IHandleIdentifier;
+
+export function isImageType(type?: string): boolean {
+  return !!type && ['image', 'binary image'].includes(type);
+}
+
+export function isSameType(type1?: string, type2?: string): boolean {
+  return (
+    !!type1 &&
+    !!type2 &&
+    (isImageType(type1) ? isImageType(type2) : type1 === type2)
+  );
+}

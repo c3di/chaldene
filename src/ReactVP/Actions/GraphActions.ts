@@ -8,7 +8,8 @@ import {
   type Identifier,
   type ValueCategory,
   type IHandle,
-  type ConnectionStatus
+  type ConnectionStatus,
+  isSameType
 } from '../Type';
 import {
   applyNodeChanges,
@@ -562,11 +563,7 @@ export default class GraphActions extends StateActions {
       return { status: 'reject', message: 'Directions not compatible.' };
     }
 
-    if (
-      sourceHandle.type !== targetHandle.type &&
-      !!sourceHandle.type &&
-      !!targetHandle.type
-    ) {
+    if (!isSameType(sourceHandle.type, targetHandle.type)) {
       return { status: 'reject', message: 'Types not compatible.' };
     }
 

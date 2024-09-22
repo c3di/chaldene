@@ -63,8 +63,7 @@ export function OutputHandle({
   description,
   widget,
   editorContext,
-  connections,
-  type
+  connections
 }: IHandleProps): JSX.Element {
   const Widget = useWidget(
     'outputs',
@@ -74,7 +73,7 @@ export function OutputHandle({
     identifier
   );
 
-  const showLabel = !(type === 'image' && widget?.type === 'ImageViewer');
+  const showLabel = widget?.type !== 'ImageViewer';
 
   return (
     <div

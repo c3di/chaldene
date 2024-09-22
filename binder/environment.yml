@@ -26,5 +26,6 @@ dependencies:
       - scipy
       - comm
       - opencv-python
+      - matplotlib
   # additional packages for demos
   # - ipywidgets

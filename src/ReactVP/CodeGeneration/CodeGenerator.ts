@@ -1,4 +1,10 @@
-import { type Graph, type Edge, type Node, topologicalSortDAG } from '../Type';
+import {
+  type Graph,
+  type Edge,
+  type Node,
+  topologicalSortDAG,
+  isImageType
+} from '../Type';
 import { getCodeGenerator } from '../Spec';
 import { uniqueHandleName } from '../Type';
 import { widgetsRegistry } from '../Widgets';
@@ -55,7 +61,7 @@ export default class CodeGenerator {
     const outputValues: Record<string, string> = {};
     outputs?.forEach(output => {
       outputValues[output.name] = uniqueHandleName(editorID, id, output.id);
-      if (output.type === 'image') {
+      if (isImageType(output.type) || output.widget?.type === 'ImageViewer') {
         imageInspections.push(outputValues[output.name]);
       }
     });
