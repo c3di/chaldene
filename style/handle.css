@@ -27,17 +27,17 @@
 
 .handle-container-input {
   position: absolute;
-  left: -19px;
+  left: -22px;
 }
 
 .handle-container-output {
   position: absolute;
-  right: -10px;
+  right: -13px;
 }
 
 .react-flow__handle.handle-style {
-  width: 10px;
-  height: 10px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   position: relative;
   transform: none !important;
