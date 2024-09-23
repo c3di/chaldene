@@ -10,7 +10,8 @@ export const watershedNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'image',
       displayLabel: 'image',
-      description: 'The input image for watershed segmentation.'
+      description:
+        'The interesting objects are assumed to be brighter than the background.'
     },
     {
       name: 'granularity',

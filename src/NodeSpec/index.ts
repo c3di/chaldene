@@ -1,17 +1,16 @@
 import { registerNodeSpec } from '../ReactVP';
 import {
   thresholdNodeSpec,
+  invertNodeSpec,
   binaryDilationNodeSpec,
   binaryErosionNodeSpec,
   binaryOpeningNodeSpec,
-  binaryClosingNodeSpec
+  binaryClosingNodeSpec,
+  removeSmallHolesNodeSpec,
+  removeSmallObjectsNodeSpec,
+  splitTouchingObjectsNodeSpec
 } from './Binary';
-import {
-  CannyNodeSpec,
-  CLAHENodeSpec,
-  denoiseBilateralNodeSpec,
-  invertNodeSpec
-} from './IP';
+import { CannyNodeSpec, CLAHENodeSpec, denoiseBilateralNodeSpec } from './IP';
 import { readImageNodeSpec, saveImageNodeSpec, saveToCsvNodeSpec } from './IO';
 import { regionpropsNodeSpec, watershedNodeSpec } from './Segmentations';
 import { differenceHeatmapNodeSpec } from './Comparison';
@@ -21,15 +20,18 @@ export function defaultNodeSpecs(): void {
   registerNodeSpec([watershedNodeSpec, regionpropsNodeSpec]);
   registerNodeSpec([
     thresholdNodeSpec,
+    invertNodeSpec,
     binaryDilationNodeSpec,
     binaryErosionNodeSpec,
     binaryOpeningNodeSpec,
-    binaryClosingNodeSpec
+    binaryClosingNodeSpec,
+    removeSmallHolesNodeSpec,
+    removeSmallObjectsNodeSpec,
+    splitTouchingObjectsNodeSpec
   ]);
 
   registerNodeSpec(denoiseBilateralNodeSpec);
   registerNodeSpec(CLAHENodeSpec);
   registerNodeSpec(CannyNodeSpec);
-  registerNodeSpec(invertNodeSpec);
   registerNodeSpec(differenceHeatmapNodeSpec);
 }

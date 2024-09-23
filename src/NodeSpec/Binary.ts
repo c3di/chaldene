@@ -59,12 +59,48 @@ ${outputs.image} = IM(binarized_image, in_im.metadata)`;
     }
   }
 };
+export const invertNodeSpec: computeNodeSpec = {
+  name: 'Invert',
+  displayLabel: 'invert',
+  description:
+    'In a binary image, each pixel is either black (0) or white (1). The invert operation switches these values: all black pixels become white, and all white pixels become black.',
+  category: 'binary',
+  inputs: [
+    {
+      name: 'image',
+      type: 'binary image',
+      displayLabel: 'binary image',
+      description: 'The input image to be inverted.'
+    }
+  ],
+  outputs: [
+    {
+      name: 'image',
+      type: 'binary image',
+      displayLabel: 'binary image',
+      description: 'The inverted output image.'
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      const import1 = 'from skimage import util';
+      const import2 = 'from im2im import Image as IM';
 
+      return `${import1}
+${import2}
+in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
+${outputs.image} = IM(util.invert(in_im.raw_image), in_im.metadata)`;
+    }
+  }
+};
 export const binaryDilationNodeSpec: computeNodeSpec = {
   name: 'binary dilation',
   displayLabel: 'binary dilation',
   description:
-    'Return returns the same result as grayscale dilation but performs faster for binary images',
+    'Dilation sets a pixel at to the maximum over all pixels in the neighborhood centered at. Dilation enlarges bright regions and shrinks dark regions.',
   category: 'binary',
   inputs: [
     {
@@ -99,7 +135,7 @@ export const binaryErosionNodeSpec: computeNodeSpec = {
   name: 'binary erosion',
   displayLabel: 'binary erosion',
   description:
-    'Return the same result as grayscale erosion but performs faster for binary images.',
+    'Erosion sets a pixel at to the minimum over all pixels in the neighborhood centered at. Erosion shrinks bright regions and enlarges dark regions.',
   category: 'binary',
   inputs: [
     {
@@ -134,7 +170,7 @@ export const binaryOpeningNodeSpec: computeNodeSpec = {
   name: 'binary opening',
   displayLabel: 'binary opening',
   description:
-    'Return the same result as grayscale opening but performs faster for binary images.',
+    'Opening can remove small bright spots (i.e. “salt”) and connect small dark cracks. This tends to “open” up (dark) gaps between (bright) features.',
   category: 'binary',
   inputs: [
     {
@@ -169,7 +205,7 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
   name: 'binary closing',
   displayLabel: 'binary closing',
   description:
-    'Return the same result as grayscale closing but performs faster for binary images.',
+    'Closing can remove small dark spots (i.e. “pepper”) and connect small bright cracks. This tends to “close” up (dark) gaps between (bright) features.',
   category: 'binary',
   inputs: [
     {
@@ -196,6 +232,150 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
 from im2im import Image as IM
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.image} = IM(morphology.binary_closing(in_im.raw_image), in_im.metadata)`;
+    }
+  }
+};
+
+export const removeSmallHolesNodeSpec: computeNodeSpec = {
+  name: 'remove small holes',
+  displayLabel: 'remove small holes',
+  description:
+    'Remove small holes (connected regions of background) within foreground objects in a binary image. It fills in small "holes" or gaps inside objects that you might want to close.',
+  category: 'binary',
+  inputs: [
+    {
+      name: 'image',
+      type: 'binary image',
+      displayLabel: 'binary image',
+      description: 'Binary input image'
+    },
+    {
+      name: 'area_threshold',
+      displayLabel: 'area threshold',
+      description:
+        'The maximum area, in pixels, of a contiguous hole that will be filled.',
+      defaultValue: 64,
+      widget: {
+        type: 'Number',
+        min: 0,
+        step: 1
+      }
+    }
+  ],
+  outputs: [
+    {
+      name: 'image',
+      type: 'binary image',
+      displayLabel: 'image',
+      description:
+        'The input image with small holes within connected components removed.'
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `from skimage import morphology
+from im2im import Image as IM
+from numpy import float64
+in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
+${outputs.image} = IM(morphology.remove_small_holes(in_im.raw_image.astype(bool), area_threshold=${inputs.area_threshold}).astype(float64), in_im.metadata)`;
+    }
+  }
+};
+
+export const removeSmallObjectsNodeSpec: computeNodeSpec = {
+  name: 'remove small objects',
+  displayLabel: 'remove small objects',
+  description:
+    'Remove small objects (connected regions of foreground) in a binary image. It removes small, isolated objects that are smaller than a specified threshold.',
+  category: 'binary',
+  inputs: [
+    {
+      name: 'image',
+      type: 'binary image',
+      displayLabel: 'binary image',
+      description: 'Binary input image'
+    },
+    {
+      name: 'min_size',
+      displayLabel: 'min size',
+      description: 'Objects smaller than this size will be removed',
+      defaultValue: 64,
+      widget: {
+        type: 'Number',
+        min: 0,
+        step: 1
+      }
+    }
+  ],
+  outputs: [
+    {
+      name: 'image',
+      type: 'binary image',
+      displayLabel: 'image',
+      description: 'The input image with small connected components removed.'
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `from skimage import morphology
+from im2im import Image as IM
+from numpy import float64
+in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
+${outputs.image} = IM(morphology.remove_small_objects(in_im.raw_image.astype(bool), min_size=${inputs.min_size}).astype(float64), in_im.metadata)`;
+    }
+  }
+};
+
+export const splitTouchingObjectsNodeSpec: computeNodeSpec = {
+  name: 'split touching objects',
+  displayLabel: 'split touching objects',
+  description:
+    'split touching objects (connected regions of foreground) in a binary image. It splits objects that are touching or overlapping.',
+  category: 'binary',
+  inputs: [
+    {
+      name: 'image',
+      type: 'binary image',
+      displayLabel: 'binary image',
+      description: 'Binary input image'
+    },
+    {
+      name: 'sigma',
+      displayLabel: 'sigma',
+      description:
+        'The standard deviation of the Gaussian kernel used for smoothing the image.',
+      defaultValue: 3.5,
+      widget: {
+        type: 'Number',
+        min: 0,
+        step: 1
+      }
+    }
+  ],
+  outputs: [
+    {
+      name: 'image',
+      type: 'binary image',
+      displayLabel: 'image',
+      description: 'The input image with small connected components removed.'
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `import napari_segment_blobs_and_things_with_membranes as nsbatwm
+from numpy import float64
+from im2im import Image as IM
+in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
+${outputs.image} = IM(nsbatwm.split_touching_objects(in_im.raw_image.astype(bool), sigma=${inputs.sigma}).astype(float64), in_im.metadata)`;
     }
   }
 };
