@@ -5,7 +5,7 @@ export const readImageNodeSpec: computeNodeSpec = {
   displayLabel: 'read image',
   description:
     'Reads a RGB or grayscale JPEG or PNG image. Optionally converts the image to the desired format.',
-  category: 'input output',
+  category: 'input & output',
   inputs: [
     {
       name: 'path',
@@ -63,7 +63,7 @@ export const saveToCsvNodeSpec: computeNodeSpec = {
   name: 'save_to_csv',
   displayLabel: 'save to csv',
   description: 'Save the input data to a CSV file.',
-  category: 'input output',
+  category: 'input & output',
   inputs: [
     {
       name: 'data',
@@ -110,7 +110,7 @@ export const saveImageNodeSpec: computeNodeSpec = {
   name: 'save_image',
   displayLabel: 'save image',
   description: 'Save the image data to a file.',
-  category: 'input output',
+  category: 'input & output',
   inputs: [
     {
       name: 'image',

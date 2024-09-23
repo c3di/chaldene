@@ -17,7 +17,6 @@ import { differenceHeatmapNodeSpec } from './Comparison';
 
 export function defaultNodeSpecs(): void {
   registerNodeSpec([readImageNodeSpec, saveImageNodeSpec, saveToCsvNodeSpec]);
-  registerNodeSpec([watershedNodeSpec, regionpropsNodeSpec]);
   registerNodeSpec([
     thresholdNodeSpec,
     invertNodeSpec,
@@ -29,9 +28,8 @@ export function defaultNodeSpecs(): void {
     removeSmallObjectsNodeSpec,
     splitTouchingObjectsNodeSpec
   ]);
-
-  registerNodeSpec(denoiseBilateralNodeSpec);
-  registerNodeSpec(CLAHENodeSpec);
+  registerNodeSpec([denoiseBilateralNodeSpec, CLAHENodeSpec]);
   registerNodeSpec(CannyNodeSpec);
+  registerNodeSpec([watershedNodeSpec, regionpropsNodeSpec]);
   registerNodeSpec(differenceHeatmapNodeSpec);
 }

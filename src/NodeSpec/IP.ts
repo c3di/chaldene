@@ -49,7 +49,7 @@ export const denoiseBilateralNodeSpec: computeNodeSpec = {
   displayLabel: 'denoise bilateral',
   description:
     'Applies bilateral denoising to reduce noise while preserving edges.',
-  category: 'Image Processing',
+  category: 'denoise & enhance',
   inputs: [
     {
       name: 'image',
@@ -88,7 +88,7 @@ export const CLAHENodeSpec: computeNodeSpec = {
   displayLabel: 'CLAHE',
   description:
     'Contrast Limited Adaptive Histogram Equalization (CLAHE) for local contrast enhancement.',
-  category: 'Image Processing',
+  category: 'denoise & enhance',
   inputs: [
     {
       name: 'image',
@@ -126,7 +126,7 @@ export const CannyNodeSpec: computeNodeSpec = {
   name: 'Canny Edge Detection',
   displayLabel: 'canny edge detection',
   description: 'Edge filter an image using the Canny algorithm.',
-  category: 'Image Processing',
+  category: 'feature detection',
   inputs: [
     {
       name: 'image',
