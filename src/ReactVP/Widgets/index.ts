@@ -2,7 +2,7 @@ import WidgetsRegistry from './WidgetsRegistry';
 import BoundingBoxInput from './BoundingBoxInput';
 import CanvasImage from './CanvasImage';
 import ImageCropper from './ImageCropper';
-import ImageViewer from './ImageViewer';
+import ImageViewer from './ImageViewerN';
 
 import {
   Text,

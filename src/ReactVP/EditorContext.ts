@@ -30,9 +30,15 @@ export default class EditorContext {
   private isLiveExecution: boolean = true;
   private nextNodeId: number = 0;
   private nextEdgeId: number = 0;
+  private runningInProcessCount: number = 0;
+  public isAsyncImageViewTransform: boolean = true;
+  private imageViewTransform: { x?: number; y?: number; zoom?: number } = {
+    x: undefined,
+    y: undefined,
+    zoom: undefined
+  }; // fit to canvas
   // for jupyterlab
   public parentContext?: any = undefined;
-  private runningInProcessCount: number = 0;
 
   constructor(
     editorID: string,
@@ -191,5 +197,52 @@ export default class EditorContext {
 
   public blur = (): void => {
     this.action('focusTracker').setFocused(false);
+  };
+
+  public toggleAsyncImageViewTransform = (): void => {
+    this.isAsyncImageViewTransform = !this.isAsyncImageViewTransform;
+    if (!this.isAsyncImageViewTransform) {
+      this.imageViewTransform = { x: undefined, y: undefined, zoom: undefined };
+    }
+  };
+
+  public fitImageToCanvas = (): void => {
+    this.updateGlobalTransform({
+      x: undefined,
+      y: undefined,
+      zoom: undefined,
+      force: true
+    });
+  };
+
+  public getImageViewTransform = (): {
+    x?: number;
+    y?: number;
+    zoom?: number;
+  } => {
+    return this.isAsyncImageViewTransform
+      ? this.imageViewTransform
+      : { x: undefined, y: undefined, zoom: undefined };
+  };
+
+  public updateGlobalTransform = ({
+    x,
+    y,
+    zoom,
+    force = false
+  }: {
+    x?: number;
+    y?: number;
+    zoom?: number;
+    force?: boolean;
+  }): void => {
+    if (this.isAsyncImageViewTransform || force) {
+      this.imageViewTransform = { x, y, zoom };
+      //force to re-render
+      this.action('graph').overrideGraph({
+        ...this.graph,
+        nodes: this.graph?.nodes.map(node => ({ ...node }))
+      });
+    }
   };
 }

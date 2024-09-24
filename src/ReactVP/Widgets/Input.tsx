@@ -33,7 +33,7 @@ export function Text({
 
   return (
     <input
-      className="nodrag common-input-style"
+      className="nodrag common-input-style widget"
       type="text"
       value={localValue}
       onChange={handleInputChange}
@@ -49,7 +49,7 @@ export function Boolean({
 }: WidgetProps): JSX.Element {
   return (
     <input
-      className="nodrag"
+      className="nodrag widget"
       type="checkbox"
       checked={value}
       onChange={e => {
@@ -108,7 +108,7 @@ export function Slider({
   const [localValue, setLocalValue] = useState(value);
   const percentage = ((localValue - min) / (max - min)) * 100;
   return (
-    <div className="slider-container">
+    <div className="slider-container widget">
       <input
         className="nodrag"
         type="range"
@@ -182,7 +182,7 @@ export function NumberInput({
 
   return (
     <input
-      className="nodrag common-input-style"
+      className="nodrag common-input-style widget"
       type="number"
       value={localValue}
       min={min}
@@ -205,7 +205,7 @@ export function Dropdown({
 }: IDropdownProps): JSX.Element {
   return (
     <select
-      className="nodrag common-input-style"
+      className="nodrag common-input-style widget"
       value={value}
       onChange={e => {
         setValue?.(forWhom, e.target.value);
@@ -229,7 +229,7 @@ export function FileInputFromServer({
 }: WidgetProps): JSX.Element {
   const isSelectFolder = extensions && extensions.length === 0;
   return (
-    <div className="file-input-container">
+    <div className="file-input-container widget">
       {editorContext?.parentContext?.openFileDialog && (
         <button
           className="file-input-button"

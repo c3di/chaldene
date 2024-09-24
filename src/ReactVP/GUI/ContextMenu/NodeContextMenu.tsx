@@ -2,11 +2,28 @@ import { type ContextMenuElement } from './ContextMenu';
 import HandleContextMenu from './HandleContextMenu';
 import type { GUIElementProps } from '../GUIElement';
 import WholeNodeContextMenu from './WholeNodeContextMenu';
-import { getHandleIdentifier, isClickOnHandle } from '../../Utils';
+import {
+  getHandleIdentifier,
+  isClickOnHandle,
+  isClickOnWidget
+} from '../../Utils';
+import WidgetsContextMenu from './WidgetsContextMenu';
 
 const nodeMenuTypes = {
   Handle: HandleContextMenu,
-  Node: WholeNodeContextMenu
+  Node: WholeNodeContextMenu,
+  Widget: WidgetsContextMenu
+};
+
+const getMenuType = (
+  node: string,
+  event?: MouseEvent | React.MouseEvent<Element, MouseEvent>
+) => {
+  return isClickOnHandle(event)
+    ? { whichPart: getHandleIdentifier(event), Menu: nodeMenuTypes.Handle }
+    : isClickOnWidget(event)
+      ? { whichPart: null, Menu: nodeMenuTypes.Widget }
+      : { whichPart: node, Menu: nodeMenuTypes.Node };
 };
 
 export default function NodeContextMenu({
@@ -15,12 +32,10 @@ export default function NodeContextMenu({
   clientPosition,
   editorContext
 }: GUIElementProps): ContextMenuElement {
-  const isMenu4Handle = isClickOnHandle(event);
-  const whichPart = isMenu4Handle ? getHandleIdentifier(event) : forWhom;
-  const MenuToShow = isMenu4Handle ? nodeMenuTypes.Handle : nodeMenuTypes.Node;
+  const { whichPart, Menu } = getMenuType(forWhom, event);
 
   return (
-    <MenuToShow
+    <Menu
       forWhom={whichPart}
       clientPosition={clientPosition}
       editorContext={editorContext}

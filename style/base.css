@@ -3,6 +3,13 @@
 
     https://jupyterlab.readthedocs.io/en/stable/developer/css.html
 */
+.grabbing {
+  cursor: grabbing !important;
+}
+
+.grab {
+  cursor: grab !important;
+}
 
 .react-flow__nodesselection-rect {
   display: none;

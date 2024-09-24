@@ -12,6 +12,12 @@ export function isClickOnHandle(
   );
 }
 
+export function isClickOnWidget(
+  event: MouseEvent | React.MouseEvent<Element, MouseEvent> | undefined
+): boolean {
+  return (event?.target as HTMLElement).classList.contains('imageview');
+}
+
 export function getHandleIdentifier(
   event: MouseEvent | React.MouseEvent<Element, MouseEvent> | undefined
 ): IHandleIdentifier | null {
