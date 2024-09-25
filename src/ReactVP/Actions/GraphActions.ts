@@ -16,7 +16,8 @@ import {
   applyEdgeChanges,
   type NodeChange,
   type EdgeChange,
-  type Connection
+  type Connection,
+  MarkerType
 } from '@xyflow/react';
 import StateActions from './StateActions';
 import {
@@ -520,7 +521,15 @@ export default class GraphActions extends StateActions {
         }
       });
     }
-    const newEdge = { ...connection, id: this.editorContext!.getEdgeId() };
+    const newEdge = {
+      ...connection,
+      id: this.editorContext!.getEdgeId(),
+      markerEnd: {
+        type: MarkerType.Arrow,
+        width: 30,
+        height: 30
+      }
+    };
     graphChanges.push({
       type: 'add',
       changedGraph: {
