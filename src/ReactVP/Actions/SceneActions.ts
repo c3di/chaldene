@@ -1,8 +1,7 @@
-import { isInputViaConnection, type IPosition } from '../Type';
+import { type IPosition } from '../Type';
 import Actions from './Actions';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import { type ReactFlowInstance } from '@xyflow/react';
-import { getBoundingClientRect, getHandleRef, getNodeRef } from '../Utils';
 
 export default class SceneActions extends Actions {
   private readonly reactFlowInstance: ReactFlowInstance<any, any>;
@@ -48,80 +47,29 @@ export default class SceneActions extends Actions {
     const layoutOptions = {
       algorithm: 'layered',
       edgeRouting: 'SPLINES',
-      portConstraints: 'FIXED_POS',
-      //  hierarchyHandling: 'INCLUDE_CHILDREN',
-      'layered.spacing.nodeNodeBetweenLayers': '20',
-      'elk.layered.nodePlacement.strategy': 'SIMPLE',
+      // portConstraints: 'FIXED_POS',
+      // hierarchyHandling: 'INCLUDE_CHILDREN',
+      'layered.spacing.nodeNodeBetweenLayers': '40',
+      'elk.layered.nodePlacement.strategy': 'BRANCH',
       'elk.padding': '[top=16.0,left=16.0,bottom=16.0,right=16.0]'
     };
-    const portID = (nodeID: string, handleID: string): string =>
-      `p${nodeID}${handleID}`;
     const graph = this.editorContext?.graph;
     if (!graph) {
       return;
     }
     const { nodes, edges } = graph;
     const elKNodes = nodes.map(node => {
-      const nodeRect = getBoundingClientRect(
-        getNodeRef(node.id, this.editorContext?.editorID)!
-      );
-      const inputPorts: any[] = [];
-      for (const input of node.data.inputs ?? []) {
-        if (!isInputViaConnection(input)) {
-          continue;
-        }
-        const portRect = getBoundingClientRect(
-          getHandleRef(
-            this.editorContext!.editorID,
-            node.id,
-            input.id,
-            'target'
-          )!
-        );
-        inputPorts.push({
-          id: portID(node.id, input.id),
-          x: portRect.x - nodeRect.x,
-          y: portRect.y - nodeRect.y,
-          height: portRect.height,
-          width: portRect.width
-        });
-      }
-
-      const outputPorts = node.data.outputs?.map(output => {
-        const portRect = getBoundingClientRect(
-          getHandleRef(
-            this.editorContext!.editorID,
-            node.id,
-            output.id,
-            'source'
-          )!
-        );
-        return {
-          id: portID(node.id, output.id),
-          x: portRect.x - nodeRect.x,
-          y: portRect.y - nodeRect.y,
-          height: portRect.height,
-          width: portRect.width
-        };
-      });
       return {
         id: node.id,
-        x: nodeRect.x,
-        y: nodeRect.y,
-        width: nodeRect.width,
-        height: nodeRect.height,
-        properties: {
-          'org.eclipse.elk.portConstraints': 'FIXED_ORDER'
-        },
-        ports: [...(inputPorts ?? []), ...(outputPorts ?? [])]
+        width: node.measured?.width,
+        height: node.measured?.height
       };
     });
     const elkEdges = edges.map((edge: any) => ({
       id: edge.id,
-      sources: [portID(edge.source, edge.sourceHandle)],
-      targets: [portID(edge.target, edge.targetHandle)]
+      sources: [edge.source],
+      targets: [edge.target]
     }));
-
     this.elk
       .layout({
         id: 'root',
@@ -147,8 +95,9 @@ export default class SceneActions extends Actions {
           nodes: layoutedNodes,
           edges
         });
-
-        void this.fitView();
+        window.requestAnimationFrame(() => {
+          void this.fitView();
+        });
       });
   };
 }
