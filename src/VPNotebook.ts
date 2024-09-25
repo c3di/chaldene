@@ -5,6 +5,11 @@ import { ArrayExt } from '@lumino/algorithm';
 const NB_CELL_CLASS = 'jp-Notebook-cell';
 
 export class VPNotebook extends NB {
+  constructor(options: NB.IOptions) {
+    super(options);
+    this.notebookConfig.defaultCell = 'Visual Code';
+  }
+
   isVisualCodeCell(widget: any): boolean {
     return widget.node.querySelectorAll(`.${EDITOR_CLASS}`).length > 0;
   }

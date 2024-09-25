@@ -105,8 +105,8 @@ class CellTypeSwitcher extends ReactWidget {
         title={this._trans.__('Select the cell type')}
       >
         <option value="-">-</option>
-        <option value="code">{this._trans.__('Code')}</option>
         <option value="visual code">{'Visual Code'}</option>
+        <option value="code">{this._trans.__('Code')}</option>
         <option value="markdown">{this._trans.__('Markdown')}</option>
         <option value="raw">{this._trans.__('Raw')}</option>
       </HTMLSelect>
