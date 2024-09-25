@@ -4,6 +4,82 @@ import { ISharedAttachmentsCell } from '@jupyter/ydoc';
 import { MarkdownCell } from '@jupyterlab/cells';
 
 /**
+ * Insert a new code cell below the active cell or in index 0 if the notebook is empty.
+ * https://github.com/jupyterlab/jupyterlab/blob/c7ab6e97af2a432af91ca9fc5a9514a5be1cee8a/packages/notebook/src/actions.tsx#L416C3-L451C4
+ * @param notebook - The target notebook widget.
+ *
+ * #### Notes
+ * The widget mode will be preserved.
+ * This action can be undone.
+ * The existing selection will be cleared.
+ * The new cell will be the active cell.
+ */
+export function insertBelow(notebook: Notebook): void {
+  if (!notebook.model) {
+    return;
+  }
+
+  const state = Private.getState(notebook);
+  const model = notebook.model;
+
+  const newIndex = notebook.activeCell ? notebook.activeCellIndex + 1 : 0;
+  model.sharedModel.insertCell(newIndex, {
+    cell_type: notebook.notebookConfig.defaultCell,
+    metadata:
+      notebook.notebookConfig.defaultCell === 'code'
+        ? {
+            // This is an empty cell created by user, thus is trusted
+            trusted: true,
+            'code type': 'visual code' // This is a visual code cell
+          }
+        : {}
+  });
+  // Make the newly inserted cell active.
+  notebook.activeCellIndex = newIndex;
+
+  notebook.deselectAll();
+  void Private.handleState(notebook, state, true);
+}
+
+/**
+ * Insert a new code cell above the active cell or in index 0 if the notebook is empty.
+ *
+ * @param notebook - The target notebook widget.
+ *
+ * #### Notes
+ * The widget mode will be preserved.
+ * This action can be undone.
+ * The existing selection will be cleared.
+ * The new cell will the active cell.
+ */
+export function insertAbove(notebook: Notebook): void {
+  if (!notebook.model) {
+    return;
+  }
+
+  const state = Private.getState(notebook);
+  const model = notebook.model;
+
+  const newIndex = notebook.activeCell ? notebook.activeCellIndex : 0;
+  model.sharedModel.insertCell(newIndex, {
+    cell_type: notebook.notebookConfig.defaultCell,
+    metadata:
+      notebook.notebookConfig.defaultCell === 'code'
+        ? {
+            // This is an empty cell created by user, thus is trusted
+            trusted: true,
+            'code type': 'visual code' // This is a visual code cell
+          }
+        : {}
+  });
+  // Make the newly inserted cell active.
+  notebook.activeCellIndex = newIndex;
+
+  notebook.deselectAll();
+  void Private.handleState(notebook, state, true);
+}
+
+/**
  * Change the selected cell type(s).
  *
  * @param notebook - The target notebook widget.

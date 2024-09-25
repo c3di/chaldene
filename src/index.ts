@@ -5,6 +5,7 @@ import {
 import {
   INotebookTracker,
   INotebookWidgetFactory,
+  NotebookActions,
   type NotebookPanel
 } from '@jupyterlab/notebook';
 import { CodeCell, Cell } from '@jupyterlab/cells';
@@ -15,6 +16,7 @@ import { ContentFactory } from './ContentFactory';
 import createCellTypeItem from './CreateCellTypeItem';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { defaultNodeSpecs } from './NodeSpec';
+import { insertAbove, insertBelow } from './Action';
 
 const chaldeneVPCell: JupyterFrontEndPlugin<void> = {
   id: 'Chaldene: Add VP Cell',
@@ -50,6 +52,9 @@ function activateChaldeneVPCell(
   });
 
   CodeCell.execute = executeCodeCell;
+
+  NotebookActions.insertBelow = insertBelow;
+  NotebookActions.insertAbove = insertAbove;
 
   const fileBrowser = fileBrowserFactory.createFileBrowser('file-input', {
     restore: false
