@@ -66,17 +66,6 @@ export const regionpropsNodeSpec: computeNodeSpec = {
       displayLabel: 'segments',
       description:
         'The segments of the image after applying segmentation algorithms.'
-    },
-    {
-      name: 'spacing',
-      type: 'number',
-      displayLabel: 'spacing',
-      description:
-        'The pixel spacing along each axis of the image. Default is 1.0.',
-      defaultValue: [1.0, 1.0],
-      widget: {
-        type: 'Tuple2'
-      }
     }
   ],
   outputs: [
@@ -95,20 +84,17 @@ export const regionpropsNodeSpec: computeNodeSpec = {
       return `from skimage import measure
 import pandas as pd
 from IPython.display import display
-${outputs.summary} = measure.regionprops_table(${inputs.segments}, spacing=${inputs.spacing}, properties=['label', 'centroid', 'area', 'num_pixels'])
+${outputs.summary} = measure.regionprops_table(${inputs.segments}, properties=['label', 'centroid', 'num_pixels'])
 data = pd.DataFrame(${outputs.summary})
 total_labels = len(data['label'])
-average_area = data['area'].mean()
 average_num_pixels = data['num_pixels'].mean()
 print(f"Number of segments: {total_labels}")
-print(f"Average segments physical area: {average_area}")
 print(f"Average segments pixels size: {average_num_pixels}")
 
 data['Position(x, y)'] = list(zip(data['centroid-1'], data['centroid-0']))
 data = data.drop(columns=['centroid-0', 'centroid-1'])
 ${outputs.summary} = data.rename(columns={
     'label': 'Index',
-    'area': 'Physical Area',
     'num_pixels': 'Pixel Count'
 })`;
     }
