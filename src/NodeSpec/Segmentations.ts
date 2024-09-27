@@ -2,8 +2,9 @@ import { computeNodeSpec } from '../ReactVP';
 
 export const watershedNodeSpec: computeNodeSpec = {
   name: 'watershed',
-  displayLabel: 'segmentation',
-  description: 'Applies watershed segmentation to the input image.',
+  displayLabel: 'watershed segmentation',
+  description:
+    'Separating overlapping or touching objects in an image into distinct regions or segments.',
   category: 'segmentation',
   inputs: [
     {
@@ -29,12 +30,12 @@ export const watershedNodeSpec: computeNodeSpec = {
       name: 'segments',
       type: 'segments',
       displayLabel: 'segments',
-      description: 'The label map produced by watershed segmentation.'
+      description: 'The segmentes produced by watershed algorithm.'
     },
     {
       name: 'vis',
       type: 'image',
-      description: 'The visualization of the watershed segmentation.'
+      description: 'The visualization of segmentes.'
     }
   ],
   codeGenerators: {
