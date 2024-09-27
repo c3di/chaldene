@@ -47,6 +47,7 @@ export const differenceHeatmapNodeSpec: computeNodeSpec = {
     ) => {
       return `
 from matplotlib import colormaps
+import numpy as np
 image1 = im2im(${inputs.image1}, 'numpy.gray_float64(0to1)').raw_image
 image2 = im2im(${inputs.image2}, 'numpy.gray_float64(0to1)').raw_image
 # absolute value of the difference and normalize to the range [0, 1] for visualization

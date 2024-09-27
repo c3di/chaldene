@@ -21,7 +21,7 @@ export const readImageNodeSpec: computeNodeSpec = {
       name: 'mode',
       displayLabel: 'mode',
       description:
-        'mode(ImageReadMode) - The read mode used for optionally converting the image. Default: RGB.',
+        'mode - The read mode used for optionally converting the image. Default: GRAY.',
       defaultValue: 'GRAY',
       widget: {
         type: 'Dropdown',
@@ -33,7 +33,8 @@ export const readImageNodeSpec: computeNodeSpec = {
     {
       name: 'image',
       type: 'image',
-      displayLabel: 'image'
+      displayLabel: 'image',
+      description: 'The image read from the file.'
     }
   ],
   codeGenerators: {
