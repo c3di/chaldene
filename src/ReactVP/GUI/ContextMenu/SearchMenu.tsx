@@ -35,8 +35,10 @@ const SearchMenu: React.FC<ISearchMenuProps> = ({
       const results: Record<string, any[]> = {};
 
       Object.entries(categories).forEach(([category, nodes]) => {
-        const matchingNodes = nodes.filter(spec =>
-          spec.displayLabel?.toLowerCase().includes(lowerQuery)
+        const matchingNodes = nodes.filter(
+          spec =>
+            spec.displayLabel?.toLowerCase().includes(lowerQuery) ||
+            spec.description?.toLowerCase().includes(lowerQuery)
         );
 
         if (
