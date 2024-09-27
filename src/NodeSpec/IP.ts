@@ -44,51 +44,12 @@ ${outputs.outputImage} = IM(${image}.raw_image[${cropArea.x}:${
   }
 };
 
-export const denoiseBilateralNodeSpec: computeNodeSpec = {
-  name: 'denoise_bilateral',
-  displayLabel: 'denoise bilateral',
-  description:
-    'Applies bilateral denoising to reduce noise while preserving edges.',
-  category: 'denoise & enhance',
-  inputs: [
-    {
-      name: 'image',
-      type: 'image',
-      displayLabel: 'image',
-      description: 'Input image.'
-    }
-  ],
-  outputs: [
-    {
-      name: 'outputImage',
-      type: 'image',
-      displayLabel: 'image',
-      description: 'The denoised output image.'
-    }
-  ],
-
-  codeGenerators: {
-    Python: (
-      inputs: Record<string, string>,
-      outputs: Record<string, string>
-    ) => {
-      const import1 = 'from skimage import restoration';
-      const import2 = 'from im2im import Image as IM';
-
-      return `${import1}
-${import2}
-in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
-${outputs.outputImage} = IM(restoration.denoise_bilateral(in_im.raw_image), in_im.metadata)`;
-    }
-  }
-};
-
 export const CLAHENodeSpec: computeNodeSpec = {
   name: 'CLAHE',
   displayLabel: 'CLAHE',
   description:
     'Contrast Limited Adaptive Histogram Equalization (CLAHE) for local contrast enhancement.',
-  category: 'denoise & enhance',
+  category: 'enhance',
   inputs: [
     {
       name: 'image',

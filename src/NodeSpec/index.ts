@@ -10,7 +10,7 @@ import {
   removeSmallObjectsNodeSpec,
   splitTouchingObjectsNodeSpec
 } from './Binary';
-import { CannyNodeSpec, CLAHENodeSpec, denoiseBilateralNodeSpec } from './IP';
+import { CannyNodeSpec, CLAHENodeSpec } from './IP';
 import { readImageNodeSpec, saveImageNodeSpec, saveToCsvNodeSpec } from './IO';
 import { regionpropsNodeSpec, watershedNodeSpec } from './Segmentations';
 import { differenceHeatmapNodeSpec } from './Comparison';
@@ -28,7 +28,7 @@ export function defaultNodeSpecs(): void {
     removeSmallObjectsNodeSpec,
     splitTouchingObjectsNodeSpec
   ]);
-  registerNodeSpec([denoiseBilateralNodeSpec, CLAHENodeSpec]);
+  registerNodeSpec([CLAHENodeSpec]);
   registerNodeSpec(CannyNodeSpec);
   registerNodeSpec([watershedNodeSpec, regionpropsNodeSpec]);
   registerNodeSpec(differenceHeatmapNodeSpec);
