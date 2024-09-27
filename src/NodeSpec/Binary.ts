@@ -371,11 +371,45 @@ export const splitTouchingObjectsNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      return `import napari_segment_blobs_and_things_with_membranes as nsbatwm
+      return `import numpy as np
+from scipy import ndimage as ndi
+from skimage.filters import sobel, gaussian
+from skimage.feature import peak_local_max
+from skimage.measure import label
+from skimage.segmentation import watershed
+from skimage.morphology import binary_opening
 from numpy import float64
 from im2im import Image as IM
+
+def split_touching_objects(binary, sigma: float = 3.5):
+    """
+    Takes a binary image and draws cuts in the objects similar to the ImageJ watershed algorithm [1].
+    https://github.com/haesleinhuepf/napari-segment-blobs-and-things-with-membranes/blob/5514d8d1de5964c835e7f71ac257b8b3f0574b90/napari_segment_blobs_and_things_with_membranes/__init__.py#L115C1-L149C37
+    """
+    binary = np.asarray(binary)
+
+    # typical way of using scikit-image watershed
+    distance = ndi.distance_transform_edt(binary)
+    blurred_distance = gaussian(distance, sigma=sigma)
+    fp = np.ones((3,) * binary.ndim)
+    coords = peak_local_max(blurred_distance, footprint=fp, labels=binary)
+    mask = np.zeros(distance.shape, dtype=bool)
+    mask[tuple(coords.T)] = True
+    markers = label(mask)
+    labels = watershed(-blurred_distance, markers, mask=binary)
+
+    # identify label-cutting edges
+    if len(binary.shape) == 2:
+        edges = sobel(labels)
+        edges2 = sobel(binary)
+    else:
+        raise NotImplementedError("Only 2D binary images are supported.")
+
+    almost = np.logical_not(np.logical_xor(edges != 0, edges2 != 0)) * binary
+    return binary_opening(almost)
+
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
-${outputs.image} = IM(nsbatwm.split_touching_objects(in_im.raw_image.astype(bool), sigma=${inputs.sigma}).astype(float64), in_im.metadata)`;
+${outputs.image} = IM(split_touching_objects(in_im.raw_image.astype(bool), sigma=${inputs.sigma}).astype(float64), in_im.metadata)`;
     }
   }
 };

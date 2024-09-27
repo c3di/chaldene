@@ -27,6 +27,5 @@ dependencies:
       - comm
       - opencv-python
       - matplotlib
-      - napari-segment-blobs-and-things-with-membranes
   # additional packages for demos
   # - ipywidgets
