@@ -11,7 +11,7 @@ export const readImageNodeSpec: computeNodeSpec = {
       name: 'path',
       type: 'string',
       displayLabel: 'file',
-      description: 'path(str) - path of the JPEG or PNG image.',
+      description: 'path of the JPEG or PNG image.',
       widget: {
         type: 'FileInputFromServer',
         extensions: ['.jpg', '.jpeg', '.png']
