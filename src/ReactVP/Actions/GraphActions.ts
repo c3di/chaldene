@@ -573,7 +573,10 @@ export default class GraphActions extends StateActions {
     }
 
     if (!isSameType(sourceHandle.type, targetHandle.type)) {
-      return { status: 'reject', message: 'Types not compatible.' };
+      return {
+        status: 'reject',
+        message: `"${sourceHandle.type}" and "${targetHandle.type}" not compatible.`
+      };
     }
 
     const cycle = findCycle({
