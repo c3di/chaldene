@@ -10,6 +10,7 @@ export interface IHandleProps extends IHandle {
 
 export function InputHandle({
   id,
+  type,
   identifier,
   displayLabel,
   description,
@@ -27,7 +28,10 @@ export function InputHandle({
   );
 
   return (
-    <div className="flex-container" title={description}>
+    <div
+      className="flex-container"
+      title={type ? `type: ${type}. ${description}` : `${description}`}
+    >
       {!Widget && (
         <div className="handle-container-input">
           <RCHandle
@@ -58,6 +62,7 @@ export function InputHandle({
 
 export function OutputHandle({
   id,
+  type,
   identifier,
   displayLabel,
   description,
@@ -79,7 +84,7 @@ export function OutputHandle({
     <div
       className="flex-container"
       style={{ justifyContent: 'flex-end' }}
-      title={description}
+      title={type ? `type: ${type}. ${description}` : `${description}`}
     >
       {Widget && (
         <div
