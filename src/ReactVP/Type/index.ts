@@ -29,9 +29,5 @@ export function isImageType(type?: string): boolean {
 }
 
 export function isSameType(type1?: string, type2?: string): boolean {
-  return (
-    !!type1 &&
-    !!type2 &&
-    (isImageType(type1) ? isImageType(type2) : type1 === type2)
-  );
+  return !!type1 && !!type2 && type1 === type2;
 }
