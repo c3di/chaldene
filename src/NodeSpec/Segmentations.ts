@@ -9,8 +9,8 @@ export const watershedNodeSpec: computeNodeSpec = {
   inputs: [
     {
       name: 'image',
-      type: 'image',
-      displayLabel: 'image',
+      type: ['binary image', 'image'],
+      displayLabel: 'image(binary, gray, rgb)',
       description:
         'The interesting objects are assumed to be brighter than the background.'
     },
@@ -45,11 +45,12 @@ export const watershedNodeSpec: computeNodeSpec = {
     ) => {
       return `from skimage import segmentation, filters
 from scipy import ndimage as ndi
+from skimage.color import label2rgb
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 gradient = filters.sobel(in_im.raw_image)
 markers = ndi.label(gradient < ${inputs.granularity})[0]
 ${outputs.segments} = segmentation.watershed(gradient, markers)
-${outputs.vis} = IM(segmentation.mark_boundaries(in_im.raw_image, ${outputs.segments}), {**in_im.metadata, 'color_channel': 'rgb', 'channel_order': 'channel last'})`;
+${outputs.vis} = IM(label2rgb(${outputs.segments}, bg_label=1), {**in_im.metadata, 'color_channel': 'rgb', 'channel_order': 'channel last'})`;
     }
   }
 };
@@ -58,7 +59,7 @@ export const regionpropsNodeSpec: computeNodeSpec = {
   name: 'regionprops',
   displayLabel: 'summary',
   description:
-    'Extract properties from segments of an image after applying segmentation algorithms.',
+    'Extract properties (index, pixel count, position) of each segments after applying segmentation algorithms.',
   category: 'segmentation',
   inputs: [
     {

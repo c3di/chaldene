@@ -55,7 +55,8 @@ ${outputs.image} = IM(io.imread(${inputs.path}, as_gray=False), 'numpy.rgb_uint8
       return `${import1}
 ${import2}
 ${import3}
-${outputs.image} = IM(io.imread(${inputs.path}, as_gray=True), 'numpy.gray_float64(0to1)')`;
+from skimage import img_as_float
+${outputs.image} = IM(img_as_float(io.imread(${inputs.path}, as_gray=True)), 'numpy.gray_float64(0to1)')`;
     }
   }
 };

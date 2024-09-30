@@ -5,7 +5,7 @@ export type HandleUsageType = HandleType;
 export interface IHandle {
   id: string;
   name: string;
-  type?: string;
+  type?: string | string[];
   displayLabel?: string;
   description?: string;
   widget?: { type: string; [key: string]: any };
