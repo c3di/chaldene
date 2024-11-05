@@ -107,8 +107,18 @@ export function Slider({
 }: INumberProps): JSX.Element {
   const [localValue, setLocalValue] = useState(value);
   const percentage = ((localValue - min) / (max - min)) * 100;
+
+  const handleValueChange = (newValue: number) => {
+    const clampedValue = Math.min(Math.max(newValue, min), max);
+    setLocalValue(clampedValue);
+    setValue?.(forWhom, clampedValue);
+  };
+
   return (
-    <div className="slider-container widget">
+    <div
+      className="slider-container widget"
+      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+    >
       <input
         className="nodrag"
         type="range"
@@ -119,29 +129,28 @@ export function Slider({
         onChange={e => {
           setLocalValue(parseFloat(e.target.value));
         }}
-        onMouseUp={e => {
-          setValue?.(forWhom, localValue);
+        onMouseUp={() => {
+          handleValueChange(localValue);
         }}
         style={{
+          flex: 1,
           background: `linear-gradient(to right, var(--vpl-blue-3) ${percentage}%, var(--vpl-blue-gray-4) ${percentage}%)`
         }}
       />
-      <div
-        className="slider-value"
-        style={{
-          position: 'absolute',
-          top: '50%',
-          right: '30px',
-          transform: 'translateY(-50%)',
-          fontSize: '12px',
-          textAlign: 'center',
-          whiteSpace: 'nowrap',
-          cursor: 'default',
-          pointerEvents: 'none'
+      <input
+        className="nodrag common-input-style"
+        type="number"
+        value={localValue}
+        min={min}
+        max={max}
+        step={step}
+        onChange={e => {
+          const newValue = parseFloat(e.target.value);
+          if (!Number.isNaN(newValue)) {
+            handleValueChange(newValue);
+          }
         }}
-      >
-        {localValue}
-      </div>
+      />
     </div>
   );
 }

@@ -61,6 +61,7 @@
         "@jupyterlab/apputils": "^4.3.5",
         "@jupyterlab/cells": "^4.2.5",
         "@jupyterlab/codeeditor": "^4.2.5",
+        "@jupyterlab/launcher": "^4.0.0",
         "@jupyterlab/nbformat": "^4.2.5",
         "@jupyterlab/notebook": "^4.2.5",
         "@jupyterlab/outputarea": "^4.2.5",
@@ -115,7 +116,8 @@
     },
     "jupyterlab": {
         "extension": true,
-        "outputDir": "chaldene/labextension"
+        "outputDir": "chaldene/labextension",
+        "schemaDir": "schema"
     },
     "eslintIgnore": [
         "node_modules",
