@@ -105,8 +105,10 @@ export function Slider({
   max = 100,
   step = 1
 }: INumberProps): JSX.Element {
-  const [localValue, setLocalValue] = useState(value);
-  const percentage = ((localValue - min) / (max - min)) * 100;
+  const [localValue, setLocalValue] = useState<number | ''>(value);
+  const percentage =
+    (((typeof localValue === 'number' ? localValue : 0) - min) / (max - min)) *
+    100;
 
   const handleValueChange = (newValue: number) => {
     const clampedValue = Math.min(Math.max(newValue, min), max);
@@ -115,14 +117,11 @@ export function Slider({
   };
 
   return (
-    <div
-      className="slider-container widget"
-      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-    >
+    <div className="slider-container widget">
       <input
         className="nodrag"
         type="range"
-        value={localValue}
+        value={typeof localValue === 'number' ? localValue : 0}
         min={min}
         max={max}
         step={step}
@@ -130,7 +129,9 @@ export function Slider({
           setLocalValue(parseFloat(e.target.value));
         }}
         onMouseUp={() => {
-          handleValueChange(localValue);
+          if (typeof localValue === 'number') {
+            handleValueChange(localValue);
+          }
         }}
         style={{
           flex: 1,
@@ -145,9 +146,19 @@ export function Slider({
         max={max}
         step={step}
         onChange={e => {
-          const newValue = parseFloat(e.target.value);
-          if (!Number.isNaN(newValue)) {
-            handleValueChange(newValue);
+          const newValue = e.target.value;
+          if (newValue === '') {
+            setLocalValue('');
+          } else {
+            const parsed = parseFloat(newValue);
+            if (!Number.isNaN(parsed)) {
+              handleValueChange(parsed);
+            }
+          }
+        }}
+        onBlur={() => {
+          if (localValue === '') {
+            handleValueChange(0);
           }
         }}
       />
@@ -164,22 +175,37 @@ export function NumberInput({
   max = Infinity,
   step
 }: INumberProps): JSX.Element {
-  const [localValue, setLocalValue] = useState(value);
+  const [localValue, setLocalValue] = useState<number | ''>(value);
   const debounceTimeout = useRef<number | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const inputValue = parseFloat(e.target.value);
-    const newValue = Number.isNaN(inputValue) ? defaultValue : inputValue;
-
-    setLocalValue(newValue > max ? max : newValue < min ? min : newValue);
-
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
+    const newValue = e.target.value;
+    if (newValue === '') {
+      setLocalValue('');
+      return;
     }
 
-    debounceTimeout.current = window.setTimeout(() => {
+    const parsed = parseFloat(newValue);
+    if (!Number.isNaN(parsed)) {
+      const clamped = Math.min(Math.max(parsed, min), max);
+      setLocalValue(clamped);
+
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+
+      debounceTimeout.current = window.setTimeout(() => {
+        setValue?.(forWhom, clamped);
+      }, 400);
+    }
+  };
+
+  const handleBlur = () => {
+    if (localValue === '') {
+      const newValue = defaultValue;
+      setLocalValue(newValue);
       setValue?.(forWhom, newValue);
-    }, 400);
+    }
   };
 
   useEffect(() => {
@@ -198,6 +224,7 @@ export function NumberInput({
       max={max}
       step={step}
       onChange={handleInputChange}
+      onBlur={handleBlur}
     />
   );
 }
