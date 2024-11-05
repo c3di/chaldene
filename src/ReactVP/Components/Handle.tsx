@@ -79,11 +79,14 @@ export function OutputHandle({
   );
 
   const showLabel = widget?.type !== 'ImageViewer';
+  const isImageViewer = widget?.type === 'ImageViewer';
 
   return (
     <div
       className="flex-container"
-      style={{ justifyContent: 'flex-end' }}
+      style={{
+        justifyContent: 'flex-end'
+      }}
       title={type ? `type: ${type}. ${description}` : `${description}`}
     >
       {Widget && (
@@ -91,6 +94,9 @@ export function OutputHandle({
           className={`widget-container ${
             !showLabel ? 'widget-container-no-label' : ''
           }`}
+          style={{
+            width: isImageViewer ? 'calc(100% - 25px)' : '100%'
+          }}
         >
           {Widget}
         </div>

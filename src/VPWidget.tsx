@@ -134,8 +134,11 @@ export class VPWidget extends ReactWidget {
     }
   }
 
-  updateInspection(id: string, imageData: string) {
-    this._context?.action('graph').updateInspection(id, imageData);
+  updateInspection(
+    id: string,
+    data: { imageUrl: string; dimensions: { width: number; height: number } }
+  ) {
+    this._context?.action('graph').updateInspection(id, data);
   }
 
   listenToInspectResult(currentKernel: any): void {
@@ -145,7 +148,11 @@ export class VPWidget extends ReactWidget {
         comm.onMsg = (msg: any) => {
           const id: string = msg.content.data.handle_id;
           const imageData = msg.content.data.image_data;
-          this?.updateInspection(id, `data:image/png;base64,${imageData}`);
+          const dimensions = msg.content.data.dimensions;
+          this?.updateInspection(id, {
+            imageUrl: `data:image/png;base64,${imageData}`,
+            dimensions: dimensions
+          });
         };
       }
     );

@@ -14,11 +14,17 @@ def ${captureImageFunctionName}(image, handleIdentifier):
     buf = PythonIO.BytesIO()
     image.save(buf, format="PNG")
     buf.seek(0)
+     # Get image dimensions
+    width, height = image.size
     # Encode the buffer contents as base64
     image_base64 = base64.b64encode(buf.read()).decode("utf-8")
     buf.close()
     # image_base64 now contains the base64-encoded grayscale image
-    comm.send({"image_data": image_base64, "handle_id": handleIdentifier})
+    comm.send({
+        "image_data": image_base64, 
+        "handle_id": handleIdentifier,
+        "dimensions": {"width": width, "height": height}
+    })
 `;
 
 export function captureImageCode(imageVar: string): string {

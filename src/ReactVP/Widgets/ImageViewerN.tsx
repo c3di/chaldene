@@ -2,8 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
 import { WidgetProps } from './Widget';
 
-export interface IImageViewerProps extends WidgetProps {
-  value: string; // base64 image
+interface IImageViewerProps extends WidgetProps {
+  value?: {
+    imageUrl: string;
+    dimensions?: {
+      width: number;
+      height: number;
+    };
+  };
 }
 
 const getPointerCoordinates = (e: Event) => {
@@ -18,7 +24,7 @@ const getPointerCoordinates = (e: Event) => {
 export default function ImageViewer({
   value,
   editorContext
-}: WidgetProps): JSX.Element {
+}: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const canvas = useRef<fabric.Canvas | null>(null);
@@ -110,11 +116,11 @@ export default function ImageViewer({
   }, []);
 
   useEffect(() => {
-    if (!canvas.current) {
+    if (!canvas.current || !value?.imageUrl) {
       return;
     }
     canvas.current.clear();
-    fabric.FabricImage.fromURL(value)
+    fabric.FabricImage.fromURL(value.imageUrl)
       .then((img: fabric.Image) => {
         if (canvas.current?.backgroundImage === img) {
           return;
@@ -124,7 +130,7 @@ export default function ImageViewer({
       .catch(err => {
         console.error('Failed to load image', err);
       });
-  }, [value]);
+  }, [value?.imageUrl]);
 
   useEffect(() => {
     if (!canvas.current || !image) {
@@ -162,19 +168,37 @@ export default function ImageViewer({
   }, [editorContext?.getImageViewTransform(), image]);
 
   return (
-    <div
-      ref={canvasElParent}
-      className={'nodrag nowheel widget common-input-style'}
-      style={{
-        width: '100%',
-        height: '100%',
-        padding: 0
-      }}
-    >
-      <canvas
-        ref={canvasElement}
-        className={`nodrag nowheel widget imageview ${isPanning.current ? 'grabbing' : 'grab'}`}
-      />
+    <div>
+      <div
+        ref={canvasElParent}
+        className={'nodrag nowheel widget common-input-style'}
+        style={{
+          width: '100%',
+          height: '100%',
+          padding: 0
+        }}
+      >
+        <canvas
+          ref={canvasElement}
+          className={`nodrag nowheel widget imageview ${isPanning.current ? 'grabbing' : 'grab'}`}
+        />
+      </div>
+      <div
+        className="image-info"
+        style={{
+          marginBottom: '0px',
+          textAlign: 'center',
+          fontSize: 'var(--vpl-ui-font-size1)',
+          fontFamily: 'var(--vpl-ui-font-family)',
+          color: 'var(--vpl-ui-font-color2)'
+        }}
+      >
+        {value?.dimensions && (
+          <span>
+            {value.dimensions.width} x {value.dimensions.height}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
