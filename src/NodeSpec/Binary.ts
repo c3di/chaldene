@@ -14,29 +14,20 @@ export const thresholdNodeSpec: computeNodeSpec = {
       description: 'The input image for thresholding.'
     },
     {
-      name: 'upper',
-      displayLabel: 'upper',
-      description: 'The lower bound for the threshold.',
-      defaultValue: 0.8,
+      name: 'range',
+      displayLabel: 'range',
+      description: 'The threshold bounds for binarization.',
+      defaultValue: { upper: 0.8, lower: 0.2 },
       widget: {
-        type: 'Number',
-        min: 0,
-        max: 1,
-        step: 0.01
-      }
-    },
-    {
-      name: 'lower',
-      displayLabel: 'lower',
-      description: 'The upper bound for the threshold.',
-      defaultValue: 0.2,
-      widget: {
-        type: 'Number',
-        min: 0,
-        max: 1,
-        step: 0.01
-      }
-    }
+          type: 'HistogramRange',
+          min: 0,
+          max: 1,
+          image: {
+            source: 'input',
+            inputName: 'image',
+          },
+        },
+      },
   ],
   outputs: [
     {

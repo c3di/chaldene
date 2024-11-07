@@ -3,6 +3,7 @@ import BoundingBoxInput from './BoundingBoxInput';
 import CanvasImage from './CanvasImage';
 import ImageCropper from './ImageCropper';
 import ImageViewer from './ImageViewerN';
+import HistogramRangeWidget from './HistogramRangeWidget';
 
 import {
   Text,
@@ -39,3 +40,4 @@ registerWidget('CanvasImage', CanvasImage);
 registerWidget('ImageCropper', ImageCropper);
 registerWidget('ImageViewer', ImageViewer);
 registerWidget('FileInputFromServer', FileInputFromServer, 'string');
+registerWidget('HistogramRange', HistogramRangeWidget, 'range');

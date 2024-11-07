@@ -121,3 +121,72 @@ input[type="range"]::-ms-thumb {
 .file-input-button svg {
   color: #718096;
 }
+
+#range-slider {
+  margin: auto;
+  overflow: hidden;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+#range-slider .range-slider__thumb {
+  width: 5px;
+  height: 100%;
+  border-radius: 4px;
+  background-color: var(--vpl-blue-0);
+  background-image: none;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+  cursor: ew-resize;
+}
+
+
+#range-slider .range-slider__range {
+  border-radius: 6px;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.range-slider {
+  height: 100% !important;
+  background: transparent !important;
+}
+
+.histogram-values {
+  position: absolute;
+  top: -30px;
+  width: 100%;
+  pointer-events: auto;
+}
+
+.value-mark {
+  position: absolute;
+  background-color: #fff;
+  color: #333;
+  padding: 4px 2px;
+  border-radius: 4px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  width: 35px;
+  text-align: center;
+  z-index: 1;
+  cursor: text;
+}
+
+/* Remove spinner buttons from number input */
+.value-mark::-webkit-inner-spin-button,
+.value-mark::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.value-mark[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* Style focus state */
+.value-mark:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
