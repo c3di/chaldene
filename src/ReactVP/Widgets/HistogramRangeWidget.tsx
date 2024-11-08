@@ -6,50 +6,19 @@ import 'react-range-slider-input/dist/style.css';
 import { type WidgetProps } from './Widget';
 
 interface IHistogramRangeWidgetProps extends WidgetProps {
-  value: { upper: number; lower: number };
-  image?: {
-    imageUrl: string;
-    dimensions?: {
-      width: number;
-      height: number;
-    };
-    histogram?: number[];
-  };
+  value: { upper: number; lower: number; histogram?: number[] };
   min?: number;
   max?: number;
+  step?: number;
 }
-
-const generateDummyHistogram = (): number[] => {
-  const histogram = new Array(256).fill(0);
-
-  // Simulate RGB peaks at different positions
-  const peaks = [
-    { pos: 64, strength: 0.8 }, // R peak
-    { pos: 128, strength: 1.0 }, // G peak
-    { pos: 192, strength: 0.6 }, // B peak
-  ];
-
-  for (let i = 0; i < 256; i++) {
-    let value = 0;
-    peaks.forEach((peak) => {
-      value += peak.strength * Math.exp(-Math.pow(i - peak.pos, 2) / 1000);
-    });
-    value += Math.random() * 0.1;
-    histogram[i] = value;
-  }
-
-  // Normalize values to be between 0 and 1
-  const max = Math.max(...histogram);
-  return histogram.map((v) => v / max);
-};
 
 export default function HistogramRangeWidget({
   value,
   setValue,
   forWhom,
-  image,
   min = 0,
   max = 1,
+  step = 0.01
 }: IHistogramRangeWidgetProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [histogram, setHistogram] = useState<number[]>([]);
@@ -57,12 +26,20 @@ export default function HistogramRangeWidget({
   const [upperInput, setUpperInput] = useState(value.upper.toFixed(2));
 
   useEffect(() => {
-    if (image?.histogram) {
-      setHistogram(image.histogram);
-    } else {
-      setHistogram(generateDummyHistogram());
+    if (!value.histogram && setValue) {
+      setValue(forWhom, {
+        lower: value.lower,
+        upper: value.upper,
+        histogram: []
+      });
     }
-  }, [image?.histogram]);
+  }, []);
+
+  useEffect(() => {
+    if (value?.histogram) {
+      setHistogram(value.histogram);
+    }
+  }, [value?.histogram]);
 
   useEffect(() => {
     setLowerInput(value.lower.toFixed(2));
@@ -139,7 +116,10 @@ export default function HistogramRangeWidget({
       setValue(forWhom, { ...value, lower: newValue });
       setLowerInput(newValue.toFixed(2));
     } else if (type === 'upper' && newValue >= value.lower && setValue) {
-      setValue(forWhom, { ...value, upper: newValue });
+      setValue(forWhom, { 
+        ...value,
+        upper: newValue
+      });
       setUpperInput(newValue.toFixed(2));
     } else {
       if (type === 'lower') {
@@ -167,6 +147,16 @@ export default function HistogramRangeWidget({
       setUpperInput(value.upper.toFixed(2));
     }
   }, [value.lower, value.upper]);
+
+  const handleRangeChange = (newValue: number[]) => {
+    if (!setValue || newValue.length !== 2) return;
+    
+    setValue(forWhom, {
+      ...value,
+      lower: newValue[0],
+      upper: newValue[1]
+    });
+  };
 
   return (
     <div style={{ marginTop: '30px' }}>
@@ -205,14 +195,8 @@ export default function HistogramRangeWidget({
             value={[value.lower, value.upper]}
             min={min}
             max={max}
-            step={0.01}
-            onInput={(newValue: number[]) => {
-              if (!setValue || newValue.length !== 2) return;
-              setValue(forWhom, {
-                lower: newValue[0],
-                upper: newValue[1],
-              });
-            }}
+            step={step}
+            onInput={handleRangeChange}
             style={{
               height: '100%',
               width: '100%',

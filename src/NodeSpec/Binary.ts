@@ -15,19 +15,17 @@ export const thresholdNodeSpec: computeNodeSpec = {
     },
     {
       name: 'range',
+      type: 'range',
       displayLabel: 'range',
       description: 'The threshold bounds for binarization.',
       defaultValue: { upper: 0.8, lower: 0.2 },
       widget: {
-          type: 'HistogramRange',
-          min: 0,
-          max: 1,
-          image: {
-            source: 'input',
-            inputName: 'image',
-          },
-        },
-      },
+        type: 'HistogramRange',
+        min: 0,
+        max: 1,
+        step: 0.01
+      }
+    }
   ],
   outputs: [
     {
@@ -45,7 +43,8 @@ export const thresholdNodeSpec: computeNodeSpec = {
       return `import numpy as np
 from im2im import Image as IM
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
-binarized_image = np.where((in_im.raw_image >= ${inputs.lower}) & (in_im.raw_image <= ${inputs.upper}), 1.0, 0.0)
+range_values = ${inputs.range}
+binarized_image = np.where((in_im.raw_image >= range_values['lower']) & (in_im.raw_image <= range_values['upper']), 1.0, 0.0)
 ${outputs.image} = IM(binarized_image, in_im.metadata)`;
     }
   }

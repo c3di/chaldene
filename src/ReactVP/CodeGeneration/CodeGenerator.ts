@@ -12,6 +12,10 @@ import {
   captureImageCode,
   ImageCaptureDependencies
 } from './CaptureImageInJupyterlab';
+import {
+  captureHistogramCode,
+  HistogramCaptureDependencies
+} from './CaptureHistogramInJupyterlab';
 
 export default class CodeGenerator {
   protected name: string;
@@ -57,18 +61,39 @@ export default class CodeGenerator {
     });
 
     const imageInspections: string[] = [];
+    const histogramInspections: Array<{ imageVar: string; targetHandle: string }> = [];
 
     const outputValues: Record<string, string> = {};
     outputs?.forEach(output => {
-      outputValues[output.name] = uniqueHandleName(editorID, id, output.id);
+      const outputVar = uniqueHandleName(editorID, id, output.id);
+      outputValues[output.name] = outputVar;
+      
       if (isImageType(output.type) || output.widget?.type === 'ImageViewer') {
-        imageInspections.push(outputValues[output.name]);
+        imageInspections.push(outputVar);
+      }
+
+
+      const connectedHistogramWidgets = inputs?.filter(
+        input => input.widget?.type === 'HistogramRange'
+      ) ?? [];
+      
+      if (connectedHistogramWidgets.length > 0) {
+        connectedHistogramWidgets.forEach(histWidget => {
+          histogramInspections.push({
+            imageVar: outputVar,
+            targetHandle: uniqueHandleName(editorID, id, histWidget.id)
+          });
+        });
       }
     });
 
     let code = generator(inputValues, outputValues);
     for (const inspection of imageInspections) {
       code += `\n${captureImageCode(inspection)}`;
+    }
+    
+    for (const { imageVar, targetHandle } of histogramInspections) {
+      code += `\n${captureHistogramCode(imageVar, targetHandle)}`;
     }
 
     return code;
@@ -84,6 +109,6 @@ export default class CodeGenerator {
       const incomingEdges = edges.filter(e => e.target === node.id);
       return this.generateNodeCode(editorID, node, incomingEdges);
     });
-    return ImageCaptureDependencies + '\n' + code.join('\n');
+    return ImageCaptureDependencies + '\n' + HistogramCaptureDependencies + '\n' + code.join('\n');
   }
 }
