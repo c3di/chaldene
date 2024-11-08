@@ -134,25 +134,19 @@ export class VPWidget extends ReactWidget {
     }
   }
 
-  updateInspection(
-    id: string,
-    data: { imageUrl: string; dimensions: { width: number; height: number } }
-  ) {
+  updateInspection(id: string, data: any) {
     this._context?.action('graph').updateInspection(id, data);
   }
 
   listenToInspectResult(currentKernel: any): void {
     currentKernel?.registerCommTarget(
-      'capture_image',
+      'inspection',
       (comm: any, msg: any) => {
         comm.onMsg = (msg: any) => {
-          const id: string = msg.content.data.handle_id;
-          const imageData = msg.content.data.image_data;
-          const dimensions = msg.content.data.dimensions;
-          this?.updateInspection(id, {
-            imageUrl: `data:image/png;base64,${imageData}`,
-            dimensions: dimensions
-          });
+          const data = msg.content.data;
+          if (data.handle_id) {
+            this?.updateInspection(data.handle_id, data);
+          }
         };
       }
     );

@@ -7,7 +7,7 @@ from PIL import Image
 from comm import create_comm
 from im2im import im2im
 
-comm = create_comm(target_name='capture_image')
+comm = create_comm(target_name='inspection')
 
 def ${captureImageFunctionName}(image, handleIdentifier):
     # Save the image to a BytesIO object
@@ -21,7 +21,7 @@ def ${captureImageFunctionName}(image, handleIdentifier):
     buf.close()
     # image_base64 now contains the base64-encoded grayscale image
     comm.send({
-        "image_data": image_base64, 
+        "imageUrl": f"data:image/png;base64,{image_base64}",
         "handle_id": handleIdentifier,
         "dimensions": {"width": width, "height": height}
     })
