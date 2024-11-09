@@ -4,25 +4,27 @@ export const HistogramCaptureDependencies = `
 import numpy as np
 from PIL import Image
 from comm import create_comm
-from im2im import im2im
 
 comm = create_comm(target_name='inspection')
 
 def ${captureHistogramFunctionName}(image, handleIdentifier):
-    # Convert to PIL image
-    pil_image = im2im(image, 'pil.rgb_gray').raw_image
+    # If image is an IM object, get its raw_image
+    if hasattr(image, 'raw_image'):
+        image = image.raw_image
     
-    # Convert to grayscale if not already
-    if pil_image.mode != 'L':
-        pil_image = pil_image.convert('L')
+    # Convert numpy array to uint8 if it's float
+    if isinstance(image, np.ndarray):
+        if image.dtype == np.float64 or image.dtype == np.float32:
+            image = (image * 255).astype(np.uint8)
+        image = Image.fromarray(image)
     
     # Get histogram data
-    hist = pil_image.histogram()
+    hist = image.histogram()
     
     # Convert to numpy array and normalize
     hist = np.array(hist, dtype=np.float64)
     hist = hist / np.max(hist) if np.max(hist) > 0 else hist
-    
+
     # Send histogram data through comm
     comm.send({
         "handle_id": handleIdentifier,

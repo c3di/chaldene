@@ -139,17 +139,14 @@ export class VPWidget extends ReactWidget {
   }
 
   listenToInspectResult(currentKernel: any): void {
-    currentKernel?.registerCommTarget(
-      'inspection',
-      (comm: any, msg: any) => {
-        comm.onMsg = (msg: any) => {
-          const data = msg.content.data;
-          if (data.handle_id) {
-            this?.updateInspection(data.handle_id, data);
-          }
-        };
-      }
-    );
+    currentKernel?.registerCommTarget('inspection', (comm: any, msg: any) => {
+      comm.onMsg = (msg: any) => {
+        const data = msg.content.data;
+        if (data.handle_id) {
+          this?.updateInspection(data.handle_id, data);
+        }
+      };
+    });
   }
 
   run(): void {

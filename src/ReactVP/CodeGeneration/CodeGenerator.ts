@@ -50,51 +50,65 @@ export default class CodeGenerator {
     const { inputs, outputs } = data;
 
     const inputValues: Record<string, string> = {};
+    const histogramInspections: Array<{
+      imageVar: string;
+      targetHandle: string;
+    }> = [];
+    const imageInspections: string[] = [];
+
+    let imageInputVar: string | null = null; // Store the image input variable
+
+    // Process inputs and collect histogram inspections
     inputs?.forEach(input => {
       const edge = incomingEdges.find(e => e.targetHandle === input.id);
+
       inputValues[input.name] = edge
         ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
         : this.widgetValueToCodeLiteral(
             this.widgetsRegistry.getOutputType(input.widget?.type),
             input.defaultValue
           );
-    });
 
-    const imageInspections: string[] = [];
-    const histogramInspections: Array<{ imageVar: string; targetHandle: string }> = [];
+      // If this is the image input, store its variable name
+      if (input.name === 'image' && edge) {
+        imageInputVar = inputValues[input.name];
+      }
+
+      // If this is a HistogramRange widget and we have an image input, use that
+      if (input.widget?.type === 'HistogramRange' && imageInputVar) {
+        histogramInspections.push({
+          imageVar: imageInputVar,
+          targetHandle: uniqueHandleName(editorID, id, input.id)
+        });
+      }
+    });
 
     const outputValues: Record<string, string> = {};
     outputs?.forEach(output => {
       const outputVar = uniqueHandleName(editorID, id, output.id);
       outputValues[output.name] = outputVar;
-      
+
       if (isImageType(output.type) || output.widget?.type === 'ImageViewer') {
         imageInspections.push(outputVar);
       }
-
-
-      const connectedHistogramWidgets = inputs?.filter(
-        input => input.widget?.type === 'HistogramRange'
-      ) ?? [];
-      
-      if (connectedHistogramWidgets.length > 0) {
-        connectedHistogramWidgets.forEach(histWidget => {
-          histogramInspections.push({
-            imageVar: outputVar,
-            targetHandle: uniqueHandleName(editorID, id, histWidget.id)
-          });
-        });
-      }
     });
 
-    let code = generator(inputValues, outputValues);
-    for (const inspection of imageInspections) {
+    let code = '';
+
+    // Histogram captures
+    if (histogramInspections.length > 0) {
+      histogramInspections.forEach(({ imageVar, targetHandle }) => {
+        code += `${captureHistogramCode(imageVar, targetHandle)}\n`;
+      });
+    }
+
+    // Main node code
+    code += generator(inputValues, outputValues);
+
+    // Image captures
+    imageInspections.forEach(inspection => {
       code += `\n${captureImageCode(inspection)}`;
-    }
-    
-    for (const { imageVar, targetHandle } of histogramInspections) {
-      code += `\n${captureHistogramCode(imageVar, targetHandle)}`;
-    }
+    });
 
     return code;
   }
@@ -105,10 +119,19 @@ export default class CodeGenerator {
   public codeFromGraph(editorID: string, graph: Graph): string {
     const nodes = topologicalSortDAG(graph);
     const edges = graph.edges;
+
     const code = nodes.map(node => {
       const incomingEdges = edges.filter(e => e.target === node.id);
       return this.generateNodeCode(editorID, node, incomingEdges);
     });
-    return ImageCaptureDependencies + '\n' + HistogramCaptureDependencies + '\n' + code.join('\n');
+    const finalCode =
+      ImageCaptureDependencies +
+      '\n' +
+      HistogramCaptureDependencies +
+      '\n' +
+      code.join('\n');
+
+    console.log('Final generated code:', finalCode); // Debug print
+    return finalCode;
   }
 }

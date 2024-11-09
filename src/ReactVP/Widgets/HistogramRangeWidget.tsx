@@ -116,7 +116,7 @@ export default function HistogramRangeWidget({
       setValue(forWhom, { ...value, lower: newValue });
       setLowerInput(newValue.toFixed(2));
     } else if (type === 'upper' && newValue >= value.lower && setValue) {
-      setValue(forWhom, { 
+      setValue(forWhom, {
         ...value,
         upper: newValue
       });
@@ -149,8 +149,10 @@ export default function HistogramRangeWidget({
   }, [value.lower, value.upper]);
 
   const handleRangeChange = (newValue: number[]) => {
-    if (!setValue || newValue.length !== 2) return;
-    
+    if (!setValue || newValue.length !== 2) {
+      return;
+    }
+
     setValue(forWhom, {
       ...value,
       lower: newValue[0],
@@ -183,7 +185,7 @@ export default function HistogramRangeWidget({
             height: '100px',
             backgroundColor: 'var(--vpl-blue-gray-6)',
             borderRadius: 'var(--vpl-border-radius)',
-            marginBottom: '8px',
+            marginBottom: '8px'
           }}
         />
 
@@ -199,7 +201,7 @@ export default function HistogramRangeWidget({
             onInput={handleRangeChange}
             style={{
               height: '100%',
-              width: '100%',
+              width: '100%'
             }}
           />
         </div>
@@ -209,22 +211,22 @@ export default function HistogramRangeWidget({
             className="value-mark"
             style={{
               left: `${value.lower * 100}%`,
-              transform: 'translateX(-50%)',
+              transform: 'translateX(-50%)'
             }}
             value={lowerInput}
-            onChange={(e) => {
+            onChange={e => {
               handleInputChange('lower', e.target.value);
             }}
             onBlur={() => {
               handleInputBlur('lower');
             }}
-            onKeyDown={(e) => {
+            onKeyDown={e => {
               handleKeyDown(e, 'lower');
             }}
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
             }}
-            onFocus={(e) => {
+            onFocus={e => {
               e.target.select();
             }}
           />
@@ -233,22 +235,22 @@ export default function HistogramRangeWidget({
             className="value-mark"
             style={{
               left: `${value.upper * 100}%`,
-              transform: 'translateX(-50%)',
+              transform: 'translateX(-50%)'
             }}
             value={upperInput}
-            onChange={(e) => {
+            onChange={e => {
               handleInputChange('upper', e.target.value);
             }}
             onBlur={() => {
               handleInputBlur('upper');
             }}
-            onKeyDown={(e) => {
+            onKeyDown={e => {
               handleKeyDown(e, 'upper');
             }}
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
             }}
-            onFocus={(e) => {
+            onFocus={e => {
               e.target.select();
             }}
           />

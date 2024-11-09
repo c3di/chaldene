@@ -668,41 +668,48 @@ export default class GraphActions extends StateActions {
    */
   public updateInspection = (whichVar: string, value: any): void => {
     const [, nodeID, id] = whichVar.split('_');
-    this.stateAction((currentGraph: Graph) => ({
-      ...currentGraph,
-      nodes: currentGraph.nodes.map(n =>
-        n.id === nodeID
-          ? {
-              ...n,
-              data: {
-                ...n.data,
-                inputs: n.data.inputs?.map((item: any) =>
-                  item.id === id
-                    ? {
-                        ...item,
-                        widget: {
-                          ...item.widget,
-                          value
-                        }
+
+    this.stateAction((currentGraph: Graph) => {
+      const updatedGraph = {
+        ...currentGraph,
+        nodes: currentGraph.nodes.map(n => {
+          if (n.id !== nodeID) {
+            return n;
+          }
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              inputs: n.data.inputs?.map((item: any) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      widget: {
+                        ...item.widget,
+                        value
                       }
-                    : item
-                ),
-                outputs: n.data.outputs?.map((item: any) =>
-                  item.id === id
-                    ? {
-                        ...item,
-                        widget: {
-                          ...item.widget,
-                          value
-                        }
+                    }
+                  : item
+              ),
+              outputs: n.data.outputs?.map((item: any) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      widget: {
+                        ...item.widget,
+                        value
                       }
-                    : item
-                )
-              }
+                    }
+                  : item
+              )
             }
-          : n
-      )
-    }));
+          };
+        })
+      };
+
+      console.log('Graph after update:', updatedGraph);
+      return updatedGraph;
+    });
   };
 
   public findNotReadyNodesForExecute = (): Record<string, string[]> => {
