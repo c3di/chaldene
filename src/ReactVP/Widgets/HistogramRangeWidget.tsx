@@ -6,7 +6,14 @@ import 'react-range-slider-input/dist/style.css';
 import { type WidgetProps } from './Widget';
 
 interface IHistogramRangeWidgetProps extends WidgetProps {
-  value: { upper: number; lower: number; histogram?: number[] };
+  value: {
+    upper: number;
+    lower: number;
+    histogram?: {
+      type: 'rgb' | 'grayscale';
+      data: number[][] | number[];
+    };
+  };
   min?: number;
   max?: number;
   step?: number;
@@ -21,25 +28,40 @@ export default function HistogramRangeWidget({
   step = 0.01
 }: IHistogramRangeWidgetProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [histogram, setHistogram] = useState<number[]>([]);
+  const [histogram, setHistogram] = useState<{
+    type: 'rgb' | 'grayscale';
+    data: number[][] | number[];
+  }>({ type: 'rgb', data: [] });
   const [lowerInput, setLowerInput] = useState(value.lower.toFixed(2));
   const [upperInput, setUpperInput] = useState(value.upper.toFixed(2));
 
   useEffect(() => {
-    if (!value.histogram && setValue) {
+    const histogramData =
+      value.histogram || (value as any)?.widget?.value?.histogram;
+
+    if (!histogramData && setValue) {
+      console.log('[HistogramRange] Initializing empty histogram');
       setValue(forWhom, {
         lower: value.lower,
         upper: value.upper,
-        histogram: []
+        histogram: {
+          type: 'grayscale',
+          data: []
+        }
       });
+    } else if (histogramData) {
+      console.log('[HistogramRange] Histogram updated:', {
+        type: histogramData.type,
+        dataLength: Array.isArray(histogramData.data)
+          ? histogramData.data.length
+          : 0,
+        sample: Array.isArray(histogramData.data)
+          ? histogramData.data.slice(0, 3)
+          : []
+      });
+      setHistogram(histogramData);
     }
-  }, []);
-
-  useEffect(() => {
-    if (value?.histogram) {
-      setHistogram(value.histogram);
-    }
-  }, [value?.histogram]);
+  }, [value, setValue, forWhom]);
 
   useEffect(() => {
     setLowerInput(value.lower.toFixed(2));
@@ -48,12 +70,34 @@ export default function HistogramRangeWidget({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || histogram.length === 0) {
+    if (
+      !canvas ||
+      !histogram?.data ||
+      (Array.isArray(histogram.data) && histogram.data.length === 0)
+    ) {
+      console.log('[HistogramRange] Skipping render - invalid data:', {
+        hasCanvas: !!canvas,
+        hasHistogram: !!histogram,
+        hasData: !!histogram?.data,
+        dataLength: histogram?.data
+          ? Array.isArray(histogram.data)
+            ? histogram.data.length
+            : 0
+          : 0
+      });
       return;
     }
 
+    console.log('[HistogramRange] Rendering histogram:', {
+      type: histogram.type,
+      width: canvas.width,
+      height: canvas.height,
+      range: [value.lower, value.upper]
+    });
+
     const ctx = canvas.getContext('2d');
     if (!ctx) {
+      console.warn('[HistogramRange] Failed to get canvas context');
       return;
     }
 
@@ -62,24 +106,66 @@ export default function HistogramRangeWidget({
 
     ctx.clearRect(0, 0, width, height);
 
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.3)';
-    histogram.forEach((value, i) => {
-      const x = (i / 255) * width;
-      const h = value * height;
-      ctx.fillRect(x, height - h, width / 255, h);
-    });
+    if (histogram.type === 'rgb') {
+      const channels = histogram.data as number[][];
+      const colors = [
+        'rgba(255, 0, 0, 0.3)',
+        'rgba(0, 255, 0, 0.3)',
+        'rgba(0, 0, 255, 0.3)'
+      ];
 
-    ctx.fillStyle = 'rgba(64, 128, 255, 0.3)';
-    const lowerX = value.lower * width;
-    const upperX = value.upper * width;
-    histogram.forEach((value, i) => {
-      const x = (i / 255) * width;
-      if (x >= lowerX && x <= upperX) {
+      channels.forEach((channel, channelIndex) => {
+        ctx.fillStyle = colors[channelIndex];
+        channel.forEach((value, i) => {
+          const x = (i / 255) * width;
+          const h = value * height;
+          ctx.fillRect(x, height - h, width / 255, h);
+        });
+      });
+    } else {
+      const grayData = histogram.data as number[];
+      ctx.fillStyle = 'rgba(128, 128, 128, 0.3)';
+      grayData.forEach((value, i) => {
+        const x = (i / 255) * width;
         const h = value * height;
         ctx.fillRect(x, height - h, width / 255, h);
-      }
-    });
-  }, [histogram, value]);
+      });
+    }
+
+    // Draw selected range
+    const lowerX = value.lower * width;
+    const upperX = value.upper * width;
+
+    if (histogram.type === 'rgb') {
+      const channels = histogram.data as number[][];
+      const colors = [
+        'rgba(255, 0, 0, 0.5)',
+        'rgba(0, 255, 0, 0.5)',
+        'rgba(0, 0, 255, 0.5)'
+      ];
+
+      channels.forEach((channel, channelIndex) => {
+        ctx.fillStyle = colors[channelIndex];
+        channel.forEach((value, i) => {
+          const x = (i / 255) * width;
+          if (x >= lowerX && x <= upperX) {
+            const h = value * height;
+            ctx.fillRect(x, height - h, width / 255, h);
+          }
+        });
+      });
+    } else {
+      const grayData = histogram.data as number[];
+      ctx.fillStyle = 'rgba(64, 128, 255, 0.5)';
+      grayData.forEach((value, i) => {
+        const x = (i / 255) * width;
+        if (x >= lowerX && x <= upperX) {
+          const h = value * height;
+          ctx.fillRect(x, height - h, width / 255, h);
+        }
+      });
+    }
+  }, [histogram, value.lower, value.upper]);
 
   const stopPropagation = (
     e: React.MouseEvent | React.TouchEvent | React.PointerEvent

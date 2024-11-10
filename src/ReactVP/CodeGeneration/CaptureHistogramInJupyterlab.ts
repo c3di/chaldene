@@ -28,7 +28,10 @@ def ${captureHistogramFunctionName}(image, handleIdentifier):
     # Send histogram data through comm
     comm.send({
         "handle_id": handleIdentifier,
-        "histogram": hist.tolist()
+        "histogram": {
+            "type": "grayscale",
+            "data": hist.tolist()
+        }
     })
 `;
 
