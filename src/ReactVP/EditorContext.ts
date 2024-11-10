@@ -148,7 +148,6 @@ export default class EditorContext {
    * @param identifier: string - editorID_nodeID_handleID
    */
   public updateInspection = (handleID: string, value: any): void => {
-    console.log('updateInspection', handleID, value);
     this.action('graph').updateInspection(handleID, value);
   };
 

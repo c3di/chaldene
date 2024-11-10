@@ -103,7 +103,6 @@ export default function ImageViewer({
       canvas.current.zoomToPoint(deltaPoint, zoom);
       opt.e.preventDefault();
       opt.e.stopPropagation();
-      console.log('zoom', zoom);
       updateGlobalTransform();
     });
 
