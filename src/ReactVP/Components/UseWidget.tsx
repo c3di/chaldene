@@ -16,20 +16,14 @@ export default function useWidget(
       return null;
     }
 
-    const widgetValue = widget?.value?.histogram
-      ? {
-          ...defaultValue,
-          histogram: widget.value.histogram
-        }
-      : defaultValue;
-
     const WidgetComponent =
       editorContext?.widgetRegistry?.get(type) ?? NotFoundWidget;
 
     const widgetProps = {
       ...widget,
       forWhom: identifier,
-      value: widgetValue, // Use the combined value
+      value: defaultValue,
+      widgetValue: widget?.value,
       setValue: (identifier?: Identifier, value?: any) => {
         editorContext
           ?.action('graph')
@@ -45,7 +39,6 @@ export default function useWidget(
     editorContext,
     identifier,
     forWhichCategory,
-    label,
-    widget?.value?.histogram
+    label
   ]);
 }

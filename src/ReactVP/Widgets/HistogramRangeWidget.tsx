@@ -9,6 +9,8 @@ interface IHistogramRangeWidgetProps extends WidgetProps {
   value: {
     upper: number;
     lower: number;
+  };
+  widgetValue?: {
     histogram?: {
       type: 'rgb' | 'grayscale';
       data: number[][] | number[];
@@ -21,6 +23,7 @@ interface IHistogramRangeWidgetProps extends WidgetProps {
 
 export default function HistogramRangeWidget({
   value,
+  widgetValue,
   setValue,
   forWhom,
   min = 0,
@@ -36,14 +39,12 @@ export default function HistogramRangeWidget({
   const [upperInput, setUpperInput] = useState(value.upper.toFixed(2));
 
   useEffect(() => {
-    const histogramData =
-      value.histogram || (value as any)?.widget?.value?.histogram;
+    const histogramData = widgetValue?.histogram;
 
     if (!histogramData && setValue) {
       console.log('[HistogramRange] Initializing empty histogram');
       setValue(forWhom, {
-        lower: value.lower,
-        upper: value.upper,
+        ...value,
         histogram: {
           type: 'grayscale',
           data: []
@@ -61,7 +62,7 @@ export default function HistogramRangeWidget({
       });
       setHistogram(histogramData);
     }
-  }, [value, setValue, forWhom]);
+  }, [value, widgetValue, setValue, forWhom]);
 
   useEffect(() => {
     setLowerInput(value.lower.toFixed(2));

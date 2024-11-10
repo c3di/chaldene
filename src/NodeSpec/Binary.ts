@@ -18,7 +18,7 @@ export const thresholdNodeSpec: computeNodeSpec = {
       type: 'range',
       displayLabel: 'range',
       description: 'The threshold bounds for binarization.',
-      defaultValue: { upper: 0.8, lower: 0.2, histogram: [] },
+      defaultValue: { upper: 0.8, lower: 0.2 },
       widget: {
         type: 'HistogramRange',
         min: 0,
