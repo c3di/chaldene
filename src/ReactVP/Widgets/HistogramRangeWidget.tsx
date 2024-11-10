@@ -10,11 +10,9 @@ interface IHistogramRangeWidgetProps extends WidgetProps {
     upper: number;
     lower: number;
   };
-  widgetValue?: {
-    histogram?: {
-      type: 'rgb' | 'grayscale';
-      data: number[][] | number[];
-    };
+  histogram?: {
+    type: 'rgb' | 'grayscale';
+    data: number[][] | number[];
   };
   min?: number;
   max?: number;
@@ -23,7 +21,7 @@ interface IHistogramRangeWidgetProps extends WidgetProps {
 
 export default function HistogramRangeWidget({
   value,
-  widgetValue,
+  histogram,
   setValue,
   forWhom,
   min = 0,
@@ -31,17 +29,11 @@ export default function HistogramRangeWidget({
   step = 0.01
 }: IHistogramRangeWidgetProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [histogram, setHistogram] = useState<{
-    type: 'rgb' | 'grayscale';
-    data: number[][] | number[];
-  }>({ type: 'rgb', data: [] });
   const [lowerInput, setLowerInput] = useState(value.lower.toFixed(2));
   const [upperInput, setUpperInput] = useState(value.upper.toFixed(2));
 
   useEffect(() => {
-    const histogramData = widgetValue?.histogram;
-
-    if (!histogramData && setValue) {
+    if (!histogram && setValue) {
       console.log('[HistogramRange] Initializing empty histogram');
       setValue(forWhom, {
         ...value,
@@ -50,24 +42,8 @@ export default function HistogramRangeWidget({
           data: []
         }
       });
-    } else if (histogramData) {
-      console.log('[HistogramRange] Histogram updated:', {
-        type: histogramData.type,
-        dataLength: Array.isArray(histogramData.data)
-          ? histogramData.data.length
-          : 0,
-        sample: Array.isArray(histogramData.data)
-          ? histogramData.data.slice(0, 3)
-          : []
-      });
-      setHistogram(histogramData);
     }
-  }, [value, widgetValue, setValue, forWhom]);
-
-  useEffect(() => {
-    setLowerInput(value.lower.toFixed(2));
-    setUpperInput(value.upper.toFixed(2));
-  }, [value.lower, value.upper]);
+  }, [histogram, setValue, forWhom, value]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -76,16 +52,6 @@ export default function HistogramRangeWidget({
       !histogram?.data ||
       (Array.isArray(histogram.data) && histogram.data.length === 0)
     ) {
-      console.log('[HistogramRange] Skipping render - invalid data:', {
-        hasCanvas: !!canvas,
-        hasHistogram: !!histogram,
-        hasData: !!histogram?.data,
-        dataLength: histogram?.data
-          ? Array.isArray(histogram.data)
-            ? histogram.data.length
-            : 0
-          : 0
-      });
       return;
     }
 

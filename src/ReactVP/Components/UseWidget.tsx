@@ -23,7 +23,7 @@ export default function useWidget(
       ...widget,
       forWhom: identifier,
       value: defaultValue,
-      widgetValue: widget?.value,
+      ...widget?.value,
       setValue: (identifier?: Identifier, value?: any) => {
         editorContext
           ?.action('graph')
