@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import RangeSlider from 'react-range-slider-input';
 import 'react-range-slider-input/dist/style.css';
 
@@ -42,7 +42,7 @@ export default function HistogramRangeWidget({
         }
       });
     }
-  }, [histogram, setValue, forWhom, value]);
+  }, [histogram]);
 
   const drawHistogram = useCallback(
     (
@@ -53,13 +53,18 @@ export default function HistogramRangeWidget({
     ) => {
       if (histogram?.type === 'rgb') {
         const channels = histogram.data as number[][];
-        const colors = channels.map(
-          (_, i) =>
-            `rgba(${i === 0 ? 255 : 0}, ${i === 1 ? 255 : 0}, ${i === 2 ? 255 : 0}, ${opacity === 'background' ? 0.3 : 0.5})`
+        const colors = useMemo(
+          () => ({
+            background: 'rgba(128, 128, 128, 0.3)',
+            overlay: 'rgba(64, 128, 255, 0.5)',
+            rgb: (i: number, opacity: 'background' | 'overlay') =>
+              `rgba(${i === 0 ? 255 : 0}, ${i === 1 ? 255 : 0}, ${i === 2 ? 255 : 0}, ${opacity === 'background' ? 0.3 : 0.5})`
+          }),
+          []
         );
 
         channels.forEach((channel, channelIndex) => {
-          ctx.fillStyle = colors[channelIndex];
+          ctx.fillStyle = colors.rgb(channelIndex, opacity);
           channel.forEach((val, i) => {
             const x = (i / 255) * width;
             const h = val * height;
@@ -135,7 +140,7 @@ export default function HistogramRangeWidget({
 
   const handleInputBlur = (type: 'lower' | 'upper') => {
     const inputValue = type === 'lower' ? lowerInput : upperInput;
-    const newValue = parseFloat(inputValue);
+    let newValue = parseFloat(inputValue);
 
     if (isNaN(newValue)) {
       if (type === 'lower') {
@@ -146,18 +151,20 @@ export default function HistogramRangeWidget({
       return;
     }
 
-    if (type === 'lower' && newValue <= value.upper && setValue) {
-      setValue(forWhom, { ...value, lower: newValue });
-      setLowerInput(newValue.toFixed(2));
-    } else if (type === 'upper' && newValue >= value.lower && setValue) {
-      setValue(forWhom, {
-        ...value,
-        upper: newValue
-      });
-      setUpperInput(newValue.toFixed(2));
-    } else {
-      if (type === 'lower') {
+    // Clamp values between min and max
+    newValue = Math.max(min, Math.min(max, newValue));
+
+    if (type === 'lower') {
+      if (newValue <= value.upper && setValue) {
+        setValue(forWhom, { ...value, lower: newValue });
+        setLowerInput(newValue.toFixed(2));
+      } else {
         setLowerInput(value.lower.toFixed(2));
+      }
+    } else {
+      if (newValue >= value.lower && setValue) {
+        setValue(forWhom, { ...value, upper: newValue });
+        setUpperInput(newValue.toFixed(2));
       } else {
         setUpperInput(value.upper.toFixed(2));
       }
@@ -182,43 +189,74 @@ export default function HistogramRangeWidget({
     }
   }, [value.lower, value.upper]);
 
-  const handleRangeChange = (newValue: number[]) => {
-    if (!setValue || newValue.length !== 2) {
-      return;
-    }
-    setValue(forWhom, {
-      ...value,
-      lower: newValue[0],
-      upper: newValue[1]
-    });
+  const handleRangeChange = useCallback(
+    (newValue: number[]) => {
+      if (!setValue || newValue.length !== 2) {
+        return;
+      }
+      setValue(forWhom, {
+        ...value,
+        lower: newValue[0],
+        upper: newValue[1]
+      });
+    },
+    [setValue, forWhom, value]
+  );
+
+  const eventHandlers = {
+    onMouseDown: stopPropagation,
+    onMouseMove: stopPropagation,
+    onMouseUp: stopPropagation,
+    onPointerDown: stopPropagation,
+    onPointerMove: stopPropagation,
+    onPointerUp: stopPropagation,
+    onTouchStart: stopPropagation,
+    onTouchMove: stopPropagation,
+    onTouchEnd: stopPropagation,
+    onDragStart: stopPropagation
   };
 
+  const getInputProps = (type: 'lower' | 'upper') => ({
+    type: 'text',
+    className: 'value-mark',
+    style: {
+      left: `${(type === 'lower' ? value.lower : value.upper) * 100}%`,
+      transform: 'translateX(-50%)'
+    },
+    value: type === 'lower' ? lowerInput : upperInput,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+      handleInputChange(type, e.target.value),
+    onBlur: () => handleInputBlur(type),
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) =>
+      handleKeyDown(e, type),
+    onClick: (e: React.MouseEvent) => e.stopPropagation(),
+    onFocus: (e: React.FocusEvent<HTMLInputElement>) => e.target.select()
+  });
+
   return (
-    <div style={{ marginTop: '30px' }}>
+    <div style={{ marginTop: '30px', marginRight: '8px', width: '100%' }}>
       <div
         className="histogram-widget"
-        style={{ position: 'relative', width: '100%', height: '100px' }}
-        onMouseDown={stopPropagation}
-        onMouseMove={stopPropagation}
-        onMouseUp={stopPropagation}
-        onPointerDown={stopPropagation}
-        onPointerMove={stopPropagation}
-        onPointerUp={stopPropagation}
-        onTouchStart={stopPropagation}
-        onTouchMove={stopPropagation}
-        onTouchEnd={stopPropagation}
-        onDragStart={stopPropagation}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100px',
+          flex: 1,
+          minWidth: 0
+        }}
+        {...eventHandlers}
       >
         <canvas
           ref={canvasRef}
-          width={200}
-          height={100}
+          width="100%"
+          height="100px"
           style={{
             width: '100%',
             height: '100px',
             backgroundColor: 'var(--vpl-blue-gray-6)',
             borderRadius: 'var(--vpl-border-radius)',
-            marginBottom: '8px'
+            marginBottom: '8px',
+            display: 'block'
           }}
         />
 
@@ -239,54 +277,8 @@ export default function HistogramRangeWidget({
           />
         </div>
         <div className="histogram-values">
-          <input
-            type="text"
-            className="value-mark"
-            style={{
-              left: `${value.lower * 100}%`,
-              transform: 'translateX(-50%)'
-            }}
-            value={lowerInput}
-            onChange={e => {
-              handleInputChange('lower', e.target.value);
-            }}
-            onBlur={() => {
-              handleInputBlur('lower');
-            }}
-            onKeyDown={e => {
-              handleKeyDown(e, 'lower');
-            }}
-            onClick={e => {
-              e.stopPropagation();
-            }}
-            onFocus={e => {
-              e.target.select();
-            }}
-          />
-          <input
-            type="text"
-            className="value-mark"
-            style={{
-              left: `${value.upper * 100}%`,
-              transform: 'translateX(-50%)'
-            }}
-            value={upperInput}
-            onChange={e => {
-              handleInputChange('upper', e.target.value);
-            }}
-            onBlur={() => {
-              handleInputBlur('upper');
-            }}
-            onKeyDown={e => {
-              handleKeyDown(e, 'upper');
-            }}
-            onClick={e => {
-              e.stopPropagation();
-            }}
-            onFocus={e => {
-              e.target.select();
-            }}
-          />
+          <input {...getInputProps('lower')} />
+          <input {...getInputProps('upper')} />
         </div>
       </div>
     </div>
