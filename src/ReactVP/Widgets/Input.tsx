@@ -92,7 +92,6 @@ export function NumericInput({
       setValue={setValue}
       min={min}
       max={max}
-      step={step}
     />
   );
 }
@@ -172,28 +171,26 @@ export function NumberInput({
   setValue,
   defaultValue = 0,
   min = -Infinity,
-  max = Infinity,
-  step
+  max = Infinity
 }: INumberProps): JSX.Element {
-  const [localValue, setLocalValue] = useState<number | ''>(value);
+  const [localValue, setLocalValue] = useState<string>(value?.toString() ?? '');
   const debounceTimeout = useRef<number | null>(null);
+
+  const clearDebounce = () => {
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+      debounceTimeout.current = null;
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const newValue = e.target.value;
-    if (newValue === '') {
-      setLocalValue('');
-      return;
-    }
+    setLocalValue(newValue);
+    clearDebounce();
 
-    const parsed = parseFloat(newValue);
-    if (!Number.isNaN(parsed)) {
+    if (newValue !== '' && !Number.isNaN(parseFloat(newValue))) {
+      const parsed = parseFloat(newValue);
       const clamped = Math.min(Math.max(parsed, min), max);
-      setLocalValue(clamped);
-
-      if (debounceTimeout.current) {
-        clearTimeout(debounceTimeout.current);
-      }
-
       debounceTimeout.current = window.setTimeout(() => {
         setValue?.(forWhom, clamped);
       }, 400);
@@ -202,18 +199,17 @@ export function NumberInput({
 
   const handleBlur = () => {
     if (localValue === '') {
-      const newValue = defaultValue;
-      setLocalValue(newValue);
-      setValue?.(forWhom, newValue);
+      setLocalValue(defaultValue.toString());
+      setValue?.(forWhom, defaultValue);
     }
   };
 
   useEffect(() => {
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
-    }
-    setLocalValue(value);
+    clearDebounce();
+    setLocalValue(value?.toString() ?? '');
   }, [value]);
+
+  useEffect(() => clearDebounce, []);
 
   return (
     <input
@@ -222,7 +218,6 @@ export function NumberInput({
       value={localValue}
       min={min}
       max={max}
-      step={step}
       onChange={handleInputChange}
       onBlur={handleBlur}
     />
