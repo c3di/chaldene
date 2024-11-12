@@ -9,8 +9,58 @@ interface IImageViewerProps extends WidgetProps {
       width: number;
       height: number;
     };
+    heatmap?: string;
   };
+  heatmapOverlay?: boolean;
 }
+
+const toggleSwitchStyles = `
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 16px;
+  margin-left: 8px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 16px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #2196F3;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(14px);
+}
+`;
 
 const getPointerCoordinates = (e: Event) => {
   if (e instanceof MouseEvent) {
@@ -21,9 +71,37 @@ const getPointerCoordinates = (e: Event) => {
   return { x: 0, y: 0 };
 };
 
+const generateDummyHeatmap = (width: number, height: number): string => {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  if (ctx) {
+    const gradient = ctx.createRadialGradient(
+      width / 2,
+      height / 2,
+      0,
+      width / 2,
+      height / 2,
+      Math.max(width, height) / 2
+    );
+
+    gradient.addColorStop(0, 'rgba(255, 0, 0, 1)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 0, 0.5)');
+    gradient.addColorStop(1, 'rgba(0, 0, 255, 0.1)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  }
+  console.log('dummy heatmap', canvas.toDataURL('image/png'));
+  return canvas.toDataURL('image/png');
+};
+
 export default function ImageViewer({
   value,
-  editorContext
+  editorContext,
+  heatmapOverlay
 }: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
@@ -32,6 +110,7 @@ export default function ImageViewer({
   const isPanning = useRef(false);
   const lastPosX = useRef(0);
   const lastPosY = useRef(0);
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   const updateGlobalTransform = () => {
     if (!editorContext) {
@@ -147,10 +226,37 @@ export default function ImageViewer({
         canvas.current!.width / image.width,
         canvas.current!.height / image.height
       );
-    // Set the canvas zoom to fit the image without scaling the image itself
     canvas.current!.setZoom(scaleFactor);
 
+    // Set background image
     canvas.current!.backgroundImage = image;
+
+    // Handle heatmap overlay
+    if (showHeatmap) {
+      // Use actual heatmap if available, otherwise use dummy heatmap
+      const heatmapUrl =
+        value?.heatmap ?? generateDummyHeatmap(image.width, image.height);
+
+      fabric.FabricImage.fromURL(heatmapUrl).then((img: fabric.Image) => {
+        // Set the overlay image with the same dimensions as the background
+        img.scaleX = image.width / (img.width ?? 1);
+        img.scaleY = image.height / (img.height ?? 1);
+        img.opacity = 0.5;
+
+        // Use overlayImage property
+        if (canvas.current) {
+          canvas.current.overlayImage = img;
+          canvas.current.renderAll();
+        }
+      });
+    } else {
+      // Clear overlay if heatmap is toggled off
+      if (canvas.current) {
+        canvas.current.overlayImage = undefined;
+        canvas.current.renderAll();
+      }
+    }
+
     const zoom = canvas.current!.getZoom();
     const viewportTransform = canvas.current!.viewportTransform;
 
@@ -164,10 +270,11 @@ export default function ImageViewer({
     }
 
     canvas.current!.renderAll();
-  }, [editorContext?.getImageViewTransform(), image]);
+  }, [editorContext?.getImageViewTransform(), image, showHeatmap]);
 
   return (
     <div>
+      <style>{toggleSwitchStyles}</style>
       <div
         ref={canvasElParent}
         className={'nodrag nowheel widget common-input-style'}
@@ -182,22 +289,51 @@ export default function ImageViewer({
           className={`nodrag nowheel widget imageview ${isPanning.current ? 'grabbing' : 'grab'}`}
         />
       </div>
-      <div
-        className="image-info"
-        style={{
-          marginBottom: '0px',
-          textAlign: 'center',
-          fontSize: 'var(--vpl-ui-font-size1)',
-          fontFamily: 'var(--vpl-ui-font-family)',
-          color: 'var(--vpl-ui-font-color2)'
-        }}
-      >
-        {value?.dimensions && (
-          <span>
-            {value.dimensions.width} x {value.dimensions.height}
-          </span>
-        )}
-      </div>
+      {value?.dimensions && (
+        <div
+          style={{
+            position: 'relative',
+            width: '100%'
+          }}
+        >
+          <div
+            className="image-info"
+            style={{
+              marginBottom: '0px',
+              textAlign: 'center',
+              fontSize: 'var(--vpl-ui-font-size1)',
+              fontFamily: 'var(--vpl-ui-font-family)',
+              color: 'var(--vpl-ui-font-color2)'
+            }}
+          >
+            <span>
+              {`${value.dimensions.width} x ${value.dimensions.height}`}
+            </span>
+            {heatmapOverlay && (
+              <div
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '80%',
+                  transform: 'translateY(-50%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={showHeatmap}
+                    onChange={() => setShowHeatmap(!showHeatmap)}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

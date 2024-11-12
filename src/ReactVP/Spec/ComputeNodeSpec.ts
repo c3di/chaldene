@@ -6,7 +6,9 @@ import type { NodeCodeGenerators } from '../CodeGeneration';
 // todo: rename data strucute Node to compute Node, keep consistent
 export default interface IComputeNodeSpec extends INodeSpec {
   inputs?: Array<Omit<IHandle, 'id' | 'identifier'>>;
-  outputs?: Array<Omit<IHandle, 'id' | 'identifier'>>;
+  outputs?: Array<
+    Omit<IHandle, 'id' | 'identifier'> & { heatmapOverlay?: boolean }
+  >;
   codeGenerators?: NodeCodeGenerators;
 }
 
@@ -36,7 +38,10 @@ export function spec2ComputeNode({
         ...output,
         widget:
           isImageType(output.type) && !output.widget
-            ? { type: 'ImageViewer' }
+            ? {
+                type: 'ImageViewer',
+                heatmapOverlay: output.heatmapOverlay ?? false
+              }
             : output.widget
       })),
       specName

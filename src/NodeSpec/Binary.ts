@@ -265,7 +265,8 @@ export const removeSmallHolesNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'image',
       description:
-        'The input image with small holes within connected components removed.'
+        'The input image with small holes within connected components removed.',
+      heatmapOverlay: true
     }
   ],
   codeGenerators: {
