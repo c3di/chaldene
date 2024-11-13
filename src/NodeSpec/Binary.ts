@@ -147,7 +147,8 @@ export const binaryErosionNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'binary image',
-      description: 'The eroded output image.'
+      description: 'The eroded output image.',
+      heatmapOverlay: true
     }
   ],
   codeGenerators: {

@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
+import * as d3Chromatic from 'd3-scale-chromatic';
+import { scaleSequential } from 'd3-scale';
+import { rgb } from 'd3-color';
 import { WidgetProps } from './Widget';
 
 interface IImageViewerProps extends WidgetProps {
@@ -9,9 +12,10 @@ interface IImageViewerProps extends WidgetProps {
       width: number;
       height: number;
     };
-    heatmap?: string;
+    differences?: number[];
   };
   heatmapOverlay?: boolean;
+  isBinary?: boolean;
 }
 
 const toggleSwitchStyles = `
@@ -71,37 +75,109 @@ const getPointerCoordinates = (e: Event) => {
   return { x: 0, y: 0 };
 };
 
-const generateDummyHeatmap = (width: number, height: number): string => {
+const COLORMAP_OPTIONS = [
+  'viridis',
+  'inferno',
+  'magma',
+  'plasma',
+  'turbo',
+  'cividis',
+  'rainbow'
+] as const;
+
+type Colormap = (typeof COLORMAP_OPTIONS)[number];
+
+const getColorScale = (colormap: Colormap, minVal: number, maxVal: number) => {
+  const interpolator = {
+    viridis: d3Chromatic.interpolateViridis,
+    inferno: d3Chromatic.interpolateInferno,
+    magma: d3Chromatic.interpolateMagma,
+    plasma: d3Chromatic.interpolatePlasma,
+    turbo: d3Chromatic.interpolateTurbo,
+    cividis: d3Chromatic.interpolateCividis,
+    rainbow: d3Chromatic.interpolateRainbow
+  }[colormap];
+
+  return scaleSequential(interpolator).domain([minVal, maxVal]);
+};
+
+// Binary color scale function for -1, 0, 1 values
+const getBinaryColorScale = () => {
+  return (value: number) => {
+    if (value < -0.5) return 'rgba(0, 0, 255, 0.8)';     
+    if (value > 0.5) return 'rgba(255, 0, 0, 0.8)';    
+    return 'rgba(255, 255, 255, 0.1)';  
+  };
+};
+
+const generateHeatmap = (
+  differences: number[],
+  width: number,
+  height: number,
+  colormap: Colormap,
+  isBinary: boolean
+): fabric.Image => {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
 
   if (ctx) {
-    const gradient = ctx.createRadialGradient(
-      width / 2,
-      height / 2,
-      0,
-      width / 2,
-      height / 2,
-      Math.max(width, height) / 2
-    );
+    const imageData = ctx.createImageData(width, height);
 
-    gradient.addColorStop(0, 'rgba(255, 0, 0, 1)');
-    gradient.addColorStop(0.5, 'rgba(255, 255, 0, 0.5)');
-    gradient.addColorStop(1, 'rgba(0, 0, 255, 0.1)');
+    type ColorMapperFunction = (value: number) => string;
+    
+    let colorMapper: ColorMapperFunction;
+    
+    if (isBinary) {
+      colorMapper = getBinaryColorScale();
+    } else {
+      let minVal = differences[0];
+      let maxVal = differences[0];
+      for (let i = 1; i < differences.length; i++) {
+        if (differences[i] < minVal) minVal = differences[i];
+        if (differences[i] > maxVal) maxVal = differences[i];
+      }
+      colorMapper = getColorScale(colormap, minVal, maxVal);
+    }
 
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
+    for (let j = 0, k = 0; j < height; ++j) {
+      for (let i = 0; i < width; ++i, ++k) {
+        const value = differences[k];
+        const colorString = colorMapper(value);
+        const color = rgb(colorString);
+        
+        if (color) {
+          const idx = k * 4;
+          imageData.data[idx] = color.r;     // R
+          imageData.data[idx + 1] = color.g; // G
+          imageData.data[idx + 2] = color.b; // B
+          
+          // Set alpha based on the color's opacity
+          if (isBinary) {
+            if (Math.abs(value) < 0.5) {
+              imageData.data[idx + 3] = 0;  // Fully transparent for values near 0
+            } else {
+              imageData.data[idx + 3] = 204;  // ~0.8 opacity for differences (204/255 ≈ 0.8)
+            }
+          } else {
+            imageData.data[idx + 3] = 255;  // Full opacity for non-binary
+          }
+        }
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
   }
-  console.log('dummy heatmap', canvas.toDataURL('image/png'));
-  return canvas.toDataURL('image/png');
+
+  return new fabric.Image(canvas);
 };
 
 export default function ImageViewer({
   value,
   editorContext,
-  heatmapOverlay
+  heatmapOverlay,
+  isBinary
 }: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
@@ -111,12 +187,20 @@ export default function ImageViewer({
   const lastPosX = useRef(0);
   const lastPosY = useRef(0);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [selectedColormap, setSelectedColormap] = useState<Colormap>('viridis');
+  const [lastValidDimensions, setLastValidDimensions] = useState<{width: number, height: number} | null>(null);
 
+  useEffect(() => {
+    if (value?.dimensions) {
+      setLastValidDimensions(value.dimensions);
+    }
+  }, [value?.dimensions]);
+
+  
   const updateGlobalTransform = () => {
     if (!editorContext) {
       return;
     }
-    // todo: push to update all re-render?
     const viewportTransform = canvas.current!.viewportTransform;
     editorContext.updateGlobalTransform({
       x: viewportTransform[4],
@@ -144,6 +228,7 @@ export default function ImageViewer({
     if (!canvasElement.current || !canvasElParent.current) {
       return;
     }
+
     canvas.current = new fabric.Canvas(canvasElement.current, {
       selection: false
     });
@@ -174,7 +259,7 @@ export default function ImageViewer({
         return;
       }
       const delta = opt.e.deltaY;
-      let zoom = canvas.current.getZoom();
+      let zoom = canvas.current!.getZoom();
       zoom *= 0.999 ** delta;
       zoom = Math.max(0.05, zoom);
       zoom = Math.min(5, zoom);
@@ -231,26 +316,29 @@ export default function ImageViewer({
     // Set background image
     canvas.current!.backgroundImage = image;
 
-    // Handle heatmap overlay
-    if (showHeatmap) {
-      // Use actual heatmap if available, otherwise use dummy heatmap
-      const heatmapUrl =
-        value?.heatmap ?? generateDummyHeatmap(image.width, image.height);
+    // Heatmap overlay
+    if (showHeatmap && value?.differences) {
+      try {
+        const heatmapImage = generateHeatmap(
+          value.differences,
+          image.width,
+          image.height,
+          selectedColormap,
+          isBinary ?? false
+        );
 
-      fabric.FabricImage.fromURL(heatmapUrl).then((img: fabric.Image) => {
-        // Set the overlay image with the same dimensions as the background
-        img.scaleX = image.width / (img.width ?? 1);
-        img.scaleY = image.height / (img.height ?? 1);
-        img.opacity = 0.5;
+        heatmapImage.scaleX = image.width / (heatmapImage.width ?? 1);
+        heatmapImage.scaleY = image.height / (heatmapImage.height ?? 1);
+        heatmapImage.opacity = isBinary ? 1.0 : 0.3;
 
-        // Use overlayImage property
         if (canvas.current) {
-          canvas.current.overlayImage = img;
+          canvas.current.overlayImage = heatmapImage;
           canvas.current.renderAll();
         }
-      });
+      } catch (error) {
+        console.error('Failed to process differences data:', error);
+      }
     } else {
-      // Clear overlay if heatmap is toggled off
       if (canvas.current) {
         canvas.current.overlayImage = undefined;
         canvas.current.renderAll();
@@ -270,18 +358,57 @@ export default function ImageViewer({
     }
 
     canvas.current!.renderAll();
-  }, [editorContext?.getImageViewTransform(), image, showHeatmap]);
+  }, [
+    editorContext?.getImageViewTransform(),
+    image,
+    showHeatmap,
+    selectedColormap,
+    value?.differences,
+    isBinary
+  ]);
 
   return (
-    <div>
+    <div 
+      style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        width: '100%', 
+        height: '100%',
+        gap: '1px',
+      }}
+    >
       <style>{toggleSwitchStyles}</style>
+      
+      {lastValidDimensions && (
+        <div
+          className="nodrag nowheel"
+          style={{
+            textAlign: 'center',
+            fontSize: 'var(--vpl-ui-font-size1)',
+            fontFamily: 'var(--vpl-ui-font-family)',
+            color: 'var(--vpl-ui-font-color2)',
+            minHeight: '14px',
+            padding: '2px 0',
+            userSelect: 'none',
+            pointerEvents: 'none',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          {`${lastValidDimensions.width} x ${lastValidDimensions.height}`}
+        </div>
+      )}
+
+      {/* Main canvas container */}
       <div
         ref={canvasElParent}
         className={'nodrag nowheel widget common-input-style'}
         style={{
           width: '100%',
-          height: '100%',
-          padding: 0
+          flex: 1,
+          padding: 0,
+          position: 'relative',
+          zIndex: 1
         }}
       >
         <canvas
@@ -289,49 +416,49 @@ export default function ImageViewer({
           className={`nodrag nowheel widget imageview ${isPanning.current ? 'grabbing' : 'grab'}`}
         />
       </div>
-      {value?.dimensions && (
+
+      {lastValidDimensions && heatmapOverlay && (
         <div
+          className="nodrag nowheel"
           style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            gap: '2px',
+            marginBottom: '2px',
             position: 'relative',
-            width: '100%'
+            zIndex: 1,
           }}
         >
-          <div
-            className="image-info"
-            style={{
-              marginBottom: '0px',
-              textAlign: 'center',
-              fontSize: 'var(--vpl-ui-font-size1)',
-              fontFamily: 'var(--vpl-ui-font-family)',
-              color: 'var(--vpl-ui-font-color2)'
-            }}
-          >
-            <span>
-              {`${value.dimensions.width} x ${value.dimensions.height}`}
-            </span>
-            {heatmapOverlay && (
-              <div
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '80%',
-                  transform: 'translateY(-50%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={showHeatmap}
-                    onChange={() => setShowHeatmap(!showHeatmap)}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
-              </div>
-            )}
-          </div>
+          {!isBinary && (
+            <select
+              className="nodrag"
+              value={selectedColormap}
+              onChange={e => setSelectedColormap(e.target.value as Colormap)}
+              style={{
+                fontSize: 'var(--vpl-ui-font-size1)',
+                padding: '2px 4px',
+                backgroundColor: 'white',
+                border: 'none',
+                borderRadius: '2px'
+              }}
+            >
+              {COLORMAP_OPTIONS.map(cm => (
+                <option key={cm} value={cm}>
+                  {cm}
+                </option>
+              ))}
+            </select>
+          )}
+          <label className="toggle-switch nodrag">
+            <input
+              type="checkbox"
+              checked={showHeatmap}
+              onChange={() => setShowHeatmap(!showHeatmap)}
+              className="nodrag"
+            />
+            <span className="toggle-slider"></span>
+          </label>
         </div>
       )}
     </div>

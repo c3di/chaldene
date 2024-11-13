@@ -16,6 +16,10 @@ import {
   captureHistogramCode,
   HistogramCaptureDependencies
 } from './CaptureHistogramInJupyterlab';
+import {
+  captureDifferenceHeatmapCode,
+  DifferenceHeatmapCaptureDependencies
+} from './CaptureDifferenceHeatmapInJupyterlab';
 
 export default class CodeGenerator {
   protected name: string;
@@ -55,10 +59,15 @@ export default class CodeGenerator {
       targetHandle: string;
     }> = [];
     const imageInspections: string[] = [];
+    const heatmapInspections: Array<{
+      inputImageVar: string;
+      outputImageVar: string;
+      handleId: string;
+    }> = [];
 
-    let imageInputVar: string | null = null; // Store the image input variable
+    let imageInputVar: string | null = null;
 
-    // Process inputs and collect histogram inspections
+    // Process inputs
     inputs?.forEach(input => {
       const edge = incomingEdges.find(e => e.targetHandle === input.id);
 
@@ -69,12 +78,10 @@ export default class CodeGenerator {
             input.defaultValue
           );
 
-      // If this is the image input, store its variable name
       if (input.name === 'image' && edge) {
         imageInputVar = inputValues[input.name];
       }
 
-      // If this is a HistogramRange widget and we have an image input, use that
       if (input.widget?.type === 'HistogramRange' && imageInputVar) {
         histogramInspections.push({
           imageVar: imageInputVar,
@@ -90,17 +97,22 @@ export default class CodeGenerator {
 
       if (isImageType(output.type) || output.widget?.type === 'ImageViewer') {
         imageInspections.push(outputVar);
+        if (output.widget?.heatmapOverlay && imageInputVar) {
+          heatmapInspections.push({
+            inputImageVar: imageInputVar,
+            outputImageVar: outputVar,
+            handleId: outputVar
+          });
+        }
       }
     });
 
     let code = '';
 
     // Histogram captures
-    if (histogramInspections.length > 0) {
-      histogramInspections.forEach(({ imageVar, targetHandle }) => {
-        code += `${captureHistogramCode(imageVar, targetHandle)}\n`;
-      });
-    }
+    histogramInspections.forEach(({ imageVar, targetHandle }) => {
+      code += `${captureHistogramCode(imageVar, targetHandle)}\n`;
+    });
 
     // Main node code
     code += generator(inputValues, outputValues);
@@ -110,12 +122,16 @@ export default class CodeGenerator {
       code += `\n${captureImageCode(inspection)}`;
     });
 
+    // Heatmap captures
+    heatmapInspections.forEach(
+      ({ inputImageVar, outputImageVar, handleId }) => {
+        code += `\n${captureDifferenceHeatmapCode(inputImageVar, outputImageVar, handleId)}`;
+      }
+    );
+
     return code;
   }
 
-  /**
-   * @param graph: Graph - including all nodes and incoming edges
-   */
   public codeFromGraph(editorID: string, graph: Graph): string {
     const nodes = topologicalSortDAG(graph);
     const edges = graph.edges;
@@ -124,14 +140,17 @@ export default class CodeGenerator {
       const incomingEdges = edges.filter(e => e.target === node.id);
       return this.generateNodeCode(editorID, node, incomingEdges);
     });
+
     const finalCode =
       ImageCaptureDependencies +
       '\n' +
       HistogramCaptureDependencies +
       '\n' +
+      DifferenceHeatmapCaptureDependencies +
+      '\n' +
       code.join('\n');
 
-    console.log('Final generated code:', finalCode); // Debug print
+    //console.log('Final generated code:', finalCode);
     return finalCode;
   }
 }

@@ -11,7 +11,6 @@ export interface IHandle {
   widget?: { type: string; [key: string]: any };
   defaultValue?: any;
   connections?: number;
-  heatmapOverlay?: boolean;
 }
 
 export interface IHandleIdentifier {

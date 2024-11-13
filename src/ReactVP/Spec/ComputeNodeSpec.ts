@@ -7,7 +7,9 @@ import type { NodeCodeGenerators } from '../CodeGeneration';
 export default interface IComputeNodeSpec extends INodeSpec {
   inputs?: Array<Omit<IHandle, 'id' | 'identifier'>>;
   outputs?: Array<
-    Omit<IHandle, 'id' | 'identifier'> & { heatmapOverlay?: boolean }
+    Omit<IHandle, 'id' | 'identifier'> & {
+      heatmapOverlay?: boolean;
+    }
   >;
   codeGenerators?: NodeCodeGenerators;
 }
@@ -40,7 +42,8 @@ export function spec2ComputeNode({
           isImageType(output.type) && !output.widget
             ? {
                 type: 'ImageViewer',
-                heatmapOverlay: output.heatmapOverlay ?? false
+                heatmapOverlay: output.heatmapOverlay ?? false,
+                isBinary: output.type === 'binary image'
               }
             : output.widget
       })),
