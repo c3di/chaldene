@@ -33,7 +33,6 @@ const getPointerCoordinates = (e: Event) => {
 const COLORMAP_OPTIONS = [
   'viridis',
   'inferno',
-  'magma',
   'plasma',
   'turbo',
   'rainbow'
@@ -45,7 +44,6 @@ const getColorScale = (colormap: Colormap, minVal: number, maxVal: number) => {
   const interpolator = {
     viridis: d3Chromatic.interpolateViridis,
     inferno: d3Chromatic.interpolateInferno,
-    magma: d3Chromatic.interpolateMagma,
     plasma: d3Chromatic.interpolatePlasma,
     turbo: d3Chromatic.interpolateTurbo,
     rainbow: d3Chromatic.interpolateRainbow
@@ -54,13 +52,12 @@ const getColorScale = (colormap: Colormap, minVal: number, maxVal: number) => {
   return scaleSequential(interpolator).domain([minVal, maxVal]);
 };
 
-// Binary color scale function for -1, 0, 1 values
 const getBinaryColorScale = () => {
   return (value: number) => {
-    if (value < -0.5) {
+    if (value === -1) {
       return 'rgba(0, 0, 255, 0.8)';
     }
-    if (value > 0.5) {
+    if (value === 1) {
       return 'rgba(255, 0, 0, 0.8)';
     }
     return 'rgba(255, 255, 255, 0.1)';
@@ -99,7 +96,11 @@ const generateHeatmap = (
           maxVal = differences[i];
         }
       }
-      colorMapper = getColorScale(colormap, minVal, maxVal);
+      const colorScale = getColorScale(colormap, -1, 1);
+      colorMapper = (value: number) => {
+        const normalizedValue = -1 + (value - minVal) * (2 / (maxVal - minVal));
+        return colorScale(normalizedValue);
+      };
     }
 
     for (let j = 0, k = 0; j < height; ++j) {
@@ -134,6 +135,40 @@ const generateHeatmap = (
   return new fabric.Image(canvas);
 };
 
+const drawColorBar = (
+  ctx: CanvasRenderingContext2D,
+  isBinary: boolean,
+  colormap: Colormap
+) => {
+  if (isBinary) {
+    const colorMapper = getBinaryColorScale();
+    const segmentWidth = 20;
+    const height = 20;
+
+    ctx.fillStyle = colorMapper(1);
+    ctx.fillRect(0, 0, segmentWidth, height);
+
+    ctx.fillStyle = colorMapper(0);
+    ctx.fillRect(segmentWidth, 0, segmentWidth, height);
+
+    ctx.fillStyle = colorMapper(-1);
+    ctx.fillRect(segmentWidth * 2, 0, segmentWidth, height);
+  } else {
+    const colorScale = getColorScale(colormap, -1, 1);
+    const width = 120;
+
+    for (let i = 0; i < width; i++) {
+      const value = -1 + (i / (width - 1)) * 2;
+      const colorString = colorScale(value);
+      const color = rgb(colorString);
+      if (color) {
+        ctx.fillStyle = color.toString();
+        ctx.fillRect(i, 0, 1, 20);
+      }
+    }
+  }
+};
+
 export default function ImageViewer({
   value,
   editorContext,
@@ -153,6 +188,7 @@ export default function ImageViewer({
     width: number;
     height: number;
   } | null>(null);
+  const colorBarRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (value?.dimensions) {
@@ -330,6 +366,22 @@ export default function ImageViewer({
     isBinary
   ]);
 
+  useEffect(() => {
+    const canvas = colorBarRef.current;
+    if (!canvas || !showHeatmap) {
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return;
+    }
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawColorBar(ctx, isBinary ?? false, selectedColormap);
+  }, [showHeatmap, isBinary, selectedColormap]);
+
   return (
     <div
       style={{
@@ -385,13 +437,10 @@ export default function ImageViewer({
             display: 'flex',
             justifyContent: 'flex-start',
             alignItems: 'center',
-            gap: '8px',
-            minHeight: '44px',
-            marginBottom: '2px',
-            paddingBottom: '0px',
             position: 'relative',
-            zIndex: 1000,
-            backgroundColor: 'var(--vpl-ui-background)'
+            zIndex: 1,
+            backgroundColor: 'var(--vpl-ui-background)',
+            height: '44px'
           }}
         >
           <button
@@ -407,7 +456,7 @@ export default function ImageViewer({
           </button>
 
           {!isBinary && showHeatmap && (
-            <div style={{ width: '80px' }}>
+            <div style={{ width: '80px', marginLeft: '8px' }}>
               <select
                 className="nodrag common-input-style widget"
                 value={selectedColormap}
@@ -420,6 +469,57 @@ export default function ImageViewer({
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {showHeatmap && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                marginLeft: '8px'
+              }}
+            >
+              <div
+                style={{
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <canvas
+                  ref={colorBarRef}
+                  width={isBinary ? 60 : 120}
+                  height={20}
+                  style={{
+                    border: '1px solid var(--vpl-border-light)',
+                    borderRadius: '2px'
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  width: isBinary ? '60px' : '120px',
+                  marginTop: '1px',
+                  fontSize: 'var(--vpl-ui-font-size1)',
+                  color: 'var(--vpl-ui-font-color2)'
+                }}
+              >
+                {isBinary ? (
+                  <>
+                    <span>-1</span>
+                    <span>0</span>
+                    <span>1</span>
+                  </>
+                ) : (
+                  <>
+                    <span>-1</span>
+                    <span>1</span>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
