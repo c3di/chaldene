@@ -112,7 +112,8 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'image',
-      description: 'The dilated output image.'
+      description: 'The dilated output image.',
+      heatmapOverlay: true
     }
   ],
   codeGenerators: {
@@ -183,7 +184,8 @@ export const binaryOpeningNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'image',
-      description: 'The opened output image.'
+      description: 'The opened output image.',
+      heatmapOverlay: true
     }
   ],
   codeGenerators: {
@@ -218,7 +220,8 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'image',
-      description: 'The opened output image.'
+      description: 'The closed output image.',
+      heatmapOverlay: true
     }
   ],
   codeGenerators: {
@@ -314,7 +317,8 @@ export const removeSmallObjectsNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'image',
-      description: 'The input image with small connected components removed.'
+      description: 'The input image with small connected components removed.',
+      heatmapOverlay: true
     }
   ],
   codeGenerators: {
@@ -362,7 +366,8 @@ export const splitTouchingObjectsNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'image',
-      description: 'The input image with small connected components removed.'
+      description: 'The input image with small connected components removed.',
+      heatmapOverlay: true
     }
   ],
   codeGenerators: {

@@ -44,6 +44,28 @@ export default function HistogramRangeWidget({
     }
   }, [histogram]);
 
+  const processHistogram = (data: number[], windowSize: number = 5) => {
+    //interpolate zeros and collect max value
+    let maxVal = 0;
+    const interpolated = data.map((val, i) => {
+      if (val === 0 && i > 0 && i < data.length - 1) {
+        // Simple interpolation between neighboring non-zero values
+        val = (data[i - 1] + data[i + 1]) / 2;
+      }
+      maxVal = Math.max(maxVal, val);
+      return val;
+    });
+
+    // normalize and smooth
+    return interpolated.map((_, idx) => {
+      const start = Math.max(0, idx - Math.floor(windowSize / 2));
+      const end = Math.min(data.length, idx + Math.floor(windowSize / 2) + 1);
+      const window = interpolated.slice(start, end);
+      // Normalize while calculating the moving average
+      return window.reduce((a, b) => a + b, 0) / window.length / maxVal;
+    });
+  };
+
   const drawHistogram = useCallback(
     (
       ctx: CanvasRenderingContext2D,
@@ -77,14 +99,19 @@ export default function HistogramRangeWidget({
         });
       } else {
         const grayData = histogram?.data as number[];
+        const processedData = processHistogram(grayData);
+
         ctx.fillStyle =
           opacity === 'background'
             ? 'rgba(128, 128, 128, 0.3)'
             : 'rgba(64, 128, 255, 0.5)';
 
-        grayData.forEach((val, i) => {
+        processedData.forEach((val, i) => {
           const x = (i / 255) * width;
           const h = val * height;
+          if (i % 25 === 0) {
+            console.log(`Bar at ${i}: value=${val}, height=${h}, x=${x}`);
+          }
           const isInRange =
             x >= value.lower * width && x <= value.upper * width;
           if (opacity === 'background' || isInRange) {
