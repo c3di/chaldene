@@ -75,3 +75,13 @@
 .colormap-dropdown option {
     padding: 0 2px;
 }
+
+.heatmap-button svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s ease;
+}
+
+.heatmap-button:hover svg {
+    transform: scale(1.1);
+}
