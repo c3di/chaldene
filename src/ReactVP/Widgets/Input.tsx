@@ -63,6 +63,7 @@ interface INumberProps extends WidgetProps {
   min?: number;
   max?: number;
   step?: number;
+  style?: React.CSSProperties;
 }
 
 export function NumericInput({
@@ -171,7 +172,8 @@ export function NumberInput({
   setValue,
   defaultValue = 0,
   min = -Infinity,
-  max = Infinity
+  max = Infinity,
+  style
 }: INumberProps): JSX.Element {
   const [localValue, setLocalValue] = useState<string>(value?.toString() ?? '');
   const debounceTimeout = useRef<number | null>(null);
@@ -220,6 +222,7 @@ export function NumberInput({
       max={max}
       onChange={handleInputChange}
       onBlur={handleBlur}
+      style={style}
     />
   );
 }

@@ -11,6 +11,7 @@ export interface INodeData extends Record<string, unknown> {
   outputs?: IHandle[];
   editorContext?: EditorContext;
   specName?: string;
+  repeatable?: boolean;
   // todo: add image preview or others interactive visualizations
 }
 

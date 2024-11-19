@@ -6,6 +6,7 @@ export const watershedNodeSpec: computeNodeSpec = {
   description:
     'Separating overlapping or touching objects in an image into distinct regions or segments.',
   category: 'segmentation',
+  repeatable: true,
   inputs: [
     {
       name: 'image',
