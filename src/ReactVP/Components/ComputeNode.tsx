@@ -76,16 +76,19 @@ export default function ComputeNode({
         <span>{displayLabel}</span>
         {repeatable && (
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 512 512"
               style={{
-                color: 'var(--vpl-blue-1)',
-                margin: '0 4px',
-                fontSize: '22px',
-                fontWeight: 'bold'
+                margin: '0 6px',
+                fill: 'var(--vpl-blue-1)',
+                stroke: 'var(--vpl-blue-1)',
+                strokeWidth: '24px'
               }}
             >
-              ×
-            </span>
+              <path d="m393.46 35.86h-274.92a118.52 118.52 0 0 0 -118.38 118.38v125a118.52 118.52 0 0 0 118.38 118.33h39.63a24 24 0 1 0 0-48h-39.63a70.47 70.47 0 0 1 -70.38-70.38v-124.95a70.47 70.47 0 0 1 70.38-70.38h274.92a70.47 70.47 0 0 1 70.38 70.38v125a70.47 70.47 0 0 1 -70.38 70.38h-79.52l37.6-37.6a24 24 0 1 0 -33.94-34.02l-78.6 78.6a24 24 0 0 0 0 33.94l78.57 78.57a24 24 0 0 0 33.94-33.94l-37.6-37.6h79.52a118.52 118.52 0 0 0 118.41-118.38v-124.95a118.52 118.52 0 0 0 -118.38-118.38z" />
+            </svg>
             <NumberInput
               forWhom={undefined}
               value={repeatCount}

@@ -39,6 +39,11 @@ export default class EditorContext {
   }; // fit to canvas
   // for jupyterlab
   public parentContext?: any = undefined;
+  private isAsyncMousePosition: boolean = true;
+  private mousePosition: { x?: number; y?: number } = {
+    x: undefined,
+    y: undefined
+  };
 
   constructor(
     editorID: string,
@@ -237,6 +242,41 @@ export default class EditorContext {
   }): void => {
     if (this.isAsyncImageViewTransform || force) {
       this.imageViewTransform = { x, y, zoom };
+      //force to re-render
+      this.action('graph').overrideGraph({
+        ...this.graph,
+        nodes: this.graph?.nodes.map(node => ({ ...node }))
+      });
+    }
+  };
+
+  public toggleAsyncMousePosition = (): void => {
+    this.isAsyncMousePosition = !this.isAsyncMousePosition;
+    if (!this.isAsyncMousePosition) {
+      this.mousePosition = { x: undefined, y: undefined };
+    }
+  };
+
+  public getMousePosition = (): {
+    x?: number;
+    y?: number;
+  } => {
+    return this.isAsyncMousePosition
+      ? this.mousePosition
+      : { x: undefined, y: undefined };
+  };
+
+  public updateMousePosition = ({
+    x,
+    y,
+    force = false
+  }: {
+    x?: number;
+    y?: number;
+    force?: boolean;
+  }): void => {
+    if (this.isAsyncMousePosition || force) {
+      this.mousePosition = { x, y };
       //force to re-render
       this.action('graph').overrideGraph({
         ...this.graph,
