@@ -22,6 +22,9 @@ export function ImageViewerFullScreen({
 }: IImageViewerFullScreenProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
+  const isPanning = useRef(false);
+  const lastPosX = useRef(0);
+  const lastPosY = useRef(0);
 
   useEffect(() => {
     if (!canvasRef.current || !imageUrl) {
@@ -38,6 +41,51 @@ export function ImageViewerFullScreen({
     canvas.setDimensions({
       width: window.innerWidth,
       height: window.innerHeight
+    });
+
+    //Panning handler
+    canvas.on('mouse:down', opt => {
+      isPanning.current = true;
+      const evt = opt.e as MouseEvent;
+      lastPosX.current = evt.clientX;
+      lastPosY.current = evt.clientY;
+    });
+
+    canvas.on('mouse:move', opt => {
+      if (isPanning.current && canvas.viewportTransform) {
+        const evt = opt.e as MouseEvent;
+        const deltaX = evt.clientX - lastPosX.current;
+        const deltaY = evt.clientY - lastPosY.current;
+
+        const viewportTransform = canvas.viewportTransform;
+        viewportTransform[4] += deltaX;
+        viewportTransform[5] += deltaY;
+
+        lastPosX.current = evt.clientX;
+        lastPosY.current = evt.clientY;
+
+        canvas.requestRenderAll();
+      }
+    });
+
+    canvas.on('mouse:up', () => {
+      isPanning.current = false;
+    });
+
+    // Zoom handler
+    canvas.on('mouse:wheel', opt => {
+      const evt = opt.e as WheelEvent;
+      const delta = evt.deltaY;
+      let zoom = canvas.getZoom();
+      zoom *= 0.999 ** delta;
+      zoom = Math.max(0.05, Math.min(5, zoom));
+
+      const point = new fabric.Point(evt.offsetX, evt.offsetY);
+
+      canvas.zoomToPoint(point, zoom);
+      evt.preventDefault();
+      evt.stopPropagation();
+      canvas.requestRenderAll();
     });
 
     // Load and display base image
@@ -58,7 +106,7 @@ export function ImageViewerFullScreen({
 
         canvas.backgroundImage = img;
 
-        // If heatmap is enabled, add it as overlay
+        // Heatmap
         if (showHeatmap && differences) {
           const heatmapImage = generateHeatmap(
             differences,
@@ -79,20 +127,20 @@ export function ImageViewerFullScreen({
 
           canvas.overlayImage = heatmapImage;
         }
-        canvas.renderAll();
+        canvas.requestRenderAll();
       },
       err => {
         console.error('Error loading image:', err);
       }
     );
 
-    // Add resize handler
+    // Window resize handler
     const handleResize = () => {
       canvas.setDimensions({
         width: window.innerWidth,
         height: window.innerHeight
       });
-      canvas.renderAll();
+      canvas.requestRenderAll();
     };
 
     window.addEventListener('resize', handleResize);
@@ -113,9 +161,7 @@ export function ImageViewerFullScreen({
         height: '100vh',
         backgroundColor: 'rgba(0, 0, 0, 0.9)',
         zIndex: 9999,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center'
+        overflow: 'hidden'
       }}
     >
       <button
@@ -134,12 +180,23 @@ export function ImageViewerFullScreen({
       >
         ✕
       </button>
-      <canvas
-        ref={canvasRef}
+      <div
         style={{
-          border: 'none'
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%'
         }}
-      />
+      >
+        <canvas
+          ref={canvasRef}
+          className={`nodrag nowheel ${isPanning.current ? 'grabbing' : 'grab'}`}
+          style={{
+            border: 'none'
+          }}
+        />
+      </div>
     </div>,
     document.body
   );
