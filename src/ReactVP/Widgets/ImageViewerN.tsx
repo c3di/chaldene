@@ -27,10 +27,6 @@ interface IImageViewerProps extends WidgetProps {
   isBinary?: boolean;
 }
 
-interface ILaserDotImage extends fabric.FabricImage {
-  isLaserDot?: boolean;
-}
-
 export default function ImageViewer({
   value,
   editorContext,
@@ -275,62 +271,91 @@ export default function ImageViewer({
     }
   }, [image, showHeatmap, value?.differences, selectedColormap, isBinary]);
 
+  //laser dot
   useEffect(() => {
     if (!canvas.current || !image) {
       return;
     }
 
-    const mousePos = editorContext?.getMousePosition() ?? {};
+    // Helper function to remove all laser dots
+    const removeAllLaserDots = () => {
+      if (!canvas.current) {
+        return;
+      }
 
-    if (mousePos.x !== undefined && mousePos.y !== undefined) {
-      // Remove any existing laser dots
       const objects = canvas.current.getObjects();
+      // Remove all laser dots first
       objects.forEach(obj => {
-        if (
-          obj instanceof fabric.FabricImage &&
-          'isLaserDot' in obj &&
-          (obj as ILaserDotImage).isLaserDot
-        ) {
+        if ('isLaserDot' in obj && (obj as any).isLaserDot) {
           canvas.current?.remove(obj);
         }
       });
+      canvas.current.renderAll();
+    };
 
-      // Laser dot
+    const mousePos = editorContext?.getMousePosition() ?? {};
+
+    // Always remove existing dots first
+    removeAllLaserDots();
+
+    if (mousePos.x !== undefined && mousePos.y !== undefined) {
       fabric.FabricImage.fromURL(LASER_DOT_IMAGE)
         .then((img: fabric.FabricImage) => {
+          const zoom = canvas.current?.getZoom() || 1;
+
           img.set({
+            scaleX: 0.02,
+            scaleY: 0.02
+          });
+
+          const group = new fabric.Group([img], {
             left: mousePos.x,
             top: mousePos.y,
             originX: 'center',
             originY: 'center',
             selectable: false,
             evented: false,
-            scaleX: 0.05,
-            scaleY: 0.05
+            scaleX: 1 / zoom,
+            scaleY: 1 / zoom
           });
 
-          (img as ILaserDotImage).isLaserDot = true;
-          canvas.current?.add(img);
+          (group as any).isLaserDot = true;
+          canvas.current?.add(group);
           canvas.current?.renderAll();
         })
         .catch(err => {
           console.error('Failed to load laser dot image:', err);
         });
-    } else {
-      // Remove laser dot when no mouse position
-      const objects = canvas.current.getObjects();
-      objects.forEach(obj => {
-        if (
-          obj instanceof fabric.FabricImage &&
-          'isLaserDot' in obj &&
-          (obj as ILaserDotImage).isLaserDot
-        ) {
-          canvas.current?.remove(obj);
-        }
-      });
-      canvas.current.renderAll();
     }
   }, [editorContext?.getMousePosition(), image]);
+
+  // Add a zoom handler to update the group's scale
+  useEffect(() => {
+    if (!canvas.current) {
+      return;
+    }
+
+    const handleZoom = () => {
+      const zoom = canvas.current?.getZoom() || 1;
+      const objects = canvas.current?.getObjects() || [];
+
+      objects.forEach(obj => {
+        if ('isLaserDot' in obj && (obj as any).isLaserDot) {
+          obj.set({
+            scaleX: 1 / zoom,
+            scaleY: 1 / zoom
+          });
+        }
+      });
+      canvas.current?.renderAll();
+    };
+
+    canvas.current.on('mouse:wheel', handleZoom);
+
+    return () => {
+      canvas.current?.off('mouse:wheel', handleZoom);
+    };
+  }, []);
 
   useEffect(() => {
     if (!canvas.current) {
