@@ -17,14 +17,15 @@ dependencies:
   - nodejs >=18,<19
   - pip
   - wheel
-  # core scientific packages
-  - numpy
-  - pillow
-  - pandas
-  - scikit-image
-  - scipy
-  - matplotlib
-  - opencv
   - pip:
       - git+https://github.com/c3di/im2im.git
+      - numpy
+      - pillow
+      - pandas
+      - scikit-image
+      - scipy
       - comm
+      - opencv-python
+      - matplotlib
+  # additional packages for demos
+  # - ipywidgets

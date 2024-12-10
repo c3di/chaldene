@@ -1,7 +1,4 @@
 import WidgetsRegistry from './WidgetsRegistry';
-import BoundingBoxInput from './BoundingBoxInput';
-import CanvasImage from './CanvasImage';
-import ImageCropper from './ImageCropper';
 import ImageViewer from './ImageViewerN';
 import HistogramRangeWidget from './HistogramRangeWidget';
 
@@ -35,9 +32,6 @@ registerWidget('Number', NumericInput, 'number');
 registerWidget('Slider', Slider, 'number');
 registerWidget('Dropdown', Dropdown, 'enum');
 registerWidget('Tuple2', Tuple2Input, 'tuple2');
-registerWidget('BoundingBox', BoundingBoxInput);
-registerWidget('CanvasImage', CanvasImage);
-registerWidget('ImageCropper', ImageCropper);
 registerWidget('ImageViewer', ImageViewer);
 registerWidget('FileInputFromServer', FileInputFromServer, 'string');
 registerWidget('HistogramRange', HistogramRangeWidget, 'range');

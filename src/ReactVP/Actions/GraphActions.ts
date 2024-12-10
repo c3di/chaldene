@@ -706,8 +706,6 @@ export default class GraphActions extends StateActions {
           };
         })
       };
-
-      //console.log('Graph after update:', updatedGraph);
       return updatedGraph;
     });
   };
