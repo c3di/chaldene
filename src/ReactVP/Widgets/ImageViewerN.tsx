@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
+import { createPortal } from 'react-dom';
 import { WidgetProps } from './Widget';
 // import { ImageViewerFullScreen } from './ImageViewerFullScreen';
-import {
-  // generateHeatmap,
-  // drawColorBar,
-  // COLORMAP_OPTIONS,
-  Colormap
-} from './heatmapUtils';
+import {} from // generateHeatmap,
+// drawColorBar,
+// COLORMAP_OPTIONS,
+// Colormap
+'./heatmapUtils';
 
 const getPointerCoordinates = (e: Event) => {
   if (e instanceof MouseEvent) {
@@ -31,6 +31,58 @@ interface IImageViewerProps extends WidgetProps {
   isBinary?: boolean;
 }
 
+function FullScreenPortal({
+  onClose,
+  children
+}: {
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      <div
+        style={{
+          padding: '16px',
+          display: 'flex',
+          justifyContent: 'flex-end'
+        }}
+      >
+        <button
+          className="heatmap-button nodrag"
+          onClick={onClose}
+          title="Exit fullscreen"
+        >
+          ✕
+        </button>
+      </div>
+      <div style={{ flex: 1 }}>{children}</div>
+    </div>,
+    document.body
+  );
+}
+
 export default function ImageViewer({
   value,
   editorContext,
@@ -45,10 +97,10 @@ export default function ImageViewer({
   const lastPosX = useRef(0);
   const lastPosY = useRef(0);
 
-  const [selectedColormap, setSelectedColormap] = useState<Colormap>('viridis');
+  //const [selectedColormap, setSelectedColormap] = useState<Colormap>('viridis');
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  console.log('ImageViewer', isFullScreen, setSelectedColormap, setShowHeatmap);
+  //console.log('ImageViewer', isFullScreen, setSelectedColormap, setShowHeatmap);
 
   const updateMousePosition = (
     x: number | undefined,
@@ -220,7 +272,6 @@ export default function ImageViewer({
     editorContext?.getImageViewTransform(),
     image,
     showHeatmap,
-    selectedColormap,
     value?.differences,
     isBinary
   ]);
@@ -357,16 +408,16 @@ export default function ImageViewer({
           </svg>
         </button>
       </div>
-      {/* {isFullScreen && value?.imageUrl && (
-        <ImageViewerFullScreen
-          imageUrl={value.imageUrl}
-          onClose={() => setIsFullScreen(false)}
-          showHeatmap={showHeatmap}
-          differences={value?.differences}
-          selectedColormap={selectedColormap}
-          isBinary={isBinary}
-        />
-      )} */}
+      {isFullScreen && (
+        <FullScreenPortal onClose={() => setIsFullScreen(false)}>
+          <ImageViewer
+            value={value}
+            editorContext={editorContext}
+            heatmapOverlay={heatmapOverlay}
+            isBinary={isBinary}
+          />
+        </FullScreenPortal>
+      )}
     </div>
   );
 }
