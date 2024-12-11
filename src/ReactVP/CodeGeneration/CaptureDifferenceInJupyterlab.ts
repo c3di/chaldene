@@ -28,10 +28,10 @@ def ${captureDifferenceFunctionName}(image1, image2, handleIdentifier):
     else:
         normalized_diff = np.zeros_like(normalized_diff)
 
-    # Send the heatmap data
+    # Send the heatmap data as 2D array
     comm.send({
         "handle_id": handleIdentifier,
-        "differences": normalized_diff.flatten().tolist(),
+        "differences": normalized_diff.tolist(), 
     })
 `;
 

@@ -35,10 +35,6 @@ export default class PythonCodeGenerator extends CodeGenerator {
       return `(${value[0]}, ${value[1]})`;
     }
 
-    if (type === 'range') {
-      return `{'lower': ${value.lower}, 'upper': ${value.upper}}`;
-    }
-
     return value;
   }
 }

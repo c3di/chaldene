@@ -34,4 +34,4 @@ registerWidget('Dropdown', Dropdown, 'enum');
 registerWidget('Tuple2', Tuple2Input, 'tuple2');
 registerWidget('ImageViewer', ImageViewer);
 registerWidget('FileInputFromServer', FileInputFromServer, 'string');
-registerWidget('HistogramRange', HistogramRangeWidget, 'range');
+registerWidget('HistogramRange', HistogramRangeWidget, 'tuple2');

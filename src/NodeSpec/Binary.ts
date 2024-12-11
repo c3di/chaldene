@@ -17,8 +17,8 @@ export const thresholdNodeSpec: computeNodeSpec = {
       name: 'range',
       type: 'tuple2',
       displayLabel: 'range',
-      description: 'The threshold bounds for binarization.',
-      defaultValue: { upper: 0.8, lower: 0.2 },
+      description: 'The threshold bounds for binarization (lower, upper).',
+      defaultValue: [0.2, 0.8],
       widget: {
         type: 'HistogramRange',
         min: 0,
@@ -45,11 +45,11 @@ from im2im import Image as IM
 
 # Get input image
 in_im = ${inputs.image}
-range_values = ${inputs.range}
+lower, upper = ${inputs.range}  
 
 # Apply threshold directly to raw image
-binarized_image = np.where((in_im.raw_image >= range_values['lower']) & 
-                          (in_im.raw_image <= range_values['upper']), 1.0, 0.0)
+binarized_image = np.where((in_im.raw_image >= lower) & 
+                          (in_im.raw_image <= upper), 1.0, 0.0)
 
 # Create output image with same metadata as input
 ${outputs.image} = IM(binarized_image, in_im.metadata)`;

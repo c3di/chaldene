@@ -6,10 +6,7 @@ import 'react-range-slider-input/dist/style.css';
 import { type WidgetProps } from './Widget';
 
 interface IHistogramRangeWidgetProps extends WidgetProps {
-  value: {
-    upper: number;
-    lower: number;
-  };
+  value: [number, number];
   histogram?: {
     type: 'rgb' | 'grayscale';
     data: number[][] | number[];
@@ -29,8 +26,8 @@ export default function HistogramRangeWidget({
   step = 0.01
 }: IHistogramRangeWidgetProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [lowerInput, setLowerInput] = useState(value.lower.toFixed(2));
-  const [upperInput, setUpperInput] = useState(value.upper.toFixed(2));
+  const [lowerInput, setLowerInput] = useState(value[0].toFixed(2));
+  const [upperInput, setUpperInput] = useState(value[1].toFixed(2));
 
   useEffect(() => {
     if (!histogram && setValue) {
@@ -90,8 +87,7 @@ export default function HistogramRangeWidget({
           channel.forEach((val, i) => {
             const x = (i / 255) * width;
             const h = val * height;
-            const isInRange =
-              x >= value.lower * width && x <= value.upper * width;
+            const isInRange = x >= value[0] * width && x <= value[1] * width;
             if (opacity === 'background' || isInRange) {
               ctx.fillRect(x, height - h, width / 255, h);
             }
@@ -112,8 +108,7 @@ export default function HistogramRangeWidget({
           if (i % 25 === 0) {
             console.log(`Bar at ${i}: value=${val}, height=${h}, x=${x}`);
           }
-          const isInRange =
-            x >= value.lower * width && x <= value.upper * width;
+          const isInRange = x >= value[0] * width && x <= value[1] * width;
           if (opacity === 'background' || isInRange) {
             ctx.fillRect(x, height - h, width / 255, h);
           }
@@ -171,29 +166,28 @@ export default function HistogramRangeWidget({
 
     if (isNaN(newValue)) {
       if (type === 'lower') {
-        setLowerInput(value.lower.toFixed(2));
+        setLowerInput(value[0].toFixed(2));
       } else {
-        setUpperInput(value.upper.toFixed(2));
+        setUpperInput(value[1].toFixed(2));
       }
       return;
     }
 
-    // Clamp values between min and max
     newValue = Math.max(min, Math.min(max, newValue));
 
     if (type === 'lower') {
-      if (newValue <= value.upper && setValue) {
-        setValue(forWhom, { ...value, lower: newValue });
+      if (newValue <= value[1] && setValue) {
+        setValue(forWhom, [newValue, value[1]]);
         setLowerInput(newValue.toFixed(2));
       } else {
-        setLowerInput(value.lower.toFixed(2));
+        setLowerInput(value[0].toFixed(2));
       }
     } else {
-      if (newValue >= value.lower && setValue) {
-        setValue(forWhom, { ...value, upper: newValue });
+      if (newValue >= value[0] && setValue) {
+        setValue(forWhom, [value[0], newValue]);
         setUpperInput(newValue.toFixed(2));
       } else {
-        setUpperInput(value.upper.toFixed(2));
+        setUpperInput(value[1].toFixed(2));
       }
     }
   };
@@ -211,23 +205,19 @@ export default function HistogramRangeWidget({
 
   useEffect(() => {
     if (document.activeElement?.tagName !== 'INPUT') {
-      setLowerInput(value.lower.toFixed(2));
-      setUpperInput(value.upper.toFixed(2));
+      setLowerInput(value[0].toFixed(2));
+      setUpperInput(value[1].toFixed(2));
     }
-  }, [value.lower, value.upper]);
+  }, [value[0], value[1]]);
 
   const handleRangeChange = useCallback(
     (newValue: number[]) => {
       if (!setValue || newValue.length !== 2) {
         return;
       }
-      setValue(forWhom, {
-        ...value,
-        lower: newValue[0],
-        upper: newValue[1]
-      });
+      setValue(forWhom, newValue);
     },
-    [setValue, forWhom, value]
+    [setValue, forWhom]
   );
 
   const eventHandlers = {
@@ -247,7 +237,7 @@ export default function HistogramRangeWidget({
     type: 'text',
     className: 'value-mark',
     style: {
-      left: `${(type === 'lower' ? value.lower : value.upper) * 100}%`,
+      left: `${(type === 'lower' ? value[0] : value[1]) * 100}%`,
       transform: 'translateX(-50%)'
     },
     value: type === 'lower' ? lowerInput : upperInput,
@@ -292,7 +282,7 @@ export default function HistogramRangeWidget({
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         >
           <RangeSlider
-            value={[value.lower, value.upper]}
+            value={[value[0], value[1]]}
             min={min}
             max={max}
             step={step}
