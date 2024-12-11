@@ -26,9 +26,10 @@ export default function HistogramRangeWidget({
   step = 0.01
 }: IHistogramRangeWidgetProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const debounceTimeout = useRef<number | null>(null);
   const [lowerInput, setLowerInput] = useState(value[0].toFixed(2));
   const [upperInput, setUpperInput] = useState(value[1].toFixed(2));
-  const debounceTimeout = useRef<number | null>(null);
+  const [displayValue, setDisplayValue] = useState<[number, number]>(value);
 
   useEffect(() => {
     if (!histogram && setValue) {
@@ -214,10 +215,15 @@ export default function HistogramRangeWidget({
 
   useEffect(() => {
     if (document.activeElement?.tagName !== 'INPUT') {
-      setLowerInput(value[0].toFixed(2));
-      setUpperInput(value[1].toFixed(2));
+      setLowerInput(displayValue[0].toFixed(2));
+      setUpperInput(displayValue[1].toFixed(2));
     }
-  }, [value[0], value[1]]);
+  }, [displayValue[0], displayValue[1]]);
+
+  // Replace the existing useEffect for value with this one
+  useEffect(() => {
+    setDisplayValue(value);
+  }, [value]);
 
   const clearDebounce = () => {
     if (debounceTimeout.current) {
@@ -231,6 +237,9 @@ export default function HistogramRangeWidget({
       if (!setValue || newValue.length !== 2) {
         return;
       }
+      setDisplayValue([newValue[0], newValue[1]]);
+
+      // Debounce the actual value update
       clearDebounce();
       debounceTimeout.current = window.setTimeout(() => {
         setValue(forWhom, newValue);
@@ -238,8 +247,6 @@ export default function HistogramRangeWidget({
     },
     [setValue, forWhom]
   );
-
-  useEffect(() => clearDebounce, []);
 
   const eventHandlers = {
     onMouseDown: stopPropagation,
@@ -258,7 +265,7 @@ export default function HistogramRangeWidget({
     type: 'text',
     className: 'value-mark',
     style: {
-      left: `${(type === 'lower' ? value[0] : value[1]) * 100}%`,
+      left: `${(type === 'lower' ? displayValue[0] : displayValue[1]) * 100}%`,
       transform: 'translateX(-50%)'
     },
     value: type === 'lower' ? lowerInput : upperInput,
@@ -304,7 +311,7 @@ export default function HistogramRangeWidget({
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         >
           <RangeSlider
-            value={[value[0], value[1]]}
+            value={[displayValue[0], displayValue[1]]}
             min={min}
             max={max}
             step={step}
