@@ -28,6 +28,7 @@ export default function HistogramRangeWidget({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [lowerInput, setLowerInput] = useState(value[0].toFixed(2));
   const [upperInput, setUpperInput] = useState(value[1].toFixed(2));
+  const debounceTimeout = useRef<number | null>(null);
 
   useEffect(() => {
     if (!histogram && setValue) {
@@ -105,9 +106,7 @@ export default function HistogramRangeWidget({
         processedData.forEach((val, i) => {
           const x = (i / 255) * width;
           const h = val * height;
-          if (i % 25 === 0) {
-            console.log(`Bar at ${i}: value=${val}, height=${h}, x=${x}`);
-          }
+
           const isInRange = x >= value[0] * width && x <= value[1] * width;
           if (opacity === 'background' || isInRange) {
             ctx.fillRect(x, height - h, width / 255, h);
@@ -210,15 +209,27 @@ export default function HistogramRangeWidget({
     }
   }, [value[0], value[1]]);
 
+  const clearDebounce = () => {
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+      debounceTimeout.current = null;
+    }
+  };
+
   const handleRangeChange = useCallback(
     (newValue: number[]) => {
       if (!setValue || newValue.length !== 2) {
         return;
       }
-      setValue(forWhom, newValue);
+      clearDebounce();
+      debounceTimeout.current = window.setTimeout(() => {
+        setValue(forWhom, newValue);
+      }, 400);
     },
     [setValue, forWhom]
   );
+
+  useEffect(() => clearDebounce, []);
 
   const eventHandlers = {
     onMouseDown: stopPropagation,
