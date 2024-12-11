@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
 import { createPortal } from 'react-dom';
 import { WidgetProps } from './Widget';
-// import { ImageViewerFullScreen } from './ImageViewerFullScreen';
 import {} from // generateHeatmap,
 // drawColorBar,
 // COLORMAP_OPTIONS,
