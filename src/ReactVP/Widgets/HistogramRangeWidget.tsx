@@ -161,17 +161,27 @@ export default function HistogramRangeWidget({
 
   const handleInputBlur = (type: 'lower' | 'upper') => {
     const inputValue = type === 'lower' ? lowerInput : upperInput;
+    const currentValue = type === 'lower' ? value[0] : value[1];
     let newValue = parseFloat(inputValue);
 
-    if (isNaN(newValue)) {
+    if (!isNaN(newValue) && newValue === currentValue) {
+      const formattedValue = currentValue.toFixed(2);
       if (type === 'lower') {
-        setLowerInput(value[0].toFixed(2));
+        setLowerInput(formattedValue);
       } else {
-        setUpperInput(value[1].toFixed(2));
+        setUpperInput(formattedValue);
       }
       return;
     }
 
+    if (isNaN(newValue)) {
+      if (type === 'lower') {
+        setLowerInput(currentValue.toFixed(2));
+      } else {
+        setUpperInput(currentValue.toFixed(2));
+      }
+      return;
+    }
     newValue = Math.max(min, Math.min(max, newValue));
 
     if (type === 'lower') {
