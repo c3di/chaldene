@@ -17,9 +17,9 @@ import {
   HistogramCaptureDependencies
 } from './CaptureHistogramInJupyterlab';
 import {
-  captureDifferenceHeatmapCode,
-  DifferenceHeatmapCaptureDependencies
-} from './CaptureDifferenceHeatmapInJupyterlab';
+  captureDifferenceCode,
+  DifferenceCaptureDependencies
+} from './CaptureDifferenceInJupyterlab';
 
 export default class CodeGenerator {
   protected name: string;
@@ -125,7 +125,7 @@ export default class CodeGenerator {
     // Heatmap captures
     heatmapInspections.forEach(
       ({ inputImageVar, outputImageVar, handleId }) => {
-        code += `\n${captureDifferenceHeatmapCode(inputImageVar, outputImageVar, handleId)}`;
+        code += `\n${captureDifferenceCode(inputImageVar, outputImageVar, handleId)}`;
       }
     );
 
@@ -146,7 +146,7 @@ export default class CodeGenerator {
       '\n' +
       HistogramCaptureDependencies +
       '\n' +
-      DifferenceHeatmapCaptureDependencies +
+      DifferenceCaptureDependencies +
       '\n' +
       code.join('\n');
 

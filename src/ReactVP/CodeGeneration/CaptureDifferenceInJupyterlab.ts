@@ -1,7 +1,6 @@
-const captureDifferenceHeatmapFunctionName: string =
-  'capture_difference_heatmap';
+const captureDifferenceFunctionName: string = 'capture_difference';
 
-export const DifferenceHeatmapCaptureDependencies = `
+export const DifferenceCaptureDependencies = `
 import json
 import numpy as np
 from PIL import Image
@@ -11,7 +10,7 @@ from im2im import im2im
 comm = create_comm(target_name='inspection')
 
 
-def ${captureDifferenceHeatmapFunctionName}(image1, image2, handleIdentifier):
+def ${captureDifferenceFunctionName}(image1, image2, handleIdentifier):
     # Convert both images to numpy arrays in the same format
     image1 = im2im(image1, 'numpy.gray_float64(0to1)').raw_image
     image2 = im2im(image2, 'numpy.gray_float64(0to1)').raw_image
@@ -36,10 +35,10 @@ def ${captureDifferenceHeatmapFunctionName}(image1, image2, handleIdentifier):
     })
 `;
 
-export function captureDifferenceHeatmapCode(
+export function captureDifferenceCode(
   image1Var: string,
   image2Var: string,
   targetHandleId: string
 ): string {
-  return `${captureDifferenceHeatmapFunctionName}(${image1Var}, ${image2Var}, "${targetHandleId}")`;
+  return `${captureDifferenceFunctionName}(${image1Var}, ${image2Var}, "${targetHandleId}")`;
 }
