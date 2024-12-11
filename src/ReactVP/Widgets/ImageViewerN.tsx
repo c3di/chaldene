@@ -2,11 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
 import { createPortal } from 'react-dom';
 import { WidgetProps } from './Widget';
-import {} from // generateHeatmap,
-// drawColorBar,
-// COLORMAP_OPTIONS,
-// Colormap
-'./heatmapUtils';
+import DiffMapTrigger from './DiffMapTrigger';
+import { genDiffMap } from './genDiffMap';
 
 const getPointerCoordinates = (e: Event) => {
   if (e instanceof MouseEvent) {
@@ -247,7 +244,7 @@ export default function ImageViewer({
 
     canvas.current!.backgroundImage = image;
     if (showHeatmap && value?.differences) {
-      const diffImage = image;
+      const diffImage = genDiffMap(value.differences, 'binary'); // todo: selectedColormap?
       diffImage.opacity = 0.3;
       canvas.current!.overlayImage = diffImage;
     } else {
@@ -377,13 +374,10 @@ export default function ImageViewer({
         }}
       >
         {heatmapOverlay && (
-          <button
-            className={`heatmap-button nodrag ${showHeatmap ? 'active' : ''}`}
-            onClick={() => setShowHeatmap(!showHeatmap)}
-            title={showHeatmap ? 'Hide heatmap' : 'Show heatmap'}
-          >
-            {showHeatmap ? 'Hide diff' : 'Show diff'}
-          </button>
+          <DiffMapTrigger
+            toggled={showHeatmap}
+            toggle={() => setShowHeatmap(!showHeatmap)}
+          />
         )}
         <button
           className="heatmap-button nodrag"
