@@ -258,7 +258,8 @@ export default function HistogramRangeWidget({
     onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) =>
       handleKeyDown(e, type),
     onClick: (e: React.MouseEvent) => e.stopPropagation(),
-    onFocus: (e: React.FocusEvent<HTMLInputElement>) => e.target.select()
+    onDoubleClick: (e: React.MouseEvent<HTMLInputElement>) =>
+      e.currentTarget.select()
   });
 
   return (
