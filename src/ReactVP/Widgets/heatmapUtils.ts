@@ -38,7 +38,7 @@ const getColorScale = (colormap: Colormap, minVal: number, maxVal: number) => {
 };
 
 export const generateHeatmap = (
-  differences: number[],
+  differences: number[][],
   width: number,
   height: number,
   colormap: Colormap,
@@ -57,38 +57,49 @@ export const generateHeatmap = (
     if (isBinary) {
       colorMapper = getBinaryColorScale();
     } else {
-      let minVal = differences[0];
-      let maxVal = differences[0];
-      for (let i = 1; i < differences.length; i++) {
-        if (differences[i] < minVal) {
-          minVal = differences[i];
-        }
-        if (differences[i] > maxVal) {
-          maxVal = differences[i];
+      let minVal = differences[0][0];
+      let maxVal = differences[0][0];
+      for (let j = 0; j < height; j++) {
+        for (let i = 0; i < width; i++) {
+          const value = differences[j][i];
+          if (value < minVal) {
+            minVal = value;
+          }
+          if (value > maxVal) {
+            maxVal = value;
+          }
         }
       }
-      const colorScale = getColorScale(colormap, -1, 1);
+
+      // Adjust domain based on min/max values
+      let domainMin = -1;
+      let domainMax = 1;
+
+      if (minVal >= 0) {
+        domainMin = 0; // If all values are positive, start scale at 0
+      }
+      if (maxVal <= 0) {
+        domainMax = 0; // If all values are negative, end scale at 0
+      }
+
+      const colorScale = getColorScale(colormap, domainMin, domainMax);
       colorMapper = colorScale;
     }
 
-    for (let j = 0, k = 0; j < height; ++j) {
-      for (let i = 0; i < width; ++i, ++k) {
-        const value = differences[k];
+    for (let j = 0; j < height; j++) {
+      for (let i = 0; i < width; i++) {
+        const value = differences[j][i];
         const colorString = colorMapper(value);
         const color = rgb(colorString);
 
         if (color) {
-          const idx = k * 4;
+          const idx = (j * width + i) * 4;
           imageData.data[idx] = color.r;
           imageData.data[idx + 1] = color.g;
           imageData.data[idx + 2] = color.b;
 
           if (isBinary) {
-            if (Math.abs(value) < 0.5) {
-              imageData.data[idx + 3] = 0;
-            } else {
-              imageData.data[idx + 3] = 204;
-            }
+            imageData.data[idx + 3] = Math.abs(value) < 0.5 ? 0 : 204;
           } else {
             imageData.data[idx + 3] = 255;
           }

@@ -7,7 +7,7 @@ interface IImageViewerFullScreenProps {
   imageUrl?: string;
   onClose: () => void;
   showHeatmap?: boolean;
-  differences?: number[];
+  differences?: number[][];
   selectedColormap?: Colormap;
   isBinary?: boolean;
 }

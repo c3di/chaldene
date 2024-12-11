@@ -21,7 +21,7 @@ interface IImageViewerProps extends WidgetProps {
       width: number;
       height: number;
     };
-    differences?: number[];
+    differences?: number[][];
   };
   heatmapOverlay?: boolean;
   isBinary?: boolean;
