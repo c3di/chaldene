@@ -245,7 +245,6 @@ export default function ImageViewer({
     canvas.current!.backgroundImage = image;
     if (showHeatmap && value?.differences) {
       const diffImage = genDiffMap(value.differences, 'binary'); // todo: selectedColormap?
-      diffImage.opacity = 0.3;
       canvas.current!.overlayImage = diffImage;
     } else {
       canvas.current!.overlayImage = undefined;

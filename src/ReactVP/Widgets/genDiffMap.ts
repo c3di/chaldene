@@ -15,13 +15,13 @@ export const COLORMAP_OPTIONS = [
 export type Colormap = (typeof COLORMAP_OPTIONS)[number];
 
 const getBinaryColorScale = (value: number): any => {
-  if (value < 0) {
-    return rgb(0, 0, 255, 1);
+  if (value <= -0.33) {
+    return rgb(0, 0, 255).copy({ opacity: 0.8 });
   }
-  if (value > 0) {
-    return rgb(255, 0, 0, 1);
+  if (value >= 0.33) {
+    return rgb(255, 0, 0).copy({ opacity: 0.8 });
   }
-  return rgb(255, 255, 255, 1);
+  return rgb(255, 255, 255).copy({ opacity: 0 });
 };
 
 export const getColorScale = (colormap: Colormap) => {
@@ -36,9 +36,9 @@ export const getColorScale = (colormap: Colormap) => {
     rainbow: d3Chromatic.interpolateRainbow
   }[colormap];
 
-  return scaleSequential(interpolator).domain([-1, 1]);
+  const scale = scaleSequential(interpolator).domain([-1, 1]);
+  return (value: number) => rgb(scale(value)).copy({ opacity: 0.8 });
 };
-
 export const genDiffMap = (
   diff: number[][],
   colormap: Colormap
@@ -59,15 +59,15 @@ export const genDiffMap = (
   for (let j = 0; j < height; j++) {
     for (let i = 0; i < width; i++) {
       const value = diff[j][i];
-      const { r, g, b } = rgb(colorScale(value));
+      const { r, g, b, opacity } = rgb(colorScale(value));
       const idx = (j * width + i) * 4;
       imageData.data[idx] = r;
       imageData.data[idx + 1] = g;
       imageData.data[idx + 2] = b;
-      imageData.data[idx + 3] = 200;
+      imageData.data[idx + 3] = opacity * 255;
     }
-    ctx.putImageData(imageData, 0, 0);
   }
+  ctx.putImageData(imageData, 0, 0);
 
   return new fabric.FabricImage(tempCanvas);
 };
