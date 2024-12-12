@@ -12,10 +12,18 @@ export const drawColorBar = (
     const value = -1 + (i / (width - 1)) * 2;
     const color = rgb(colorScale(value));
     if (color) {
+      color.opacity = 1;
       ctx.fillStyle = color.toString();
       ctx.fillRect(i, 0, 1, 20);
     }
   }
+
+  // Text labels
+  ctx.fillStyle = 'black';
+  ctx.font = '12px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('-1', 0, 35);
+  ctx.fillText('1', width, 35);
 };
 
 export default function ColorBar({

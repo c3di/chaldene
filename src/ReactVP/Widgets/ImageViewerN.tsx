@@ -93,8 +93,7 @@ export default function ImageViewer({
   const lastPosX = useRef(0);
   const lastPosY = useRef(0);
 
-  //const [selectedColormap, setSelectedColormap] = useState<Colormap>('viridis');
-  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showDiffMap, setShowDiffMap] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   //console.log('ImageViewer', isFullScreen, setSelectedColormap, setShowHeatmap);
 
@@ -243,8 +242,11 @@ export default function ImageViewer({
     });
 
     canvas.current!.backgroundImage = image;
-    if (showHeatmap && value?.differences) {
-      const diffImage = genDiffMap(value.differences, 'binary'); // todo: selectedColormap?
+    if (showDiffMap && value?.differences) {
+      const diffImage = genDiffMap(
+        value.differences,
+        isBinary ? 'binary' : 'turbo'
+      );
       canvas.current!.overlayImage = diffImage;
     } else {
       canvas.current!.overlayImage = undefined;
@@ -266,7 +268,7 @@ export default function ImageViewer({
   }, [
     editorContext?.getImageViewTransform(),
     image,
-    showHeatmap,
+    showDiffMap,
     value?.differences,
     isBinary
   ]);
@@ -374,8 +376,9 @@ export default function ImageViewer({
       >
         {heatmapOverlay && (
           <DiffMapTrigger
-            toggled={showHeatmap}
-            toggle={() => setShowHeatmap(!showHeatmap)}
+            toggled={showDiffMap}
+            toggle={() => setShowDiffMap(!showDiffMap)}
+            isBinary={isBinary ?? false}
           />
         )}
         <button

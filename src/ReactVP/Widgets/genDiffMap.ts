@@ -37,7 +37,7 @@ export const getColorScale = (colormap: Colormap) => {
   }[colormap];
 
   const scale = scaleSequential(interpolator).domain([-1, 1]);
-  return (value: number) => rgb(scale(value)).copy({ opacity: 0.8 });
+  return (value: number) => rgb(scale(value)).copy({ opacity: 0.3 });
 };
 export const genDiffMap = (
   diff: number[][],
