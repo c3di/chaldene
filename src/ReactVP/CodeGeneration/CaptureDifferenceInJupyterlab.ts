@@ -15,18 +15,23 @@ def ${captureDifferenceFunctionName}(image1, image2, handleIdentifier):
     image1 = im2im(image1, 'numpy.gray_float64(0to1)').raw_image
     image2 = im2im(image2, 'numpy.gray_float64(0to1)').raw_image
     
-    # Calculate normalized difference
-    normalized_diff = np.abs(image1 - image2)
+    # Calculate raw difference
+    diff = image2 - image1
     
-    # Ensure we have actual differences (avoid division by zero)
-    max_diff = np.max(normalized_diff)
-    min_diff = np.min(normalized_diff)
+    # Check if images are binary 
+    is_binary = np.all(np.logical_or(np.isclose(image1, 0), np.isclose(image1, 1))) and \
+                np.all(np.logical_or(np.isclose(image2, 0), np.isclose(image2, 1)))
     
-    if max_diff > min_diff:
-        # Normalize to [0, 1] range
-        normalized_diff = (normalized_diff - min_diff) / (max_diff - min_diff)
+    if is_binary:
+        # For binary images: round to exact -1, 0, 1 values
+        normalized_diff = np.round(diff, decimals=3)
     else:
-        normalized_diff = np.zeros_like(normalized_diff)
+        # For non-binary images: normalize to [-1, 1] range
+        max_diff = np.max(np.abs(diff))
+        if max_diff > 0:
+            normalized_diff = diff / max_diff
+        else:
+            normalized_diff = diff
 
     # Send the heatmap data as 2D array
     comm.send({

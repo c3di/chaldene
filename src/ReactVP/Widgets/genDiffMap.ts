@@ -15,11 +15,11 @@ export const COLORMAP_OPTIONS = [
 export type Colormap = (typeof COLORMAP_OPTIONS)[number];
 
 const getBinaryColorScale = (value: number): any => {
-  if (value <= -0.33) {
-    return rgb(0, 0, 255).copy({ opacity: 0.8 });
+  if (value === -1) {
+    return rgb(255, 100, 100).copy({ opacity: 0.8 }); // Red
   }
-  if (value >= 0.33) {
-    return rgb(255, 0, 0).copy({ opacity: 0.8 });
+  if (value === 1) {
+    return rgb(0, 255, 0).copy({ opacity: 0.8 }); // Bright green
   }
   return rgb(255, 255, 255).copy({ opacity: 0 });
 };

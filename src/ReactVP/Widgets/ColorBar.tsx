@@ -7,23 +7,31 @@ export const drawColorBar = (
   colormap: Colormap
 ) => {
   const colorScale = getColorScale(colormap);
-  const width = 120;
-  for (let i = 0; i < width; i++) {
-    const value = -1 + (i / (width - 1)) * 2;
-    const color = rgb(colorScale(value));
-    if (color) {
-      color.opacity = 1;
-      ctx.fillStyle = color.toString();
-      ctx.fillRect(i, 0, 1, 20);
+  const width = colormap === 'binary' ? 60 : 120;
+
+  if (colormap === 'binary') {
+    // Draw two equal sections for binary colormap
+    const sectionWidth = width / 2;
+
+    const redColor = rgb(colorScale(-1));
+    ctx.fillStyle = redColor?.toString() || '';
+    ctx.fillRect(0, 0, sectionWidth, 20);
+
+    const greenColor = rgb(colorScale(1));
+    ctx.fillStyle = greenColor?.toString() || '';
+    ctx.fillRect(sectionWidth, 0, sectionWidth, 20);
+  } else {
+    // Original continuous gradient for other colormaps
+    for (let i = 0; i < width; i++) {
+      const value = -1 + (i / (width - 1)) * 2;
+      const color = rgb(colorScale(value));
+      if (color) {
+        color.opacity = 1;
+        ctx.fillStyle = color.toString();
+        ctx.fillRect(i, 0, 1, 20);
+      }
     }
   }
-
-  // Text labels
-  ctx.fillStyle = 'black';
-  ctx.font = '12px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('-1', 0, 35);
-  ctx.fillText('1', width, 35);
 };
 
 export default function ColorBar({
@@ -38,7 +46,24 @@ export default function ColorBar({
     if (ctx) {
       drawColorBar(ctx, colormap);
     }
-  }, []);
+  }, [colormap]); // Added colormap to dependency array
 
-  return <canvas ref={canvasRef} width={120} height={20}></canvas>;
+  const width = colormap === 'binary' ? 60 : 120;
+
+  return (
+    <div style={{ position: 'relative', width }}>
+      <canvas ref={canvasRef} width={width} height={20} />
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginTop: '0.5px',
+          fontSize: '10px'
+        }}
+      >
+        <span>-1</span>
+        <span>1</span>
+      </div>
+    </div>
+  );
 }

@@ -13,16 +13,24 @@ export default function DiffMapTrigger({
   isBinary: boolean;
 }): JSX.Element {
   return (
-    <div>
-      <ColorBar colormap={isBinary ? 'binary' : 'turbo'} />
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '8px',
+        height: '24px'
+      }}
+    >
       <button
         className={`heatmap-button nodrag ${toggled ? 'active' : ''}`}
         onClick={toggle}
         title={toggled ? 'Hide Difference' : 'Show Difference'}
-        style={{ padding: 0 }}
       >
         <img src={DIFFMAP_ICON_PATH} alt="heatmap toggle" className="nodrag" />
       </button>
+      <div style={{ height: '100%' }}>
+        {toggled && <ColorBar colormap={isBinary ? 'binary' : 'turbo'} />}
+      </div>
     </div>
   );
 }
