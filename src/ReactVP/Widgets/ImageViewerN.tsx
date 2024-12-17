@@ -220,18 +220,15 @@ export default function ImageViewer({
       return;
     }
 
-    const {
-      x: asyncX,
-      y: asyncY,
-      zoom: asyncZoom
-    } = editorContext?.getImageViewTransform() ?? {};
-
-    const scaleFactor =
-      asyncZoom ??
-      Math.min(
-        canvas.current!.width / image.width,
-        canvas.current!.height / image.height
-      );
+    const scaleFactor = isFullScreen
+      ? Math.min(
+          canvas.current!.width / image.width,
+          canvas.current!.height / image.height
+        )
+      : Math.min(
+          canvas.current!.width / image.width,
+          canvas.current!.height / image.height
+        );
 
     canvas.current!.setZoom(scaleFactor);
 
@@ -260,18 +257,12 @@ export default function ImageViewer({
     const centerY = (canvas.current!.height - image.height * zoom) / 2;
 
     if (viewportTransform) {
-      viewportTransform[4] = asyncX ?? centerX;
-      viewportTransform[5] = asyncY ?? centerY;
+      viewportTransform[4] = centerX;
+      viewportTransform[5] = centerY;
     }
 
     canvas.current!.renderAll();
-  }, [
-    editorContext?.getImageViewTransform(),
-    image,
-    showDiffMap,
-    value?.differences,
-    isBinary
-  ]);
+  }, [image, showDiffMap, value?.differences, isBinary, isFullScreen]);
 
   useEffect(() => {
     if (!canvas.current || !image) {
