@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as fabric from 'fabric';
 import { createPortal } from 'react-dom';
 import { WidgetProps } from './Widget';
@@ -25,6 +25,8 @@ interface IImageViewerProps extends WidgetProps {
   };
   heatmapOverlay?: boolean;
   isBinary?: boolean;
+  isFullscreen?: boolean;
+  onFullscreenChange?: (fullscreen: boolean) => void;
 }
 
 function FullScreenPortal({
@@ -79,11 +81,13 @@ function FullScreenPortal({
   );
 }
 
-export default function ImageViewer({
+function ImageViewer({
   value,
   editorContext,
   heatmapOverlay,
-  isBinary
+  isBinary,
+  isFullscreen = false,
+  onFullscreenChange
 }: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
@@ -94,7 +98,10 @@ export default function ImageViewer({
   const lastPosY = useRef(0);
 
   const [showDiffMap, setShowDiffMap] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  const normalViewerSize = useRef<{ width: number; height: number } | null>(
+    null
+  );
+  const fullscreenSize = useRef<{ width: number; height: number } | null>(null);
   //console.log('ImageViewer', isFullScreen, setSelectedColormap, setShowHeatmap);
 
   const updateMousePosition = (
@@ -220,16 +227,75 @@ export default function ImageViewer({
       return;
     }
 
-    const scaleFactor = isFullScreen
-      ? Math.min(
-          canvas.current!.width / image.width,
-          canvas.current!.height / image.height
-        )
-      : Math.min(
-          canvas.current!.width / image.width,
-          canvas.current!.height / image.height
-        );
+    const {
+      x: asyncX,
+      y: asyncY,
+      zoom: asyncZoom
+    } = editorContext?.getImageViewTransform() ?? {};
 
+    console.log('Initial transform values:', { asyncX, asyncY, asyncZoom }); // Debug log
+
+    if (canvasElParent.current) {
+      if (isFullscreen) {
+        fullscreenSize.current = {
+          width: canvasElParent.current.clientWidth,
+          height: canvasElParent.current.clientHeight
+        };
+        console.log('Storing fullscreen size:', fullscreenSize.current);
+      } else {
+        normalViewerSize.current = {
+          width: canvasElParent.current.clientWidth,
+          height: canvasElParent.current.clientHeight
+        };
+        console.log('Storing normal viewer size:', normalViewerSize.current);
+      }
+    }
+
+    // Calculate scale ratio when in fullscreen
+    let scaleRatio = 1;
+    if (normalViewerSize.current && canvasElParent.current) {
+      if (isFullscreen) {
+        // Going to fullscreen
+        const widthRatio =
+          canvasElParent.current.clientWidth / normalViewerSize.current.width;
+        const heightRatio =
+          canvasElParent.current.clientHeight / normalViewerSize.current.height;
+        scaleRatio = Math.min(widthRatio, heightRatio);
+      } else if (fullscreenSize.current) {
+        // Coming back from fullscreen
+        const widthRatio =
+          fullscreenSize.current.width / normalViewerSize.current.width;
+        const heightRatio =
+          fullscreenSize.current.height / normalViewerSize.current.height;
+        scaleRatio = 1 / Math.min(widthRatio, heightRatio);
+      }
+
+      console.log('Scale ratio calculation:', {
+        currentWidth: canvasElParent.current.clientWidth,
+        currentHeight: canvasElParent.current.clientHeight,
+        normalWidth: normalViewerSize.current.width,
+        normalHeight: normalViewerSize.current.height,
+        fullscreenWidth: fullscreenSize.current?.width,
+        fullscreenHeight: fullscreenSize.current?.height,
+        scaleRatio,
+        isFullscreen
+      });
+    }
+    const scaleFactor =
+      (asyncZoom ? asyncZoom * scaleRatio : undefined) ??
+      Math.min(
+        canvas.current!.width / image.width,
+        canvas.current!.height / image.height
+      );
+
+    console.log('Applied transformations:', {
+      // Debug log
+      scaleFactor,
+      originalZoom: asyncZoom,
+      scaleRatio,
+      transformX: asyncX ? asyncX * scaleRatio : null,
+      transformY: asyncY ? asyncY * scaleRatio : null
+    });
     canvas.current!.setZoom(scaleFactor);
 
     const laserDot = (canvas.current as any).laserDot;
@@ -257,12 +323,31 @@ export default function ImageViewer({
     const centerY = (canvas.current!.height - image.height * zoom) / 2;
 
     if (viewportTransform) {
-      viewportTransform[4] = centerX;
-      viewportTransform[5] = centerY;
+      viewportTransform[4] = asyncX ? asyncX * scaleRatio : centerX;
+      viewportTransform[5] = asyncY ? asyncY * scaleRatio : centerY;
     }
 
+    console.log('Final canvas state:', {
+      // Debug log
+      isFullscreen: isFullscreen,
+      canvasWidth: canvas.current!.width,
+      canvasHeight: canvas.current!.height,
+      imageWidth: image.width,
+      imageHeight: image.height,
+      finalZoom: zoom,
+      finalTransformX: viewportTransform?.[4],
+      finalTransformY: viewportTransform?.[5]
+    });
+
     canvas.current!.renderAll();
-  }, [image, showDiffMap, value?.differences, isBinary, isFullScreen]);
+  }, [
+    editorContext?.getImageViewTransform(),
+    image,
+    showDiffMap,
+    value?.differences,
+    isBinary,
+    isFullscreen
+  ]);
 
   useEffect(() => {
     if (!canvas.current || !image) {
@@ -372,38 +457,62 @@ export default function ImageViewer({
             isBinary={isBinary ?? false}
           />
         )}
-        <button
-          className="heatmap-button nodrag"
-          onClick={() => {
-            setIsFullScreen(true);
-          }}
-          title="View fullscreen"
-          style={{ marginLeft: '8px' }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+        {!isFullscreen && (
+          <button
+            className="heatmap-button nodrag"
+            onClick={() => onFullscreenChange?.(true)}
+            title="View fullscreen"
+            style={{ marginLeft: '8px' }}
           >
-            <path
-              d="M2 6H0V0H6V2H2V6ZM0 8H2V12H6V14H0V8ZM12 12H8V14H14V8H12V12ZM8 2V0H14V6H12V2H8Z"
-              fill="currentColor"
-            />
-          </svg>
-        </button>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M2 6H0V0H6V2H2V6ZM0 8H2V12H6V14H0V8ZM12 12H8V14H14V8H12V12ZM8 2V0H14V6H12V2H8Z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+        )}
       </div>
-      {isFullScreen && (
-        <FullScreenPortal onClose={() => setIsFullScreen(false)}>
-          <ImageViewer
-            value={value}
-            editorContext={editorContext}
-            heatmapOverlay={heatmapOverlay}
-            isBinary={isBinary}
-          />
-        </FullScreenPortal>
-      )}
     </div>
   );
 }
+
+function ImageViewerWithFullscreen(props: IImageViewerProps): JSX.Element {
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  const handleFullscreenChange = useCallback((fullscreen: boolean) => {
+    setIsFullScreen(fullscreen);
+  }, []);
+
+  return (
+    <>
+      <ImageViewer
+        {...props}
+        isFullscreen={isFullScreen}
+        onFullscreenChange={handleFullscreenChange}
+      />
+      {isFullScreen && (
+        <FullScreenPortal
+          onClose={() => {
+            console.log('FullScreenPortal onClose'); // Debug log
+            handleFullscreenChange(false);
+          }}
+        >
+          <ImageViewer
+            {...props}
+            isFullscreen={true}
+            onFullscreenChange={handleFullscreenChange}
+          />
+        </FullScreenPortal>
+      )}
+    </>
+  );
+}
+
+export { ImageViewerWithFullscreen, ImageViewer };

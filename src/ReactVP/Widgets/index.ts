@@ -1,5 +1,5 @@
 import WidgetsRegistry from './WidgetsRegistry';
-import ImageViewer from './ImageViewerN';
+import { ImageViewerWithFullscreen } from './ImageViewerN';
 import HistogramRangeWidget from './HistogramRangeWidget';
 
 import {
@@ -32,6 +32,6 @@ registerWidget('Number', NumericInput, 'number');
 registerWidget('Slider', Slider, 'number');
 registerWidget('Dropdown', Dropdown, 'enum');
 registerWidget('Tuple2', Tuple2Input, 'tuple2');
-registerWidget('ImageViewer', ImageViewer);
+registerWidget('ImageViewer', ImageViewerWithFullscreen);
 registerWidget('FileInputFromServer', FileInputFromServer, 'string');
 registerWidget('HistogramRange', HistogramRangeWidget, 'tuple2');
