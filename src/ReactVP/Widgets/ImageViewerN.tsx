@@ -5,7 +5,7 @@ import { WidgetProps } from './Widget';
 import DiffMapTrigger from './DiffMapTrigger';
 import { genDiffMap } from './genDiffMap';
 
-const getPointerCoordinates = (e: Event) => {
+const getMousePosition = (e: Event) => {
   if (e instanceof MouseEvent) {
     return { x: e.clientX, y: e.clientY };
   } else if (e instanceof TouchEvent && e.touches.length > 0) {
@@ -145,14 +145,14 @@ export default function ImageViewer({
 
     canvas.current.on('mouse:down', opt => {
       isPanning.current = true;
-      const { x, y } = getPointerCoordinates(opt.e);
+      const { x, y } = getMousePosition(opt.e);
       updateLastPox(x, y);
     });
 
     canvas.current.on('mouse:move', opt => {
       if (isPanning.current) {
         const viewportTransform = canvas.current!.viewportTransform;
-        const { x, y } = getPointerCoordinates(opt.e);
+        const { x, y } = getMousePosition(opt.e);
         viewportTransform[4] += x - lastPosX.current;
         viewportTransform[5] += y - lastPosY.current;
         canvas.current?.renderAll();
