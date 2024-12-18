@@ -107,15 +107,123 @@ export default function ImageViewer({
     editorContext.updateMousePosition({ x, y });
   };
 
-  const updateGlobalTransform = () => {
-    if (!editorContext) {
+  const originalCanvasDimensions = useRef<{
+    width: number;
+    height: number;
+  } | null>(null);
+
+  const fullscreenDimensions = useRef<{
+    width: number;
+    height: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const parent = canvasElParent.current;
+    if (!parent || originalCanvasDimensions.current) {
       return;
     }
-    const viewportTransform = canvas.current!.viewportTransform;
+
+    originalCanvasDimensions.current = {
+      width: parent.clientWidth,
+      height: parent.clientHeight
+    };
+
+    fullscreenDimensions.current = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+
+    // console.log('Storing dimensions on mount:', {
+    //   original: originalCanvasDimensions.current,
+    //   fullscreen: fullscreenDimensions.current
+    // });
+  }, []);
+
+  function resizeCanvas() {
+    const parent = canvasElParent.current;
+    if (!parent) {
+      return;
+    }
+
+    // console.log('Current canvas dimensions:', {
+    //   width: parent.clientWidth,
+    //   height: parent.clientHeight,
+    //   isFullScreen,
+    //   originalDimensions: originalCanvasDimensions.current
+    // });
+
+    canvas.current?.setDimensions({
+      width: parent.clientWidth,
+      height: parent.clientHeight
+    });
+    canvas.current?.renderAll();
+  }
+
+  const getScaleRatio = () => {
+    if (!originalCanvasDimensions.current || !fullscreenDimensions.current) {
+      console.log('Cannot calculate scale ratio - missing dimensions');
+      return 1;
+    }
+
+    const currentDimensions = isFullScreen
+      ? fullscreenDimensions.current
+      : originalCanvasDimensions.current;
+
+    const originalWidth = originalCanvasDimensions.current.width;
+    const originalHeight = originalCanvasDimensions.current.height;
+
+    const ratio = isFullScreen
+      ? Math.min(
+          currentDimensions.width / originalWidth,
+          currentDimensions.height / originalHeight
+        )
+      : 1 /
+        Math.min(
+          fullscreenDimensions.current.width / originalWidth,
+          fullscreenDimensions.current.height / originalHeight
+        );
+
+    // console.log('Scale ratio calculation:', {
+    //   currentDimensions,
+    //   originalDimensions: originalCanvasDimensions.current,
+    //   ratio,
+    //   isFullScreen,
+    //   calculation: isFullScreen
+    //     ? 'fullscreen/original'
+    //     : '1/(fullscreen/original)'
+    // });
+
+    return ratio;
+  };
+
+  const updateGlobalTransform = () => {
+    if (!editorContext || !canvas.current) {
+      return;
+    }
+
+    const viewportTransform = canvas.current.viewportTransform;
+    const currentZoom = canvas.current.getZoom();
+    const scaleRatio = getScaleRatio();
+
+    // console.log('Updating global transform:', {
+    //   before: {
+    //     x: viewportTransform[4],
+    //     y: viewportTransform[5],
+    //     zoom: currentZoom
+    //   },
+    //   after: {
+    //     x: viewportTransform[4] / scaleRatio,
+    //     y: viewportTransform[5] / scaleRatio,
+    //     zoom: currentZoom / scaleRatio
+    //   },
+    //   scaleRatio,
+    //   isFullScreen
+    // });
+
     editorContext.updateGlobalTransform({
-      x: viewportTransform[4],
-      y: viewportTransform[5],
-      zoom: canvas.current?.getZoom() ?? 1
+      x: viewportTransform[4] / scaleRatio,
+      y: viewportTransform[5] / scaleRatio,
+      zoom: currentZoom / scaleRatio
     });
   };
 
@@ -124,15 +232,6 @@ export default function ImageViewer({
     lastPosY.current = y;
     updateGlobalTransform();
   };
-
-  function resizeCanvas() {
-    const parent = canvasElParent.current;
-    canvas.current?.setDimensions({
-      width: parent?.clientWidth ?? 0,
-      height: parent?.clientHeight ?? 0
-    });
-    canvas.current?.renderAll();
-  }
 
   useEffect(() => {
     if (!canvasElement.current || !canvasElParent.current) {
@@ -226,14 +325,32 @@ export default function ImageViewer({
       zoom: asyncZoom
     } = editorContext?.getImageViewTransform() ?? {};
 
+    const scaleRatio = getScaleRatio();
+
+    // console.log('Applying transform:', {
+    //   before: { x: asyncX, y: asyncY, zoom: asyncZoom },
+    //   after: {
+    //     x: asyncX !== undefined ? asyncX * scaleRatio : undefined,
+    //     y: asyncY !== undefined ? asyncY * scaleRatio : undefined,
+    //     zoom: asyncZoom !== undefined ? asyncZoom * scaleRatio : undefined
+    //   },
+    //   scaleRatio,
+    //   isFullScreen
+    // });
+
+    const scaledX = asyncX !== undefined ? asyncX * scaleRatio : undefined;
+    const scaledY = asyncY !== undefined ? asyncY * scaleRatio : undefined;
+    const scaledZoom =
+      asyncZoom !== undefined ? asyncZoom * scaleRatio : undefined;
+
     const scaleFactor =
-      asyncZoom ??
+      scaledZoom ??
       Math.min(
-        canvas.current!.width / image.width,
-        canvas.current!.height / image.height
+        canvas.current.width / image.width,
+        canvas.current.height / image.height
       );
 
-    canvas.current!.setZoom(scaleFactor);
+    canvas.current.setZoom(scaleFactor);
 
     const laserDot = (canvas.current as any).laserDot;
     laserDot?.set({
@@ -255,13 +372,14 @@ export default function ImageViewer({
     const zoom = canvas.current!.getZoom();
     const viewportTransform = canvas.current!.viewportTransform;
 
-    // Calculate the translation to center the image
-    const centerX = (canvas.current!.width - image.width * zoom) / 2;
-    const centerY = (canvas.current!.height - image.height * zoom) / 2;
-
-    if (viewportTransform) {
-      viewportTransform[4] = asyncX ?? centerX;
-      viewportTransform[5] = asyncY ?? centerY;
+    if (scaledX !== undefined && scaledY !== undefined) {
+      viewportTransform[4] = scaledX;
+      viewportTransform[5] = scaledY;
+    } else {
+      const centerX = (canvas.current!.width - image.width * zoom) / 2;
+      const centerY = (canvas.current!.height - image.height * zoom) / 2;
+      viewportTransform[4] = centerX;
+      viewportTransform[5] = centerY;
     }
 
     canvas.current!.renderAll();
@@ -270,7 +388,8 @@ export default function ImageViewer({
     image,
     showDiffMap,
     value?.differences,
-    isBinary
+    isBinary,
+    isFullScreen
   ]);
 
   useEffect(() => {
