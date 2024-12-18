@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as fabric from 'fabric';
 import { createPortal } from 'react-dom';
 import { WidgetProps } from './Widget';
@@ -25,8 +25,6 @@ interface IImageViewerProps extends WidgetProps {
   };
   heatmapOverlay?: boolean;
   isBinary?: boolean;
-  isFullscreen?: boolean;
-  onFullscreenChange?: (fullscreen: boolean) => void;
 }
 
 function FullScreenPortal({
@@ -81,19 +79,12 @@ function FullScreenPortal({
   );
 }
 
-function ImageViewer({
+export default function ImageViewer({
   value,
   editorContext,
   heatmapOverlay,
-  isBinary,
-  isFullscreen = false,
-  onFullscreenChange,
-  transformMultiplier = 1,
-  onContainerMount
-}: IImageViewerProps & {
-  transformMultiplier?: number;
-  onContainerMount: (element: HTMLDivElement) => void;
-}): JSX.Element {
+  isBinary
+}: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const canvas = useRef<fabric.Canvas | null>(null);
@@ -101,9 +92,10 @@ function ImageViewer({
   const isPanning = useRef(false);
   const lastPosX = useRef(0);
   const lastPosY = useRef(0);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const [showDiffMap, setShowDiffMap] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  //console.log('ImageViewer', isFullScreen, setSelectedColormap, setShowHeatmap);
 
   const updateMousePosition = (
     x: number | undefined,
@@ -141,12 +133,6 @@ function ImageViewer({
     });
     canvas.current?.renderAll();
   }
-
-  useEffect(() => {
-    if (containerRef.current) {
-      onContainerMount(containerRef.current);
-    }
-  }, [onContainerMount]);
 
   useEffect(() => {
     if (!canvasElement.current || !canvasElParent.current) {
@@ -230,7 +216,7 @@ function ImageViewer({
   }, [value]);
 
   useEffect(() => {
-    if (!canvas.current || !image || !canvasElParent.current) {
+    if (!canvas.current || !image) {
       return;
     }
 
@@ -240,21 +226,12 @@ function ImageViewer({
       zoom: asyncZoom
     } = editorContext?.getImageViewTransform() ?? {};
 
-    const scaleFactor = asyncZoom
-      ? asyncZoom * transformMultiplier
-      : Math.min(
-          canvas.current!.width / image.width,
-          canvas.current!.height / image.height
-        );
-
-    console.log('Applied transformations:', {
-      scaleFactor,
-      originalZoom: asyncZoom,
-      transformMultiplier,
-      transformX: asyncX ? asyncX * transformMultiplier : null,
-      transformY: asyncY ? asyncY * transformMultiplier : null,
-      isFullscreen
-    });
+    const scaleFactor =
+      asyncZoom ??
+      Math.min(
+        canvas.current!.width / image.width,
+        canvas.current!.height / image.height
+      );
 
     canvas.current!.setZoom(scaleFactor);
 
@@ -283,8 +260,8 @@ function ImageViewer({
     const centerY = (canvas.current!.height - image.height * zoom) / 2;
 
     if (viewportTransform) {
-      viewportTransform[4] = asyncX ? asyncX * transformMultiplier : centerX;
-      viewportTransform[5] = asyncY ? asyncY * transformMultiplier : centerY;
+      viewportTransform[4] = asyncX ?? centerX;
+      viewportTransform[5] = asyncY ?? centerY;
     }
 
     canvas.current!.renderAll();
@@ -293,9 +270,7 @@ function ImageViewer({
     image,
     showDiffMap,
     value?.differences,
-    isBinary,
-    isFullscreen,
-    transformMultiplier
+    isBinary
   ]);
 
   useEffect(() => {
@@ -365,7 +340,6 @@ function ImageViewer({
 
   return (
     <div
-      ref={containerRef}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -407,112 +381,38 @@ function ImageViewer({
             isBinary={isBinary ?? false}
           />
         )}
-        {!isFullscreen && (
-          <button
-            className="heatmap-button nodrag"
-            onClick={() => onFullscreenChange?.(true)}
-            title="View fullscreen"
-            style={{ marginLeft: '8px' }}
+        <button
+          className="heatmap-button nodrag"
+          onClick={() => {
+            setIsFullScreen(true);
+          }}
+          title="View fullscreen"
+          style={{ marginLeft: '8px' }}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 14 14"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2 6H0V0H6V2H2V6ZM0 8H2V12H6V14H0V8ZM12 12H8V14H14V8H12V12ZM8 2V0H14V6H12V2H8Z"
-                fill="currentColor"
-              />
-            </svg>
-          </button>
-        )}
+            <path
+              d="M2 6H0V0H6V2H2V6ZM0 8H2V12H6V14H0V8ZM12 12H8V14H14V8H12V12ZM8 2V0H14V6H12V2H8Z"
+              fill="currentColor"
+            />
+          </svg>
+        </button>
       </div>
-    </div>
-  );
-}
-
-function ImageViewerWithFullscreen(props: IImageViewerProps): JSX.Element {
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [transformMultiplier, setTransformMultiplier] = useState(1);
-  const normalSizeRef = useRef<{ width: number; height: number } | null>(null);
-  const handleContainerMount = useCallback((element: HTMLDivElement) => {
-    if (!normalSizeRef.current) {
-      normalSizeRef.current = {
-        width: element.clientWidth,
-        height: element.clientHeight
-      };
-      console.log(
-        'Container mounted - Stored normal size:',
-        normalSizeRef.current
-      );
-    }
-  }, []);
-  const handleFullscreenChange = useCallback((toFullscreen: boolean) => {
-    console.log('handleFullscreenChange called:', {
-      toFullscreen,
-      normalSize: normalSizeRef.current,
-      currentMultiplier: transformMultiplier
-    });
-
-    if (toFullscreen && normalSizeRef.current) {
-      const fullscreenWidth = window.innerWidth;
-      const fullscreenHeight = window.innerHeight;
-
-      const widthRatio = fullscreenWidth / normalSizeRef.current.width;
-      const heightRatio = fullscreenHeight / normalSizeRef.current.height;
-      const newMultiplier = Math.min(widthRatio, heightRatio);
-
-      console.log('Calculating new multiplier:', {
-        normalWidth: normalSizeRef.current.width,
-        normalHeight: normalSizeRef.current.height,
-        fullscreenWidth,
-        fullscreenHeight,
-        widthRatio,
-        heightRatio,
-        newMultiplier
-      });
-
-      setTransformMultiplier(newMultiplier);
-      setIsFullScreen(true);
-    } else {
-      console.log('Resetting multiplier to 1');
-      setTransformMultiplier(1);
-      setIsFullScreen(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    console.log('State updated:', {
-      isFullScreen,
-      transformMultiplier,
-      normalSize: normalSizeRef.current
-    });
-  }, [isFullScreen, transformMultiplier]);
-
-  return (
-    <>
-      <ImageViewer
-        {...props}
-        isFullscreen={isFullScreen}
-        onFullscreenChange={handleFullscreenChange}
-        transformMultiplier={transformMultiplier}
-        onContainerMount={handleContainerMount}
-      />
       {isFullScreen && (
-        <FullScreenPortal onClose={() => handleFullscreenChange(false)}>
+        <FullScreenPortal onClose={() => setIsFullScreen(false)}>
           <ImageViewer
-            {...props}
-            isFullscreen={true}
-            onFullscreenChange={handleFullscreenChange}
-            transformMultiplier={transformMultiplier}
-            onContainerMount={() => {}} // Pass empty function for fullscreen instance
+            value={value}
+            editorContext={editorContext}
+            heatmapOverlay={heatmapOverlay}
+            isBinary={isBinary}
           />
         </FullScreenPortal>
       )}
-    </>
+    </div>
   );
 }
-
-export { ImageViewerWithFullscreen, ImageViewer };
