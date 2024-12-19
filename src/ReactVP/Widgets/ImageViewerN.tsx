@@ -95,7 +95,9 @@ export default function ImageViewer({
 
   const [showDiffMap, setShowDiffMap] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  //console.log('ImageViewer', isFullScreen, setSelectedColormap, setShowHeatmap);
+  const [imageDimensions, setImageDimensions] = useState<
+    { width: number; height: number } | undefined
+  >();
 
   const updateMousePosition = (
     x: number | undefined,
@@ -302,12 +304,23 @@ export default function ImageViewer({
     if (!value?.imageUrl) {
       return;
     }
-    fabric.FabricImage.fromURL(value?.imageUrl)
+
+    if (value.dimensions) {
+      setImageDimensions(value.dimensions);
+    }
+
+    fabric.FabricImage.fromURL(value.imageUrl)
       .then((img: fabric.Image) => {
         if (canvas.current?.backgroundImage === img) {
           return;
         }
         setImage(img);
+        if (!value.dimensions) {
+          setImageDimensions({
+            width: img.width ?? 0,
+            height: img.height ?? 0
+          });
+        }
       })
       .catch(err => {
         console.error('Failed to load image', err);
@@ -467,6 +480,63 @@ export default function ImageViewer({
         gap: '1px'
       }}
     >
+      {image && (
+        <div
+          className="nodrag nowheel"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            position: 'relative',
+            zIndex: 1,
+            backgroundColor: 'var(--vpl-ui-background)',
+            height: '24px'
+          }}
+        >
+          <div
+            style={{
+              fontSize: 'var(--vpl-ui-font-size1)',
+              fontFamily: 'var(--vpl-ui-font-family)',
+              color: 'var(--vpl-ui-font-color2)'
+            }}
+          >
+            {imageDimensions && (
+              <span>{`${imageDimensions.width}×${imageDimensions.height}`}</span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {heatmapOverlay && (
+              <DiffMapTrigger
+                toggled={showDiffMap}
+                toggle={() => setShowDiffMap(!showDiffMap)}
+                isBinary={isBinary ?? false}
+              />
+            )}
+            <button
+              className="heatmap-button nodrag"
+              onClick={() => {
+                setIsFullScreen(true);
+              }}
+              title="View fullscreen"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M2 6H0V0H6V2H2V6ZM0 8H2V12H6V14H0V8ZM12 12H8V14H14V8H12V12ZM8 2V0H14V6H12V2H8Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div
         ref={canvasElParent}
         className={'nodrag nowheel widget common-input-style'}
@@ -479,48 +549,7 @@ export default function ImageViewer({
         <canvas
           ref={canvasElement}
           className={`nodrag nowheel widget imageview ${isPanning.current ? 'grabbing' : 'grab'}`}
-        />{' '}
-      </div>
-      <div
-        className="nodrag nowheel"
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-start',
-          alignItems: 'center',
-          position: 'relative',
-          zIndex: 1,
-          backgroundColor: 'var(--vpl-ui-background)',
-          height: '44px'
-        }}
-      >
-        {heatmapOverlay && (
-          <DiffMapTrigger
-            toggled={showDiffMap}
-            toggle={() => setShowDiffMap(!showDiffMap)}
-            isBinary={isBinary ?? false}
-          />
-        )}
-        <button
-          className="heatmap-button nodrag"
-          onClick={() => {
-            setIsFullScreen(true);
-          }}
-          title="View fullscreen"
-          style={{ marginLeft: '8px' }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M2 6H0V0H6V2H2V6ZM0 8H2V12H6V14H0V8ZM12 12H8V14H14V8H12V12ZM8 2V0H14V6H12V2H8Z"
-              fill="currentColor"
-            />
-          </svg>
-        </button>
+        />
       </div>
       {isFullScreen && (
         <FullScreenPortal onClose={() => setIsFullScreen(false)}>
