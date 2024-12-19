@@ -1,6 +1,6 @@
 .heatmap-button {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border: none;
     border-radius: 4px;
     background: linear-gradient(to bottom, #ffffff, #f0f0f0);
@@ -35,8 +35,8 @@
 }
 
 .heatmap-button img {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     object-fit: contain;
     border-radius: 2px;
     filter: saturate(0.3) brightness(1.2);
@@ -68,17 +68,9 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-.colormap-dropdown {
-    padding: 0 2px !important;
-}
-
-.colormap-dropdown option {
-    padding: 0 2px;
-}
-
 .heatmap-button svg {
-    width: 14px;
-    height: 14px;
+    width: 20px;
+    height: 20px;
     transition: transform 0.2s ease;
 }
 

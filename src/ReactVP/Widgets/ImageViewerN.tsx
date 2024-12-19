@@ -505,7 +505,7 @@ export default function ImageViewer({
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '4px' }}>
             {heatmapOverlay && (
               <DiffMapTrigger
                 toggled={showDiffMap}
@@ -519,18 +519,21 @@ export default function ImageViewer({
                 setIsFullScreen(true);
               }}
               title="View fullscreen"
+              style={{
+                padding: '4px'
+              }}
             >
               <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 64 64"
+                width="100%"
+                height="100%"
+                fill="currentColor"
               >
-                <path
-                  d="M2 6H0V0H6V2H2V6ZM0 8H2V12H6V14H0V8ZM12 12H8V14H14V8H12V12ZM8 2V0H14V6H12V2H8Z"
-                  fill="currentColor"
-                />
+                <path d="m61 1h-17a2 2 0 0 0 0 4h12.008l-18.389 17.553a2 2 0 1 0 2.762 2.894l18.619-17.773v12.326a2 2 0 0 0 4 0v-17a2 2 0 0 0 -2-2z" />
+                <path d="m61 42a2 2 0 0 0 -2 2v12.172l-18.586-18.586a2 2 0 0 0 -2.828 2.828l18.586 18.586h-12.172a2 2 0 0 0 0 4h17a2 2 0 0 0 2-2v-17a2 2 0 0 0 -2-2z" />
+                <path d="m22.586 38.586-17.586 17.586v-12.172a2 2 0 0 0 -4 0v17a2 2 0 0 0 2 2h17a2 2 0 0 0 0-4h-12.172l17.586-17.586a2 2 0 0 0 -2.828-2.828z" />
+                <path d="m7.828 5h12.172a2 2 0 0 0 0-4h-17a2 2 0 0 0 -2 2v17a2 2 0 0 0 4 0v-12.172l17.586 17.586a2 2 0 0 0 2.828-2.828z" />
               </svg>
             </button>
           </div>
