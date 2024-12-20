@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, memo } from 'react';
+import { useEffect, useRef, useState, useCallback, memo, useMemo } from 'react';
 import * as fabric from 'fabric';
 import { createPortal } from 'react-dom';
 import { WidgetProps } from './Widget';
@@ -142,7 +142,6 @@ export default function ImageViewer({
   const [imageDimensions, setImageDimensions] = useState<
     { width: number; height: number } | undefined
   >();
-  const mountCount = useRef(0);
 
   const updateMousePosition = (
     x: number | undefined,
@@ -179,11 +178,6 @@ export default function ImageViewer({
       width: window.innerWidth,
       height: window.innerHeight
     };
-
-    // console.log('Storing dimensions on mount:', {
-    //   original: originalCanvasDimensions.current,
-    //   fullscreen: fullscreenDimensions.current
-    // });
   }, []);
 
   function resizeCanvas() {
@@ -341,12 +335,46 @@ export default function ImageViewer({
     };
   }, []);
 
+  const portalValue = useMemo(
+    () => ({
+      ...value,
+      imageUrl: value?.imageUrl ?? image?.getSrc() ?? '',
+      dimensions: imageDimensions ?? value?.dimensions
+    }),
+    [value, image, imageDimensions]
+  );
+
   useEffect(() => {
+    // console.log('Image loading effect:', {
+    //   hasCanvas: !!canvas.current,
+    //   imageUrl: value?.imageUrl,
+    //   hasDifferences: !!value?.differences,
+    //   fullValue: value,
+    //   isFullScreenControl: !!isFullScreenControl,
+    //   isFullScreenValue: isFullScreenControl?.isFullScreen,
+    //   timestamp: new Date().toISOString()
+    // });
+
     if (!canvas.current) {
       return;
     }
+
+    const newImageUrl = value?.imageUrl;
+    const currentImageUrl = image?.getSrc();
+    if (newImageUrl === currentImageUrl && image) {
+      //console.log('Skipping image load - URL unchanged');
+      return;
+    }
+
     canvas.current.clear();
-    if (!value?.imageUrl) {
+
+    if (!newImageUrl && image) {
+      //console.log('Preserving current image while updating other properties');
+      canvas.current!.backgroundImage = image;
+      return;
+    }
+
+    if (!newImageUrl) {
       return;
     }
 
@@ -354,7 +382,7 @@ export default function ImageViewer({
       setImageDimensions(value.dimensions);
     }
 
-    fabric.FabricImage.fromURL(value.imageUrl)
+    fabric.FabricImage.fromURL(newImageUrl)
       .then((img: fabric.Image) => {
         if (canvas.current?.backgroundImage === img) {
           return;
@@ -368,9 +396,13 @@ export default function ImageViewer({
         }
       })
       .catch(err => {
-        console.error('Failed to load image', err);
+        console.error('Failed to load image:', {
+          error: err,
+          isFullScreen,
+          isPortalInstance: !!isFullScreenControl
+        });
       });
-  }, [value]);
+  }, [value?.imageUrl]);
 
   useEffect(() => {
     if (!canvas.current || !image) {
@@ -533,32 +565,6 @@ export default function ImageViewer({
     </div>
   );
 
-  useEffect(() => {
-    mountCount.current += 1;
-    console.log('Component lifecycle:', {
-      mountCount: mountCount.current,
-      isFullScreen,
-      timestamp: new Date().toISOString(),
-      stack: new Error().stack
-    });
-
-    return () => {
-      console.log('Component unmounting:', {
-        mountCount: mountCount.current,
-        isFullScreen,
-        timestamp: new Date().toISOString()
-      });
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log('Fullscreen state changed:', {
-      isFullScreen,
-      mountCount: mountCount.current,
-      timestamp: new Date().toISOString()
-    });
-  }, [isFullScreen]);
-
   const handleScreenToggle = useCallback(() => {
     setIsFullScreen(!isFullScreen);
   }, [isFullScreen, setIsFullScreen]);
@@ -618,7 +624,16 @@ export default function ImageViewer({
           style={{
             display: 'flex',
             justifyContent: 'flex-start',
-            padding: '0px'
+            position: isFullScreen ? 'absolute' : 'relative',
+            bottom: isFullScreen ? '20px' : 'auto',
+            left: isFullScreen ? '20px' : 'auto',
+            zIndex: isFullScreen ? 10000 : 'auto',
+            backgroundColor: isFullScreen
+              ? 'rgba(0, 0, 0, 0.7)'
+              : 'transparent',
+            borderRadius: isFullScreen ? '4px' : '0',
+            padding: isFullScreen ? '4px' : '0',
+            color: isFullScreen ? 'white' : 'inherit'
           }}
         >
           <DiffMapTrigger
@@ -631,7 +646,7 @@ export default function ImageViewer({
       {isFullScreen && !isFullScreenControl && (
         <FullScreenPortal onClose={() => setIsFullScreen(false)}>
           <ImageViewer
-            value={value}
+            value={portalValue}
             editorContext={editorContext}
             heatmapOverlay={heatmapOverlay}
             isBinary={isBinary}
