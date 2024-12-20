@@ -506,13 +506,6 @@ export default function ImageViewer({
           </div>
 
           <div style={{ display: 'flex', gap: '4px' }}>
-            {heatmapOverlay && (
-              <DiffMapTrigger
-                toggled={showDiffMap}
-                toggle={() => setShowDiffMap(!showDiffMap)}
-                isBinary={isBinary ?? false}
-              />
-            )}
             <button
               className="heatmap-button nodrag"
               onClick={() => {
@@ -554,6 +547,21 @@ export default function ImageViewer({
           className={`nodrag nowheel widget imageview ${isPanning.current ? 'grabbing' : 'grab'}`}
         />
       </div>
+      {image && heatmapOverlay && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-start',
+            padding: '0px'
+          }}
+        >
+          <DiffMapTrigger
+            toggled={showDiffMap}
+            toggle={() => setShowDiffMap(!showDiffMap)}
+            isBinary={isBinary ?? false}
+          />
+        </div>
+      )}
       {isFullScreen && (
         <FullScreenPortal onClose={() => setIsFullScreen(false)}>
           <ImageViewer

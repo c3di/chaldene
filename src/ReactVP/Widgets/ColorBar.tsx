@@ -46,21 +46,14 @@ export default function ColorBar({
     if (ctx) {
       drawColorBar(ctx, colormap);
     }
-  }, [colormap]); // Added colormap to dependency array
+  }, [colormap]);
 
   const width = colormap === 'binary' ? 60 : 120;
 
   return (
-    <div style={{ position: 'relative', width }}>
+    <div className="colorbar-container" style={{ width }}>
       <canvas ref={canvasRef} width={width} height={20} />
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginTop: '0.5px',
-          fontSize: '10px'
-        }}
-      >
+      <div className="colorbar-labels">
         <span>-1</span>
         <span>1</span>
       </div>
