@@ -58,21 +58,6 @@ function FullScreenPortal({
         flexDirection: 'column'
       }}
     >
-      <div
-        style={{
-          padding: '16px',
-          display: 'flex',
-          justifyContent: 'flex-end'
-        }}
-      >
-        <button
-          className="heatmap-button nodrag"
-          onClick={onClose}
-          title="Exit fullscreen"
-        >
-          ✕
-        </button>
-      </div>
       <div style={{ flex: 1 }}>{children}</div>
     </div>,
     document.body
@@ -83,7 +68,8 @@ export default function ImageViewer({
   value,
   editorContext,
   heatmapOverlay,
-  isBinary
+  isBinary,
+  isPortalView = false
 }: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
@@ -94,10 +80,11 @@ export default function ImageViewer({
   const lastPosY = useRef(0);
 
   const [showDiffMap, setShowDiffMap] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(isPortalView);
   const [imageDimensions, setImageDimensions] = useState<
     { width: number; height: number } | undefined
   >();
+  const mountCount = useRef(0);
 
   const updateMousePosition = (
     x: number | undefined,
@@ -470,6 +457,109 @@ export default function ImageViewer({
     }
   }, [editorContext?.getMousePosition()]);
 
+  const DimensionsText = ({
+    dimensions,
+    isFullScreen
+  }: {
+    dimensions?: { width: number; height: number };
+    isFullScreen: boolean;
+  }) => (
+    <div
+      style={{
+        fontSize: isFullScreen ? '16px' : 'var(--vpl-ui-font-size1)',
+        fontFamily: 'var(--vpl-ui-font-family)',
+        color: isFullScreen ? 'white' : 'var(--vpl-ui-font-color2)'
+      }}
+    >
+      {dimensions && <span>{`${dimensions.width}×${dimensions.height}`}</span>}
+    </div>
+  );
+
+  useEffect(() => {
+    mountCount.current += 1;
+    console.log('Component lifecycle:', {
+      mountCount: mountCount.current,
+      isFullScreen,
+      isPortal: !!document.querySelector('.fullscreen-portal'),
+      timestamp: new Date().toISOString(),
+      stack: new Error().stack
+    });
+
+    return () => {
+      console.log('Component unmounting:', {
+        mountCount: mountCount.current,
+        isFullScreen,
+        timestamp: new Date().toISOString()
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('Fullscreen state changed:', {
+      isFullScreen,
+      mountCount: mountCount.current,
+      timestamp: new Date().toISOString()
+    });
+  }, [isFullScreen]);
+
+  const ScreenToggleButton = () => {
+    console.log('Rendering ScreenToggleButton:', {
+      isFullScreen,
+      isPortalView,
+      mountCount: mountCount.current,
+      timestamp: new Date().toISOString()
+    });
+
+    return (
+      <button
+        className="fullscreen-button nodrag"
+        onClick={() => {
+          if (isPortalView) {
+            // If we're in the portal view, just close it
+            setIsFullScreen(false);
+          } else {
+            // If we're in the main view, open fullscreen
+            setIsFullScreen(true);
+          }
+        }}
+        title={isPortalView ? 'Exit fullscreen' : 'View fullscreen'}
+        style={{
+          padding: '4px'
+        }}
+      >
+        {!isPortalView ? (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 64 64"
+            width="100%"
+            height="100%"
+            fill="currentColor"
+          >
+            <path d="m61 1h-17a2 2 0 0 0 0 4h12.008l-18.389 17.553a2 2 0 1 0 2.762 2.894l18.619-17.773v12.326a2 2 0 0 0 4 0v-17a2 2 0 0 0 -2-2z" />
+            <path d="m61 42a2 2 0 0 0 -2 2v12.172l-18.586-18.586a2 2 0 0 0 -2.828 2.828l18.586 18.586h-12.172a2 2 0 0 0 0 4h17a2 2 0 0 0 2-2v-17a2 2 0 0 0 -2-2z" />
+            <path d="m22.586 38.586-17.586 17.586v-12.172a2 2 0 0 0 -4 0v17a2 2 0 0 0 2 2h17a2 2 0 0 0 0-4h-12.172l17.586-17.586a2 2 0 0 0 -2.828-2.828z" />
+            <path d="m7.828 5h12.172a2 2 0 0 0 0-4h-17a2 2 0 0 0 -2 2v17a2 2 0 0 0 4 0v-12.172l17.586 17.586a2 2 0 0 0 2.828-2.828z" />
+          </svg>
+        ) : (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            height="24"
+            viewBox="0 0 24 24"
+            width="24"
+          >
+            <path
+              clipRule="evenodd"
+              d="m22.4247 1.57564c.2343.23431.2343.61421 0 .84853l-4.9758 4.97573h3.5515c.3314 0 .6.26863.6.6s-.2686.6-.6.6h-5c-.3314 0-.6-.26863-.6-.6v-5c0-.33137.2686-.6.6-.6s.6.26863.6.6v3.55147l4.9757-4.97573c.2343-.23432.6142-.23432.8486 0zm-19.42431 15.02426c-.33137 0-.6-.2686-.6-.6s.26863-.6.6-.6h5c.33137 0 .6.2686.6.6v5c0 .3314-.26863.6-.6.6s-.6-.2686-.6-.6v-3.5515l-4.97574 4.9758c-.23431.2343-.61421.2343-.84852 0-.23432-.2343-.23432-.6142 0-.8486l4.97573-4.9757zm-1.42426-15.02426c.23431-.23432.61421-.23432.84852 0l4.97574 4.97573v-3.55147c0-.33137.26863-.6.6-.6s.6.26863.6.6v5c0 .33137-.26863.6-.6.6h-5c-.33137 0-.6-.26863-.6-.6s.26863-.6.6-.6h3.55147l-4.97573-4.97573c-.23432-.23432-.23432-.61422 0-.84853zm14.42427 13.82426h5c.3314 0 .6.2686.6.6s-.2686.6-.6.6h-3.5515l4.9758 4.9757c.2343.2344.2343.6143 0 .8486-.2344.2343-.6143.2343-.8486 0l-4.9757-4.9758v3.5515c0 .3314-.2686.6-.6.6s-.6-.2686-.6-.6v-5c0-.3314.2686-.6.6-.6z"
+              fill="currentColor"
+              fillRule="evenodd"
+            />
+          </svg>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div
       style={{
@@ -493,42 +583,12 @@ export default function ImageViewer({
             height: '24px'
           }}
         >
-          <div
-            style={{
-              fontSize: 'var(--vpl-ui-font-size1)',
-              fontFamily: 'var(--vpl-ui-font-family)',
-              color: 'var(--vpl-ui-font-color2)'
-            }}
-          >
-            {imageDimensions && (
-              <span>{`${imageDimensions.width}×${imageDimensions.height}`}</span>
-            )}
-          </div>
-
+          <DimensionsText
+            dimensions={imageDimensions}
+            isFullScreen={isFullScreen}
+          />
           <div style={{ display: 'flex', gap: '4px' }}>
-            <button
-              className="heatmap-button nodrag"
-              onClick={() => {
-                setIsFullScreen(true);
-              }}
-              title="View fullscreen"
-              style={{
-                padding: '4px'
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 64 64"
-                width="100%"
-                height="100%"
-                fill="currentColor"
-              >
-                <path d="m61 1h-17a2 2 0 0 0 0 4h12.008l-18.389 17.553a2 2 0 1 0 2.762 2.894l18.619-17.773v12.326a2 2 0 0 0 4 0v-17a2 2 0 0 0 -2-2z" />
-                <path d="m61 42a2 2 0 0 0 -2 2v12.172l-18.586-18.586a2 2 0 0 0 -2.828 2.828l18.586 18.586h-12.172a2 2 0 0 0 0 4h17a2 2 0 0 0 2-2v-17a2 2 0 0 0 -2-2z" />
-                <path d="m22.586 38.586-17.586 17.586v-12.172a2 2 0 0 0 -4 0v17a2 2 0 0 0 2 2h17a2 2 0 0 0 0-4h-12.172l17.586-17.586a2 2 0 0 0 -2.828-2.828z" />
-                <path d="m7.828 5h12.172a2 2 0 0 0 0-4h-17a2 2 0 0 0 -2 2v17a2 2 0 0 0 4 0v-12.172l17.586 17.586a2 2 0 0 0 2.828-2.828z" />
-              </svg>
-            </button>
+            <ScreenToggleButton />
           </div>
         </div>
       )}
@@ -562,13 +622,14 @@ export default function ImageViewer({
           />
         </div>
       )}
-      {isFullScreen && (
+      {isFullScreen && !isPortalView && (
         <FullScreenPortal onClose={() => setIsFullScreen(false)}>
           <ImageViewer
             value={value}
             editorContext={editorContext}
             heatmapOverlay={heatmapOverlay}
             isBinary={isBinary}
+            isPortalView={true}
           />
         </FullScreenPortal>
       )}
