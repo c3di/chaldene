@@ -293,7 +293,7 @@ export default function HistogramRangeWidget({
         style={{
           position: 'relative',
           width: '100%',
-          height: '100px',
+          height: '70px',
           flex: 1,
           minWidth: 0
         }}
@@ -302,10 +302,10 @@ export default function HistogramRangeWidget({
         <canvas
           ref={canvasRef}
           width="100%"
-          height="100px"
+          height="70px"
           style={{
             width: '100%',
-            height: '100px',
+            height: '70px',
             backgroundColor: 'var(--vpl-blue-gray-6)',
             borderRadius: 'var(--vpl-border-radius)',
             marginBottom: '8px',
