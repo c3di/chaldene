@@ -2,7 +2,7 @@ import { computeNodeSpec } from '../ReactVP';
 
 export const thresholdNodeSpec: computeNodeSpec = {
   name: 'threshold',
-  displayLabel: 'threshold',
+  displayLabel: 'Threshold',
   category: 'binary',
   description:
     'Generates a binary image by applying thresholding to the input image using specified upper and lower bounds. Pixels with values within the range are set to 1, while those outside the range are set to 0.',
@@ -10,13 +10,13 @@ export const thresholdNodeSpec: computeNodeSpec = {
     {
       name: 'image',
       type: 'image',
-      displayLabel: 'image',
+      displayLabel: 'Image',
       description: 'The input image for thresholding.'
     },
     {
       name: 'range',
       type: 'tuple2',
-      displayLabel: 'range',
+      displayLabel: 'Range',
       description: 'The threshold bounds for binarization (lower, upper).',
       defaultValue: [0.2, 0.8],
       widget: {
