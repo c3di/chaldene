@@ -89,7 +89,8 @@ export default function HistogramRangeWidget({
           channel.forEach((val, i) => {
             const x = (i / 255) * width;
             const h = val * height;
-            const isInRange = x >= value[0] * width && x <= value[1] * width;
+            const isInRange =
+              x >= displayValue[0] * width && x <= displayValue[1] * width;
             if (opacity === 'background' || isInRange) {
               ctx.fillRect(x, height - h, width / 255, h);
             }
@@ -108,14 +109,15 @@ export default function HistogramRangeWidget({
           const x = (i / 255) * width;
           const h = val * height;
 
-          const isInRange = x >= value[0] * width && x <= value[1] * width;
+          const isInRange =
+            x >= displayValue[0] * width && x <= displayValue[1] * width;
           if (opacity === 'background' || isInRange) {
             ctx.fillRect(x, height - h, width / 255, h);
           }
         });
       }
     },
-    [histogram, value]
+    [histogram, displayValue]
   );
 
   // Render histogram and range overlay
@@ -140,7 +142,7 @@ export default function HistogramRangeWidget({
     ctx.clearRect(0, 0, width, height);
     drawHistogram(ctx, width, height, 'background');
     drawHistogram(ctx, width, height, 'overlay');
-  }, [histogram, value, drawHistogram]);
+  }, [histogram, displayValue, drawHistogram]);
 
   const stopPropagation = (
     e: React.MouseEvent | React.TouchEvent | React.PointerEvent
@@ -162,7 +164,7 @@ export default function HistogramRangeWidget({
 
   const handleInputBlur = (type: 'lower' | 'upper') => {
     const inputValue = type === 'lower' ? lowerInput : upperInput;
-    const currentValue = type === 'lower' ? value[0] : value[1];
+    const currentValue = type === 'lower' ? displayValue[0] : displayValue[1];
     let newValue = parseFloat(inputValue);
 
     if (!isNaN(newValue) && newValue === currentValue) {
@@ -186,18 +188,18 @@ export default function HistogramRangeWidget({
     newValue = Math.max(min, Math.min(max, newValue));
 
     if (type === 'lower') {
-      if (newValue <= value[1] && setValue) {
-        setValue(forWhom, [newValue, value[1]]);
+      if (newValue <= displayValue[1] && setValue) {
+        setValue(forWhom, [newValue, displayValue[1]]);
         setLowerInput(newValue.toFixed(2));
       } else {
-        setLowerInput(value[0].toFixed(2));
+        setLowerInput(displayValue[0].toFixed(2));
       }
     } else {
-      if (newValue >= value[0] && setValue) {
-        setValue(forWhom, [value[0], newValue]);
+      if (newValue >= displayValue[0] && setValue) {
+        setValue(forWhom, [displayValue[0], newValue]);
         setUpperInput(newValue.toFixed(2));
       } else {
-        setUpperInput(value[1].toFixed(2));
+        setUpperInput(displayValue[1].toFixed(2));
       }
     }
   };
@@ -220,7 +222,6 @@ export default function HistogramRangeWidget({
     }
   }, [displayValue[0], displayValue[1]]);
 
-  // Replace the existing useEffect for value with this one
   useEffect(() => {
     setDisplayValue(value);
   }, [value]);
@@ -237,12 +238,14 @@ export default function HistogramRangeWidget({
       if (!setValue || newValue.length !== 2) {
         return;
       }
+
+      // Immediately update the display value for real-time rendering
       setDisplayValue([newValue[0], newValue[1]]);
 
-      // Debounce the actual value update
+      // Debounce only the parent setValue call
       clearDebounce();
       debounceTimeout.current = window.setTimeout(() => {
-        setValue(forWhom, newValue);
+        setValue(forWhom, [newValue[0], newValue[1]]);
       }, 400);
     },
     [setValue, forWhom]
