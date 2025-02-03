@@ -1,6 +1,7 @@
 import WidgetsRegistry from './WidgetsRegistry';
 import ImageViewer from './ImageViewerN';
 import HistogramRangeWidget from './HistogramRangeWidget';
+import ImageCropperWidget from './ImageCropperWidget';
 
 import {
   Text,
@@ -34,3 +35,4 @@ registerWidget('Tuple2', Tuple2Input, 'tuple2');
 registerWidget('ImageViewer', ImageViewer);
 registerWidget('FileInputFromServer', FileInputFromServer, 'string');
 registerWidget('HistogramRange', HistogramRangeWidget, 'tuple2');
+registerWidget('ImageCropperWidget', ImageCropperWidget, 'image');

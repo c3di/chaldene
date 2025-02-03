@@ -4,27 +4,30 @@ import { type computeNodeSpec } from '../ReactVP';
 
 export const cropNodeSpec: computeNodeSpec = {
   name: 'crop',
-  displayLabel: 'crop',
+  displayLabel: 'Crop',
   category: 'Image Processing',
   inputs: [
     {
       name: 'image',
       type: 'image',
       displayLabel: 'image',
-      description: 'The input image to be cropped.'
+      description: 'Input image.'
     },
     {
-      name: 'crop_area',
+      name: 'crop',
+      type: 'image',
+      displayLabel: 'crop',
       widget: {
-        type: 'BoundingBox'
+        type: 'ImageCropperWidget'
       }
     }
   ],
   outputs: [
     {
-      name: 'image',
+      name: 'outputImage',
       type: 'image',
-      displayLabel: 'image'
+      displayLabel: 'image',
+      description: 'The cropped output image.'
     }
   ],
 
@@ -37,9 +40,9 @@ export const cropNodeSpec: computeNodeSpec = {
 
       return `${import1}
 ${import2}
-${outputs.outputImage} = IM(${image}.raw_image[${cropArea.x}:${
-        cropArea.x + cropArea.width
-      }, ${cropArea.y}:${cropArea.y + cropArea.height}], ${image}.metadata)`;
+${outputs.outputImage} = IM(${image}.raw_image[${cropArea.y}:${
+        cropArea.y + cropArea.height
+      }, ${cropArea.x}:${cropArea.x + cropArea.width}], ${image}.metadata)`;
     }
   }
 };

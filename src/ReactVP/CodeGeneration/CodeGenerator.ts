@@ -150,7 +150,7 @@ export default class CodeGenerator {
       '\n' +
       code.join('\n');
 
-    //console.log('Final generated code:', finalCode);
+    console.log('Final generated code:', finalCode);
     return finalCode;
   }
 }
