@@ -5,7 +5,7 @@ export { type Edge } from './Edge';
 export { isUsedAsInput, uniqueHandleName } from './Handle';
 export { default as Registry } from './Registry';
 export { type Graph, defaultGraph } from './Graph';
-export type { Tuple2 } from './Tuple';
+export type { Tuple2, Tuple4 } from './Tuple';
 export type { default as BoundingBox } from './BoundingBox';
 export type { default as ExecuteStatus } from './ExecuteStatus';
 export type { default as ConnectionStatus } from './ConnectionStatus';

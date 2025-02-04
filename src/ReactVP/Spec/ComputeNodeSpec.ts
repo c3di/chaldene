@@ -41,7 +41,9 @@ export function spec2ComputeNode({
         id: `out${index}`,
         ...output,
         widget:
-          isImageType(output.type) && !output.widget
+          isImageType(output.type) &&
+          !output.widget &&
+          !inputs?.some(input => input.widget?.type === 'ImageViewer')
             ? {
                 type: 'ImageViewer',
                 heatmapOverlay: output.heatmapOverlay ?? false,

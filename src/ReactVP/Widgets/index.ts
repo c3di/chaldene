@@ -35,4 +35,4 @@ registerWidget('Tuple2', Tuple2Input, 'tuple2');
 registerWidget('ImageViewer', ImageViewer);
 registerWidget('FileInputFromServer', FileInputFromServer, 'string');
 registerWidget('HistogramRange', HistogramRangeWidget, 'tuple2');
-registerWidget('ImageCropperWidget', ImageCropperWidget, 'image');
+registerWidget('ImageCropperWidget', ImageCropperWidget, 'tuple4');

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { WidgetProps } from './Widget';
 import DiffMapTrigger from './DiffMapTrigger';
 import { genDiffMap } from './genDiffMap';
+import CropDialog from './CropDialog';
 
 const getMousePosition = (e: Event) => {
   if (e instanceof MouseEvent) {
@@ -25,10 +26,12 @@ interface IImageViewerProps extends WidgetProps {
   };
   heatmapOverlay?: boolean;
   isBinary?: boolean;
+  showCropControl?: boolean;
   isFullScreenControl?: {
     isFullScreen: boolean;
     setIsFullScreen: (value: boolean) => void;
   };
+  forWhom?: any;
 }
 
 function FullScreenPortal({
@@ -124,7 +127,9 @@ export default function ImageViewer({
   editorContext,
   heatmapOverlay,
   isBinary,
-  isFullScreenControl
+  showCropControl,
+  isFullScreenControl,
+  forWhom
 }: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
@@ -142,6 +147,7 @@ export default function ImageViewer({
   const [imageDimensions, setImageDimensions] = useState<
     { width: number; height: number } | undefined
   >();
+  const [showCropDialog, setShowCropDialog] = useState(false);
 
   const updateMousePosition = (
     x: number | undefined,
@@ -569,6 +575,27 @@ export default function ImageViewer({
     setIsFullScreen(!isFullScreen);
   }, [isFullScreen, setIsFullScreen]);
 
+  const CropButton = memo(() => {
+    return (
+      <button
+        className="crop-button nodrag"
+        onClick={() => setShowCropDialog(true)}
+        title="Crop image"
+        style={{ padding: '4px' }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="100%"
+          height="100%"
+          fill="currentColor"
+        >
+          <path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8zM7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z" />
+        </svg>
+      </button>
+    );
+  });
+
   return (
     <div
       style={{
@@ -597,6 +624,7 @@ export default function ImageViewer({
             isFullScreen={isFullScreen}
           />
           <div style={{ display: 'flex', gap: '4px' }}>
+            {showCropControl && <CropButton />}
             <ScreenToggleButton
               isFullScreen={isFullScreen}
               onToggle={handleScreenToggle}
@@ -650,12 +678,31 @@ export default function ImageViewer({
             editorContext={editorContext}
             heatmapOverlay={heatmapOverlay}
             isBinary={isBinary}
+            showCropControl={showCropControl}
             isFullScreenControl={{
               isFullScreen: true,
               setIsFullScreen
             }}
+            forWhom={forWhom}
           />
         </FullScreenPortal>
+      )}
+      {showCropDialog && (
+        <CropDialog
+          imageUrl={value?.imageUrl ?? ''}
+          value={imageDimensions}
+          setValue={(_, newDimensions) => {
+            if (
+              newDimensions &&
+              newDimensions.width > 0 &&
+              newDimensions.height > 0
+            ) {
+              setImageDimensions(newDimensions);
+            }
+          }}
+          forWhom={forWhom}
+          onClose={() => setShowCropDialog(false)}
+        />
       )}
     </div>
   );
