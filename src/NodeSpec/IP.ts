@@ -12,16 +12,6 @@ export const cropNodeSpec: computeNodeSpec = {
       type: 'image',
       displayLabel: 'image',
       description: 'Input image.'
-    },
-    {
-      name: 'cropArea',
-      type: 'tuple4',
-      displayLabel: 'crop area',
-      description: 'Crop area coordinates (x, y, width, height)',
-      widget: {
-        type: 'ImageViewer',
-        showCropControl: true
-      }
     }
   ],
 
@@ -30,7 +20,8 @@ export const cropNodeSpec: computeNodeSpec = {
       name: 'outputImage',
       type: 'image',
       displayLabel: 'image',
-      description: 'The cropped output image.'
+      description: 'The cropped output image.',
+      showCropControl: true
     }
   ],
 
@@ -39,7 +30,16 @@ export const cropNodeSpec: computeNodeSpec = {
       const import1 = 'from im2im import Image as IM';
       const import2 = 'import numpy as np';
       const image = inputs.image;
-      const [x, y, width, height] = inputs.cropArea;
+      const cropDimensions = outputs.outputImage_value ?? null;
+
+      // If no crop dimensions set, return the full image
+      if (!cropDimensions) {
+        return `${import1}
+${import2}
+${outputs.outputImage} = ${image}`;
+      }
+
+      const { x, y, width, height } = cropDimensions;
 
       return `${import1}
 ${import2}

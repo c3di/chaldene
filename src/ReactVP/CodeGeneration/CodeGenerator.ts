@@ -82,6 +82,19 @@ export default class CodeGenerator {
         imageInputVar = inputValues[input.name];
       }
 
+      if (
+        input.widget?.type === 'ImageViewer' &&
+        input.widget.showCropControl &&
+        imageInputVar
+      ) {
+        const captureCode = captureImageCode(
+          imageInputVar,
+          uniqueHandleName(editorID, id, input.id)
+        );
+        console.log('Adding crop widget capture:', captureCode); // Debug log
+        imageInspections.push(captureCode);
+      }
+
       if (input.widget?.type === 'HistogramRange' && imageInputVar) {
         histogramInspections.push({
           imageVar: imageInputVar,
@@ -96,6 +109,13 @@ export default class CodeGenerator {
       outputValues[output.name] = outputVar;
 
       if (isImageType(output.type) || output.widget?.type === 'ImageViewer') {
+        if (output.widget?.showCropControl && imageInputVar) {
+          const captureCode = captureImageCode(
+            imageInputVar,
+            uniqueHandleName(editorID, id, output.id)
+          );
+          imageInspections.push(captureCode);
+        }
         imageInspections.push(outputVar);
         if (output.widget?.heatmapOverlay && imageInputVar) {
           heatmapInspections.push({
@@ -109,6 +129,24 @@ export default class CodeGenerator {
 
     let code = '';
 
+    // Debug logs
+    console.log(
+      'Input captures:',
+      imageInspections.filter(insp => insp.includes('capture_image'))
+    );
+    console.log(
+      'Output captures:',
+      imageInspections.filter(insp => !insp.includes('capture_image'))
+    );
+
+    // Image captures for inputs (crop widget)
+    const inputCaptures = imageInspections.filter(insp =>
+      insp.includes('capture_image')
+    );
+    inputCaptures.forEach(inspection => {
+      code += `${inspection}\n`;
+    });
+
     // Histogram captures
     histogramInspections.forEach(({ imageVar, targetHandle }) => {
       code += `${captureHistogramCode(imageVar, targetHandle)}\n`;
@@ -117,8 +155,11 @@ export default class CodeGenerator {
     // Main node code
     code += generator(inputValues, outputValues);
 
-    // Image captures
-    imageInspections.forEach(inspection => {
+    // Image captures for outputs
+    const outputCaptures = imageInspections.filter(
+      insp => !insp.includes('capture_image')
+    );
+    outputCaptures.forEach(inspection => {
       code += `\n${captureImageCode(inspection)}`;
     });
 

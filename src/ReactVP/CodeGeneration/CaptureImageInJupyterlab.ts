@@ -41,6 +41,6 @@ def ${captureImageFunctionName}(image, handleIdentifier):
     })
 `;
 
-export function captureImageCode(imageVar: string): string {
-  return `${captureImageFunctionName}(${imageVar}, "${imageVar}")`;
+export function captureImageCode(imageVar: string, handleId?: string): string {
+  return `${captureImageFunctionName}(${imageVar}, "${handleId ?? imageVar}")`;
 }
