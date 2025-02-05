@@ -140,7 +140,7 @@ export default function ImageViewer({
   const setIsFullScreen =
     isFullScreenControl?.setIsFullScreen ?? setLocalIsFullScreen;
   const [imageDimensions, setImageDimensions] = useState<
-    { x: number; y: number; width: number; height: number } | undefined
+    { width: number; height: number } | undefined
   >();
 
   const updateMousePosition = (
@@ -345,35 +345,62 @@ export default function ImageViewer({
   );
 
   useEffect(() => {
-    if (!value) {
+    // console.log('Image loading effect:', {
+    //   hasCanvas: !!canvas.current,
+    //   imageUrl: value?.imageUrl,
+    //   hasDifferences: !!value?.differences,
+    //   fullValue: value,
+    //   isFullScreenControl: !!isFullScreenControl,
+    //   isFullScreenValue: isFullScreenControl?.isFullScreen,
+    //   timestamp: new Date().toISOString()
+    // });
+
+    if (!canvas.current) {
       return;
     }
 
-    const newImageUrl = value.imageUrl;
+    const newImageUrl = value?.imageUrl;
     const currentImageUrl = image?.getSrc();
     if (newImageUrl === currentImageUrl && image) {
+      //console.log('Skipping image load - URL unchanged');
       return;
     }
 
-    // Load new image from backend
-    fabric.FabricImage.fromURL(newImageUrl, {
-      crossOrigin: 'anonymous'
-    })
+    canvas.current.clear();
+
+    if (!newImageUrl && image) {
+      //console.log('Preserving current image while updating other properties');
+      canvas.current!.backgroundImage = image;
+      return;
+    }
+
+    if (!newImageUrl) {
+      return;
+    }
+
+    if (value.dimensions) {
+      setImageDimensions(value.dimensions);
+    }
+
+    fabric.FabricImage.fromURL(newImageUrl)
       .then((img: fabric.Image) => {
-        if (!canvas.current) {
+        if (canvas.current?.backgroundImage === img) {
           return;
         }
         setImage(img);
-        setImageDimensions({
-          x: 0,
-          y: 0,
-          width: img.width ?? 0,
-          height: img.height ?? 0
-        });
-        canvas.current.renderAll();
+        if (!value.dimensions) {
+          setImageDimensions({
+            width: img.width ?? 0,
+            height: img.height ?? 0
+          });
+        }
       })
       .catch(err => {
-        console.error('Failed to load image:', err);
+        console.error('Failed to load image:', {
+          error: err,
+          isFullScreen,
+          isPortalInstance: !!isFullScreenControl
+        });
       });
   }, [value?.imageUrl]);
 
@@ -524,7 +551,7 @@ export default function ImageViewer({
     dimensions,
     isFullScreen
   }: {
-    dimensions?: { x: number; y: number; width: number; height: number };
+    dimensions?: { width: number; height: number };
     isFullScreen: boolean;
   }) => (
     <div
