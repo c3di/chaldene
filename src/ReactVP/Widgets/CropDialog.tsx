@@ -2,11 +2,34 @@ import { useState, useEffect } from 'react';
 import ReactCrop, { type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { type WidgetProps } from './Widget';
+import { createPortal } from 'react-dom';
 
 interface ICropDialogProps extends WidgetProps {
   imageUrl: string;
   onClose: () => void;
 }
+
+const CropDialogPortal = ({ children }: { children: React.ReactNode }) => {
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 9999,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+};
 
 export default function CropDialog({
   imageUrl,
@@ -17,10 +40,10 @@ export default function CropDialog({
 }: ICropDialogProps) {
   const [crop, setCrop] = useState<Crop>({
     unit: 'px',
-    x: value?.[0] ?? 0,
-    y: value?.[1] ?? 0,
-    width: value?.[2] ?? 0,
-    height: value?.[3] ?? 0
+    x: value?.x ?? 0,
+    y: value?.y ?? 0,
+    width: value?.width ?? 0,
+    height: value?.height ?? 0
   });
 
   const [imageElement, setImageElement] = useState<HTMLImageElement | null>(
@@ -32,12 +55,18 @@ export default function CropDialog({
     img.src = imageUrl;
     img.onload = () => {
       setImageElement(img);
-      // Always set default crop to 80% of image centered
-      const width = img.width * 0.8;
-      const height = img.height * 0.8;
-      const x = (img.width - width) / 2;
-      const y = (img.height - height) / 2;
-      setCrop({ unit: 'px', x, y, width, height });
+      // Set initial crop to 50% of image size, centered
+      const width = Math.min(img.width * 0.5, img.width);
+      const height = Math.min(img.height * 0.5, img.height);
+      const x = Math.max(0, (img.width - width) / 2);
+      const y = Math.max(0, (img.height - height) / 2);
+      setCrop({
+        unit: 'px',
+        x,
+        y,
+        width,
+        height
+      });
     };
   }, [imageUrl]);
 
@@ -47,19 +76,37 @@ export default function CropDialog({
   };
 
   const handleApply = () => {
-    // Ensure dimensions are valid and within image bounds
-    const dimensions = {
-      width: Math.max(1, Math.round(crop.width)),
-      height: Math.max(1, Math.round(crop.height))
-    };
+    // Pass crop coordinates as tuple4 [x, y, width, height]
+    const cropData = [
+      Math.round(crop.x),
+      Math.round(crop.y),
+      Math.max(1, Math.round(crop.width)),
+      Math.max(1, Math.round(crop.height))
+    ];
 
-    setValue?.(forWhom, dimensions);
+    console.log('CropDialog - Before setValue:', {
+      cropData,
+      forWhom
+    });
+
+    // Update the output value which will trigger backend processing
+    setValue?.(forWhom, cropData);
     onClose();
   };
 
   return (
-    <div className="crop-dialog-overlay">
-      <div className="crop-dialog">
+    <CropDialogPortal>
+      <div
+        className="crop-dialog"
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '20px',
+          maxWidth: '90vw',
+          maxHeight: '90vh',
+          overflow: 'auto'
+        }}
+      >
         <div className="crop-dialog-header">
           <h3>Crop Image</h3>
           <button onClick={onClose}>×</button>
@@ -69,7 +116,17 @@ export default function CropDialog({
             {imageElement && (
               <ReactCrop
                 crop={crop}
-                onChange={newCrop => setCrop(newCrop)}
+                onChange={newCrop => {
+                  // Ensure crop stays within image bounds
+                  const constrainedCrop = {
+                    ...newCrop,
+                    x: Math.max(0, newCrop.x),
+                    y: Math.max(0, newCrop.y),
+                    width: Math.min(newCrop.width, imageElement?.width ?? 0),
+                    height: Math.min(newCrop.height, imageElement?.height ?? 0)
+                  };
+                  setCrop(constrainedCrop);
+                }}
                 aspect={undefined}
               >
                 <img
@@ -120,6 +177,6 @@ export default function CropDialog({
           <button onClick={handleApply}>Apply</button>
         </div>
       </div>
-    </div>
+    </CropDialogPortal>
   );
 }

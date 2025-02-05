@@ -9,7 +9,6 @@ export default interface IComputeNodeSpec extends INodeSpec {
   outputs?: Array<
     Omit<IHandle, 'id' | 'identifier'> & {
       heatmapOverlay?: boolean;
-      showCropControl?: boolean;
     }
   >;
   codeGenerators?: NodeCodeGenerators;
@@ -46,8 +45,7 @@ export function spec2ComputeNode({
             ? {
                 type: 'ImageViewer',
                 heatmapOverlay: output.heatmapOverlay ?? false,
-                isBinary: output.type === 'binary image',
-                showCropControl: output.showCropControl ?? false
+                isBinary: output.type === 'binary image'
               }
             : output.widget
       })),

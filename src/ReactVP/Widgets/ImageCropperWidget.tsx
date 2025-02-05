@@ -1,114 +1,76 @@
-import { useState, useEffect } from 'react';
-import ReactCrop, { type Crop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
+import { useState } from 'react';
 import { type WidgetProps } from './Widget';
-import { type IHandleIdentifier } from '../Type';
+import CropDialog from './CropDialog';
 
-interface ImageCropperWidgetProps extends WidgetProps {
-  value?: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  setValue?: (identifier?: IHandleIdentifier, value?: any) => void;
-  forWhom?: IHandleIdentifier;
+interface IImageCropperWidgetProps extends WidgetProps {
   imageUrl?: string;
 }
 
-export default function ImageCropperWidget({
+export default function ImageCropper({
+  forWhom,
   value,
   setValue,
-  forWhom,
-  imageUrl,
   editorContext
-}: ImageCropperWidgetProps) {
-  console.log('ImageCropperWidget props:', {
-    value,
-    forWhom,
-    imageUrl,
-    hasEditorContext: !!editorContext
-  });
+}: IImageCropperWidgetProps): JSX.Element {
+  const [showCropDialog, setShowCropDialog] = useState(false);
 
-  const [crop, setCrop] = useState<Crop>({
-    unit: 'px',
-    x: value?.x ?? 0,
-    y: value?.y ?? 0,
-    width: value?.width ?? 0,
-    height: value?.height ?? 0
-  });
-
-  const [imageElement, setImageElement] = useState<HTMLImageElement | null>(
-    null
-  );
-
-  useEffect(() => {
-    console.log('ImageUrl changed:', imageUrl);
-    if (!imageUrl) {
-      return;
+  const getConnectedImageUrl = () => {
+    if (!editorContext?.graph || !forWhom) {
+      return '';
     }
 
-    const img = new Image();
-    img.src = imageUrl;
-    img.onload = () => {
-      console.log('Image loaded:', {
-        width: img.width,
-        height: img.height
-      });
-      setImageElement(img);
+    const edge = editorContext.graph.edges.find(
+      e => e.target === forWhom.nodeID && e.targetHandle === 'in0'
+    );
 
-      // Set initial crop to center 80% of image if no crop exists
-      if (!value?.width) {
-        const width = img.width * 0.8;
-        const height = img.height * 0.8;
-        const x = (img.width - width) / 2;
-        const y = (img.height - height) / 2;
-
-        console.log('Setting initial crop:', { x, y, width, height });
-        setCrop({ unit: 'px', x, y, width, height });
-        if (forWhom && setValue) {
-          setValue(forWhom, { x, y, width, height });
-        }
-      }
-    };
-    img.onerror = error => {
-      console.error('Error loading image:', error);
-    };
-  }, [imageUrl]);
-
-  const onCropChange = (newCrop: Crop) => {
-    setCrop(newCrop);
-  };
-
-  const onCropComplete = (crop: Crop) => {
-    if (forWhom && setValue) {
-      setValue(forWhom, {
-        x: Math.round(crop.x),
-        y: Math.round(crop.y),
-        width: Math.round(crop.width),
-        height: Math.round(crop.height)
-      });
+    if (!edge) {
+      return '';
     }
-  };
 
-  if (!imageElement || !imageUrl) {
-    return <div>No image loaded</div>;
-  }
+    const sourceNode = editorContext.graph.nodes.find(
+      n => n.id === edge.source
+    );
+    const sourceOutput = sourceNode?.data.outputs?.find(
+      o => o.id === edge.sourceHandle
+    );
+
+    return sourceOutput?.widget?.value?.imageUrl ?? '';
+  };
 
   return (
-    <div className="image-cropper-container">
-      <ReactCrop
-        crop={crop}
-        onChange={onCropChange}
-        onComplete={onCropComplete}
-        aspect={undefined}
+    <div className="crop-input-container widget">
+      <button
+        className="crop-input-button"
+        title="Open crop dialog"
+        onClick={() => setShowCropDialog(true)}
       >
-        <img
-          src={imageUrl}
-          alt="Crop preview"
-          style={{ maxWidth: '100%', maxHeight: '100%' }}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="currentColor"
+        >
+          <path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8zM7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z" />
+        </svg>
+      </button>
+
+      {showCropDialog && (
+        <CropDialog
+          imageUrl={getConnectedImageUrl()}
+          value={value}
+          setValue={(_, newDimensions) => {
+            if (newDimensions && Array.isArray(newDimensions)) {
+              setValue?.(forWhom, newDimensions);
+              if (editorContext?.graph) {
+                editorContext.updateGraph(editorContext.graph);
+              }
+            }
+          }}
+          forWhom={forWhom}
+          onClose={() => setShowCropDialog(false)}
         />
-      </ReactCrop>
+      )}
     </div>
   );
 }

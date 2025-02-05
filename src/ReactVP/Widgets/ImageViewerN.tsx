@@ -4,7 +4,6 @@ import { createPortal } from 'react-dom';
 import { WidgetProps } from './Widget';
 import DiffMapTrigger from './DiffMapTrigger';
 import { genDiffMap } from './genDiffMap';
-import CropDialog from './CropDialog';
 
 const getMousePosition = (e: Event) => {
   if (e instanceof MouseEvent) {
@@ -26,12 +25,10 @@ interface IImageViewerProps extends WidgetProps {
   };
   heatmapOverlay?: boolean;
   isBinary?: boolean;
-  showCropControl?: boolean;
   isFullScreenControl?: {
     isFullScreen: boolean;
     setIsFullScreen: (value: boolean) => void;
   };
-  forWhom?: any;
 }
 
 function FullScreenPortal({
@@ -127,9 +124,7 @@ export default function ImageViewer({
   editorContext,
   heatmapOverlay,
   isBinary,
-  showCropControl,
-  isFullScreenControl,
-  forWhom
+  isFullScreenControl
 }: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
@@ -145,9 +140,8 @@ export default function ImageViewer({
   const setIsFullScreen =
     isFullScreenControl?.setIsFullScreen ?? setLocalIsFullScreen;
   const [imageDimensions, setImageDimensions] = useState<
-    { width: number; height: number } | undefined
+    { x: number; y: number; width: number; height: number } | undefined
   >();
-  const [showCropDialog, setShowCropDialog] = useState(false);
 
   const updateMousePosition = (
     x: number | undefined,
@@ -351,62 +345,35 @@ export default function ImageViewer({
   );
 
   useEffect(() => {
-    // console.log('Image loading effect:', {
-    //   hasCanvas: !!canvas.current,
-    //   imageUrl: value?.imageUrl,
-    //   hasDifferences: !!value?.differences,
-    //   fullValue: value,
-    //   isFullScreenControl: !!isFullScreenControl,
-    //   isFullScreenValue: isFullScreenControl?.isFullScreen,
-    //   timestamp: new Date().toISOString()
-    // });
-
-    if (!canvas.current) {
+    if (!value) {
       return;
     }
 
-    const newImageUrl = value?.imageUrl;
+    const newImageUrl = value.imageUrl;
     const currentImageUrl = image?.getSrc();
     if (newImageUrl === currentImageUrl && image) {
-      //console.log('Skipping image load - URL unchanged');
       return;
     }
 
-    canvas.current.clear();
-
-    if (!newImageUrl && image) {
-      //console.log('Preserving current image while updating other properties');
-      canvas.current!.backgroundImage = image;
-      return;
-    }
-
-    if (!newImageUrl) {
-      return;
-    }
-
-    if (value.dimensions) {
-      setImageDimensions(value.dimensions);
-    }
-
-    fabric.FabricImage.fromURL(newImageUrl)
+    // Load new image from backend
+    fabric.FabricImage.fromURL(newImageUrl, {
+      crossOrigin: 'anonymous'
+    })
       .then((img: fabric.Image) => {
-        if (canvas.current?.backgroundImage === img) {
+        if (!canvas.current) {
           return;
         }
         setImage(img);
-        if (!value.dimensions) {
-          setImageDimensions({
-            width: img.width ?? 0,
-            height: img.height ?? 0
-          });
-        }
+        setImageDimensions({
+          x: 0,
+          y: 0,
+          width: img.width ?? 0,
+          height: img.height ?? 0
+        });
+        canvas.current.renderAll();
       })
       .catch(err => {
-        console.error('Failed to load image:', {
-          error: err,
-          isFullScreen,
-          isPortalInstance: !!isFullScreenControl
-        });
+        console.error('Failed to load image:', err);
       });
   }, [value?.imageUrl]);
 
@@ -557,7 +524,7 @@ export default function ImageViewer({
     dimensions,
     isFullScreen
   }: {
-    dimensions?: { width: number; height: number };
+    dimensions?: { x: number; y: number; width: number; height: number };
     isFullScreen: boolean;
   }) => (
     <div
@@ -574,27 +541,6 @@ export default function ImageViewer({
   const handleScreenToggle = useCallback(() => {
     setIsFullScreen(!isFullScreen);
   }, [isFullScreen, setIsFullScreen]);
-
-  const CropButton = memo(() => {
-    return (
-      <button
-        className="crop-button nodrag"
-        onClick={() => setShowCropDialog(true)}
-        title="Crop image"
-        style={{ padding: '4px' }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          width="100%"
-          height="100%"
-          fill="currentColor"
-        >
-          <path d="M17 15h2V7c0-1.1-.9-2-2-2H9v2h8v8zM7 17V1H5v4H1v2h4v10c0 1.1.9 2 2 2h10v4h2v-4h4v-2H7z" />
-        </svg>
-      </button>
-    );
-  });
 
   return (
     <div
@@ -624,7 +570,6 @@ export default function ImageViewer({
             isFullScreen={isFullScreen}
           />
           <div style={{ display: 'flex', gap: '4px' }}>
-            {showCropControl && <CropButton />}
             <ScreenToggleButton
               isFullScreen={isFullScreen}
               onToggle={handleScreenToggle}
@@ -678,31 +623,12 @@ export default function ImageViewer({
             editorContext={editorContext}
             heatmapOverlay={heatmapOverlay}
             isBinary={isBinary}
-            showCropControl={showCropControl}
             isFullScreenControl={{
               isFullScreen: true,
               setIsFullScreen
             }}
-            forWhom={forWhom}
           />
         </FullScreenPortal>
-      )}
-      {showCropDialog && (
-        <CropDialog
-          imageUrl={value?.imageUrl ?? ''}
-          value={imageDimensions}
-          setValue={(_, newDimensions) => {
-            if (
-              newDimensions &&
-              newDimensions.width > 0 &&
-              newDimensions.height > 0
-            ) {
-              setImageDimensions(newDimensions);
-            }
-          }}
-          forWhom={forWhom}
-          onClose={() => setShowCropDialog(false)}
-        />
       )}
     </div>
   );
