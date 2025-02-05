@@ -11,22 +11,7 @@ interface ICropDialogProps extends WidgetProps {
 
 const CropDialogPortal = ({ children }: { children: React.ReactNode }) => {
   return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 9999,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}
-    >
-      {children}
-    </div>,
+    <div className="crop-dialog-overlay">{children}</div>,
     document.body
   );
 };
@@ -94,87 +79,94 @@ export default function CropDialog({
     onClose();
   };
 
+  const onCropChange = (newCrop: Crop) => {
+    // Ensure crop stays within image bounds
+    const constrainedCrop = {
+      ...newCrop,
+      x: Math.max(0, newCrop.x),
+      y: Math.max(0, newCrop.y),
+      width: Math.min(newCrop.width, imageElement?.width ?? 0),
+      height: Math.min(newCrop.height, imageElement?.height ?? 0)
+    };
+    setCrop(constrainedCrop);
+  };
+
+  const onCropComplete = (crop: Crop) => {
+    // Ensure crop stays within image bounds
+    const constrainedCrop = {
+      ...crop,
+      x: Math.max(0, crop.x),
+      y: Math.max(0, crop.y),
+      width: Math.min(crop.width, imageElement?.width ?? 0),
+      height: Math.min(crop.height, imageElement?.height ?? 0)
+    };
+    setCrop(constrainedCrop);
+  };
+
   return (
     <CropDialogPortal>
-      <div
-        className="crop-dialog"
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          padding: '20px',
-          maxWidth: '90vw',
-          maxHeight: '90vh',
-          overflow: 'auto'
-        }}
-      >
-        <div className="crop-dialog-header">
-          <h3>Crop Image</h3>
-          <button onClick={onClose}>×</button>
-        </div>
+      <div className="crop-dialog">
         <div className="crop-dialog-content">
-          <div className="crop-image-container">
-            {imageElement && (
-              <ReactCrop
-                crop={crop}
-                onChange={newCrop => {
-                  // Ensure crop stays within image bounds
-                  const constrainedCrop = {
-                    ...newCrop,
-                    x: Math.max(0, newCrop.x),
-                    y: Math.max(0, newCrop.y),
-                    width: Math.min(newCrop.width, imageElement?.width ?? 0),
-                    height: Math.min(newCrop.height, imageElement?.height ?? 0)
-                  };
-                  setCrop(constrainedCrop);
-                }}
-                aspect={undefined}
-              >
-                <img
-                  src={imageUrl}
-                  alt="Crop preview"
-                  style={{ maxWidth: '100%', maxHeight: '60vh' }}
+          <ReactCrop
+            crop={crop}
+            onChange={onCropChange}
+            onComplete={onCropComplete}
+            aspect={undefined}
+          >
+            <img
+              src={imageUrl}
+              alt="Crop preview"
+              style={{ maxWidth: '100%', maxHeight: '100%' }}
+            />
+          </ReactCrop>
+
+          <div className="crop-inputs">
+            <div className="input-row">
+              <div className="input-group common-input-style">
+                <label>X:</label>
+                <input
+                  type="number"
+                  value={Math.round(crop.x)}
+                  onChange={e => handleManualInput('x', e.target.value)}
                 />
-              </ReactCrop>
-            )}
-          </div>
-          <div className="crop-controls">
-            <div className="crop-input-group">
-              <label>X:</label>
-              <input
-                type="number"
-                value={Math.round(crop.x)}
-                onChange={e => handleManualInput('x', e.target.value)}
-              />
+              </div>
+              <div className="input-group common-input-style">
+                <label>Y:</label>
+                <input
+                  type="number"
+                  value={Math.round(crop.y)}
+                  onChange={e => handleManualInput('y', e.target.value)}
+                />
+              </div>
             </div>
-            <div className="crop-input-group">
-              <label>Y:</label>
-              <input
-                type="number"
-                value={Math.round(crop.y)}
-                onChange={e => handleManualInput('y', e.target.value)}
-              />
-            </div>
-            <div className="crop-input-group">
-              <label>Width:</label>
-              <input
-                type="number"
-                value={Math.round(crop.width)}
-                onChange={e => handleManualInput('width', e.target.value)}
-              />
-            </div>
-            <div className="crop-input-group">
-              <label>Height:</label>
-              <input
-                type="number"
-                value={Math.round(crop.height)}
-                onChange={e => handleManualInput('height', e.target.value)}
-              />
+            <div className="input-row">
+              <div className="input-group common-input-style">
+                <label>Width:</label>
+                <input
+                  type="number"
+                  value={Math.round(crop.width)}
+                  onChange={e => handleManualInput('width', e.target.value)}
+                />
+              </div>
+              <div className="input-group common-input-style">
+                <label>Height:</label>
+                <input
+                  type="number"
+                  value={Math.round(crop.height)}
+                  onChange={e => handleManualInput('height', e.target.value)}
+                />
+              </div>
             </div>
           </div>
-        </div>
-        <div className="crop-dialog-footer">
-          <button onClick={onClose}>Cancel</button>
-          <button onClick={handleApply}>Apply</button>
+
+          <div className="crop-dialog-buttons">
+            <button className="cancel-button" onClick={onClose}>
+              Cancel
+            </button>
+            <button className="apply-button" onClick={handleApply}>
+              Apply
+            </button>
+          </div>
         </div>
       </div>
     </CropDialogPortal>
