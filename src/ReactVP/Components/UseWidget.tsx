@@ -8,7 +8,8 @@ export default function useWidget(
   defaultValue: any,
   editorContext: any,
   identifier: any,
-  label?: string
+  label?: string,
+  nodeDimensions?: { width: number; height: number }
 ): JSX.Element | null {
   return useMemo(() => {
     const type = widget?.type;
@@ -30,8 +31,10 @@ export default function useWidget(
           .setValue(forWhichCategory, identifier, value);
       },
       label,
-      editorContext
+      editorContext,
+      nodeDimensions
     };
+
     return <WidgetComponent {...widgetProps} />;
   }, [
     widget,
@@ -39,6 +42,7 @@ export default function useWidget(
     editorContext,
     identifier,
     forWhichCategory,
-    label
+    label,
+    nodeDimensions
   ]);
 }

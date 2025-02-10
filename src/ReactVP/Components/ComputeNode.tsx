@@ -1,10 +1,13 @@
-import { type NodeProps as RcNodeProps } from '@xyflow/react';
+import { type NodeProps as RcNodeProps, NodeResizer } from '@xyflow/react';
 import { type IHandle, type Node as nodeType } from '../Type';
 import { OutputHandle, InputHandle } from './Handle';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NumberInput } from '../Widgets/Input';
 
 export type NodeProps = RcNodeProps<nodeType>;
+
+const DEFAULT_NODE_WIDTH = 300;
+const MIN_NODE_HEIGHT = 150;
 
 export default function ComputeNode({
   id,
@@ -20,6 +23,10 @@ export default function ComputeNode({
     repeatable
   } = data;
   const [repeatCount, setRepeatCount] = useState(1);
+  const [nodeDimensions, setNodeDimensions] = useState({
+    width: DEFAULT_NODE_WIDTH,
+    height: MIN_NODE_HEIGHT
+  });
 
   const _inputs = inputs ?? [];
   const inputHandles = _inputs.map((handle: IHandle) => (
@@ -38,8 +45,17 @@ export default function ComputeNode({
       key={handle.id}
       identifier={{ nodeID: id, id: handle.id, type: 'source' }}
       editorContext={editorContext}
+      nodeDimensions={nodeDimensions}
     />
   ));
+
+  useEffect(() => {
+    console.log('Node dimensions updated:', {
+      nodeId: id,
+      dimensions: nodeDimensions,
+      timestamp: new Date().toISOString()
+    });
+  }, [nodeDimensions, id]);
 
   return (
     <div
@@ -55,10 +71,27 @@ export default function ComputeNode({
             ? '1.5px solid var(--vpl-blue-1)'
             : '1px solid var(--vpl-border-color1)'
         }`,
-        width: '300px',
+        width: nodeDimensions.width,
         transition: 'border-color 0.1s ease-in-out'
       }}
     >
+      {selected && (
+        <NodeResizer
+          minWidth={DEFAULT_NODE_WIDTH}
+          minHeight={MIN_NODE_HEIGHT}
+          isVisible={selected}
+          lineStyle={{ background: 'var(--vpl-blue-1)' }}
+          handleStyle={{ background: 'var(--vpl-blue-1)' }}
+          onResize={(_, params) => {
+            console.log('Node resize event:', {
+              nodeId: id,
+              newDimensions: { width: params.width, height: params.height },
+              timestamp: new Date().toISOString()
+            });
+            setNodeDimensions({ width: params.width, height: params.height });
+          }}
+        />
+      )}
       <div
         className="node__header"
         style={{

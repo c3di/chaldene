@@ -124,7 +124,8 @@ export default function ImageViewer({
   editorContext,
   heatmapOverlay,
   isBinary,
-  isFullScreenControl
+  isFullScreenControl,
+  nodeDimensions
 }: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
@@ -180,18 +181,40 @@ export default function ImageViewer({
     };
   }, []);
 
+  useEffect(() => {
+    console.log('ImageViewer dimensions:', {
+      nodeDimensions,
+      canvasParentSize: canvasElParent.current
+        ? {
+            width: canvasElParent.current.clientWidth,
+            height: canvasElParent.current.clientHeight
+          }
+        : null,
+      canvasSize: canvasElement.current
+        ? {
+            width: canvasElement.current.width,
+            height: canvasElement.current.height
+          }
+        : null,
+      timestamp: new Date().toISOString()
+    });
+  }, [nodeDimensions]);
+
   function resizeCanvas() {
     const parent = canvasElParent.current;
     if (!parent) {
       return;
     }
 
-    // console.log('Current canvas dimensions:', {
-    //   width: parent.clientWidth,
-    //   height: parent.clientHeight,
-    //   isFullScreen,
-    //   originalDimensions: originalCanvasDimensions.current
-    // });
+    console.log('Canvas resize:', {
+      parentDimensions: {
+        width: parent.clientWidth,
+        height: parent.clientHeight
+      },
+      nodeDimensions,
+      isFullScreen,
+      timestamp: new Date().toISOString()
+    });
 
     canvas.current?.setDimensions({
       width: parent.clientWidth,
@@ -610,7 +633,7 @@ export default function ImageViewer({
         className={'nodrag nowheel widget common-input-style'}
         style={{
           width: '100%',
-          height: '100%',
+          height: nodeDimensions ? `${nodeDimensions.height - 80}px` : '100%',
           padding: 0
         }}
       >
@@ -654,6 +677,7 @@ export default function ImageViewer({
               isFullScreen: true,
               setIsFullScreen
             }}
+            nodeDimensions={nodeDimensions}
           />
         </FullScreenPortal>
       )}

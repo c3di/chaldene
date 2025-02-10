@@ -6,6 +6,7 @@ import type EditorContext from '../EditorContext';
 export interface IHandleProps extends IHandle {
   identifier: IHandleIdentifier;
   editorContext?: EditorContext;
+  nodeDimensions?: { width: number; height: number };
 }
 
 export function InputHandle({
@@ -21,6 +22,7 @@ export function InputHandle({
 }: IHandleProps): JSX.Element {
   const Widget = useWidget(
     'inputs',
+
     widget,
     defaultValue,
     editorContext,
@@ -68,14 +70,17 @@ export function OutputHandle({
   description,
   widget,
   editorContext,
-  connections
+  connections,
+  nodeDimensions
 }: IHandleProps): JSX.Element {
   const Widget = useWidget(
     'outputs',
     widget,
     widget?.value,
     editorContext,
-    identifier
+    identifier,
+    displayLabel,
+    nodeDimensions
   );
 
   const showLabel = widget?.type !== 'ImageViewer';
