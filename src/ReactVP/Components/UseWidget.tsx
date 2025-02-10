@@ -9,7 +9,7 @@ export default function useWidget(
   editorContext: any,
   identifier: any,
   label?: string,
-  nodeDimensions?: { width: number; height: number }
+  nodeDimensions?: { width: number; height?: number }
 ): JSX.Element | null {
   return useMemo(() => {
     const type = widget?.type;
@@ -32,9 +32,8 @@ export default function useWidget(
       },
       label,
       editorContext,
-      nodeDimensions
+      ...(type === 'ImageViewer' ? { nodeDimensions } : {})
     };
-
     return <WidgetComponent {...widgetProps} />;
   }, [
     widget,

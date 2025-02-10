@@ -7,7 +7,7 @@ import { NumberInput } from '../Widgets/Input';
 export type NodeProps = RcNodeProps<nodeType>;
 
 const DEFAULT_NODE_WIDTH = 300;
-const MIN_NODE_HEIGHT = 150;
+const MIN_NODE_HEIGHT = 230; // 150px for canvas + 80px for padding/header
 
 export default function ComputeNode({
   id,
@@ -25,7 +25,7 @@ export default function ComputeNode({
   const [repeatCount, setRepeatCount] = useState(1);
   const [nodeDimensions, setNodeDimensions] = useState({
     width: DEFAULT_NODE_WIDTH,
-    height: MIN_NODE_HEIGHT
+    height: 0
   });
 
   const _inputs = inputs ?? [];
@@ -72,6 +72,7 @@ export default function ComputeNode({
             : '1px solid var(--vpl-border-color1)'
         }`,
         width: nodeDimensions.width,
+        minHeight: MIN_NODE_HEIGHT,
         transition: 'border-color 0.1s ease-in-out'
       }}
     >
@@ -83,12 +84,10 @@ export default function ComputeNode({
           lineStyle={{ background: 'var(--vpl-blue-1)' }}
           handleStyle={{ background: 'var(--vpl-blue-1)' }}
           onResize={(_, params) => {
-            console.log('Node resize event:', {
-              nodeId: id,
-              newDimensions: { width: params.width, height: params.height },
-              timestamp: new Date().toISOString()
+            setNodeDimensions({
+              width: params.width,
+              height: Math.max(params.height, MIN_NODE_HEIGHT)
             });
-            setNodeDimensions({ width: params.width, height: params.height });
           }}
         />
       )}

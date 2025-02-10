@@ -6,7 +6,7 @@ import type EditorContext from '../EditorContext';
 export interface IHandleProps extends IHandle {
   identifier: IHandleIdentifier;
   editorContext?: EditorContext;
-  nodeDimensions?: { width: number; height: number };
+  nodeDimensions?: { width: number; height?: number };
 }
 
 export function InputHandle({

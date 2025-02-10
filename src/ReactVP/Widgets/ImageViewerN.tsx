@@ -633,7 +633,9 @@ export default function ImageViewer({
         className={'nodrag nowheel widget common-input-style'}
         style={{
           width: '100%',
-          height: nodeDimensions ? `${nodeDimensions.height - 80}px` : '100%',
+          height: nodeDimensions?.height
+            ? `${nodeDimensions.height - 80}px`
+            : '100%',
           padding: 0
         }}
       >
