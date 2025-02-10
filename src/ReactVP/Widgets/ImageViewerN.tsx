@@ -202,25 +202,37 @@ export default function ImageViewer({
 
   function resizeCanvas() {
     const parent = canvasElParent.current;
-    if (!parent) {
+    if (!parent || !canvas.current) {
       return;
     }
 
-    console.log('Canvas resize:', {
-      parentDimensions: {
-        width: parent.clientWidth,
-        height: parent.clientHeight
-      },
-      nodeDimensions,
-      isFullScreen,
-      timestamp: new Date().toISOString()
+    const parentWidth = parent.clientWidth;
+    const parentHeight = parent.clientHeight;
+
+    // Update canvas dimensions
+    canvas.current.setDimensions({
+      width: parentWidth,
+      height: parentHeight
     });
 
-    canvas.current?.setDimensions({
-      width: parent.clientWidth,
-      height: parent.clientHeight
-    });
-    canvas.current?.renderAll();
+    // If we have an image, rescale it to fit the new canvas size
+    if (image) {
+      const scaleFactor = Math.min(
+        parentWidth / (image.width ?? 1),
+        parentHeight / (image.height ?? 1)
+      );
+
+      canvas.current.setZoom(scaleFactor);
+
+      // Center the image
+      const viewportTransform = canvas.current.viewportTransform;
+      const centerX = (parentWidth - (image.width ?? 0) * scaleFactor) / 2;
+      const centerY = (parentHeight - (image.height ?? 0) * scaleFactor) / 2;
+      viewportTransform[4] = centerX;
+      viewportTransform[5] = centerY;
+    }
+
+    canvas.current.renderAll();
   }
 
   const getScaleRatio = () => {
@@ -592,6 +604,20 @@ export default function ImageViewer({
     setIsFullScreen(!isFullScreen);
   }, [isFullScreen, setIsFullScreen]);
 
+  // Add effect to handle node dimension changes
+  useEffect(() => {
+    if (!nodeDimensions) {
+      return;
+    }
+
+    // Add a small delay to ensure the parent div has been resized
+    const timeoutId = setTimeout(() => {
+      resizeCanvas();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [nodeDimensions]);
+
   return (
     <div
       style={{
@@ -632,11 +658,14 @@ export default function ImageViewer({
         ref={canvasElParent}
         className={'nodrag nowheel widget common-input-style'}
         style={{
-          width: '100%',
+          width: nodeDimensions?.width
+            ? `${nodeDimensions.width - 23}px`
+            : '100%',
           height: nodeDimensions?.height
             ? `${nodeDimensions.height - 80}px`
-            : '100%',
-          padding: 0
+            : '150px',
+          padding: 0,
+          overflow: 'hidden'
         }}
       >
         <canvas

@@ -1,7 +1,7 @@
 import { type NodeProps as RcNodeProps, NodeResizer } from '@xyflow/react';
 import { type IHandle, type Node as nodeType } from '../Type';
 import { OutputHandle, InputHandle } from './Handle';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { NumberInput } from '../Widgets/Input';
 
 export type NodeProps = RcNodeProps<nodeType>;
@@ -50,6 +50,25 @@ export default function ComputeNode({
   ));
 
   useEffect(() => {
+    // Update node dimensions when component mounts
+    setNodeDimensions({
+      width: DEFAULT_NODE_WIDTH,
+      height: MIN_NODE_HEIGHT
+    });
+  }, []);
+
+  const handleNodeResize = useCallback(
+    (_: unknown, params: { width: number; height: number }) => {
+      const newDimensions = {
+        width: params.width,
+        height: Math.max(params.height, MIN_NODE_HEIGHT)
+      };
+      setNodeDimensions(newDimensions);
+    },
+    []
+  );
+
+  useEffect(() => {
     console.log('Node dimensions updated:', {
       nodeId: id,
       dimensions: nodeDimensions,
@@ -83,12 +102,7 @@ export default function ComputeNode({
           isVisible={selected}
           lineStyle={{ background: 'var(--vpl-blue-1)' }}
           handleStyle={{ background: 'var(--vpl-blue-1)' }}
-          onResize={(_, params) => {
-            setNodeDimensions({
-              width: params.width,
-              height: Math.max(params.height, MIN_NODE_HEIGHT)
-            });
-          }}
+          onResize={handleNodeResize}
         />
       )}
       <div
