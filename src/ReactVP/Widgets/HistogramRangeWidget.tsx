@@ -266,7 +266,7 @@ export default function HistogramRangeWidget({
 
   const getInputProps = (type: 'lower' | 'upper') => ({
     type: 'text',
-    className: 'value-mark',
+    className: 'value-mark nodrag',
     style: {
       left: `${(type === 'lower' ? displayValue[0] : displayValue[1]) * 100}%`,
       transform: 'translateX(-50%)'
