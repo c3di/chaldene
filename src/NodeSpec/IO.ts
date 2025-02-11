@@ -44,17 +44,14 @@ export const readImageNodeSpec: computeNodeSpec = {
     ) => {
       const import1 = 'from skimage import io';
       const import2 = 'from im2im import Image as IM';
-      const import3 = 'from im2im import get_possible_metadata';
 
       if (inputs.mode === 'RGB') {
         return `${import1}
 ${import2}
-${import3}
 ${outputs.image} = IM(io.imread(${inputs.path}, as_gray=False), 'numpy.rgb_uint8')`;
       }
       return `${import1}
 ${import2}
-${import3}
 from skimage import img_as_float
 ${outputs.image} = IM(img_as_float(io.imread(${inputs.path}, as_gray=True)), 'numpy.gray_float64(0to1)')`;
     }
