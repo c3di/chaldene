@@ -153,9 +153,9 @@ export const CannyNodeSpec: computeNodeSpec = {
   outputs: [
     {
       name: 'outputImage',
-      type: 'image',
-      displayLabel: 'image',
-      heatmapOverlay: true
+      type: 'binary image',
+      displayLabel: 'binary image'
+      // heatmapOverlay: true
     }
   ],
 

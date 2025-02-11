@@ -32,7 +32,9 @@ export function InputHandle({
   return (
     <div
       className="flex-container"
-      title={type ? `type: ${type}. ${description}` : `${description}`}
+      title={
+        type ? `type: ${type}. ` : '' + description ? `${description}` : ''
+      }
     >
       {!Widget && (
         <div className="handle-container-input">
@@ -92,7 +94,9 @@ export function OutputHandle({
       style={{
         justifyContent: 'flex-end'
       }}
-      title={type ? `type: ${type}. ${description}` : `${description}`}
+      title={
+        type ? `type: ${type}. ` : '' + description ? `${description}` : ''
+      }
     >
       {Widget && (
         <div
