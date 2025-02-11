@@ -39,7 +39,8 @@ export default class CodeGenerator {
   public generateNodeCode(
     editorID: string,
     { id, data }: Node,
-    incomingEdges: Edge[]
+    incomingEdges: Edge[],
+    inspect_included: boolean = true
   ): string {
     const generator = getCodeGenerator(data.specName, this.name);
     if (!generator) {
@@ -109,37 +110,53 @@ export default class CodeGenerator {
 
     let code = '';
 
-    // Histogram captures
-    histogramInspections.forEach(({ imageVar, targetHandle }) => {
-      code += `${captureHistogramCode(imageVar, targetHandle)}\n`;
-    });
-
+    if (inspect_included) {
+      // Histogram captures
+      histogramInspections.forEach(({ imageVar, targetHandle }) => {
+        code += `${captureHistogramCode(imageVar, targetHandle)}\n`;
+      });
+    }
     // Main node code
     code += generator(inputValues, outputValues);
 
-    // Image captures
-    imageInspections.forEach(inspection => {
-      code += `\n${captureImageCode(inspection)}`;
-    });
+    if (inspect_included) {
+      // Image captures
+      imageInspections.forEach(inspection => {
+        code += `\n${captureImageCode(inspection)}`;
+      });
 
-    // Heatmap captures
-    heatmapInspections.forEach(
-      ({ inputImageVar, outputImageVar, handleId }) => {
-        code += `\n${captureDifferenceCode(inputImageVar, outputImageVar, handleId)}`;
-      }
-    );
+      // Heatmap captures
+      heatmapInspections.forEach(
+        ({ inputImageVar, outputImageVar, handleId }) => {
+          code += `\n${captureDifferenceCode(inputImageVar, outputImageVar, handleId)}`;
+        }
+      );
+    }
 
     return code;
   }
 
-  public codeFromGraph(editorID: string, graph: Graph): string {
+  public codeFromGraph(
+    editorID: string,
+    graph: Graph,
+    inspect_included: boolean = true
+  ): string {
     const nodes = topologicalSortDAG(graph);
     const edges = graph.edges;
 
     const code = nodes.map(node => {
       const incomingEdges = edges.filter(e => e.target === node.id);
-      return this.generateNodeCode(editorID, node, incomingEdges);
+      return this.generateNodeCode(
+        editorID,
+        node,
+        incomingEdges,
+        inspect_included
+      );
     });
+
+    if (!inspect_included) {
+      return code.join('\n');
+    }
 
     const finalCode =
       ImageCaptureDependencies +
@@ -150,7 +167,6 @@ export default class CodeGenerator {
       '\n' +
       code.join('\n');
 
-    console.log('Final generated code:', finalCode);
     return finalCode;
   }
 }

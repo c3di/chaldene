@@ -181,7 +181,10 @@ export default class EditorContext {
    *
    * @param increment: whether to return code on the changed part of the graph or the whole graph.
    */
-  public code = (increment: boolean = true): string | null => {
+  public code = (
+    increment: boolean = true,
+    inspect_included = true
+  ): string | null => {
     const graphToBeExecuted = this.getGraphToBeExecuted(increment);
     if (!graphToBeExecuted) {
       return null;
@@ -191,7 +194,7 @@ export default class EditorContext {
     console.log('flowsToBeExecuted', graphToBeExecuted);
     const codes = this.codeGeneratorRegistry
       .get(this.executeLanguage)
-      .codeFromGraph(this.editorID, graphToBeExecuted);
+      .codeFromGraph(this.editorID, graphToBeExecuted, inspect_included);
     return codes;
   };
 
