@@ -290,7 +290,14 @@ export default function HistogramRangeWidget({
   });
 
   return (
-    <div style={{ marginTop: '30px', marginRight: '8px', width: '100%' }}>
+    <div
+      style={{
+        marginTop: '30px',
+        marginRight: '8px',
+        width: '225px',
+        flexShrink: 0
+      }}
+    >
       <div
         className="histogram-widget"
         style={{

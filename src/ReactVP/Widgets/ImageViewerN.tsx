@@ -196,9 +196,18 @@ export default function ImageViewer({
             height: canvasElement.current.height
           }
         : null,
+      histogramSize: document.querySelector('.histogram-widget')
+        ? {
+            width: (document.querySelector('.histogram-widget') as HTMLElement)
+              .clientWidth,
+            height: (document.querySelector('.histogram-widget') as HTMLElement)
+              .clientHeight
+          }
+        : null,
+      isFullScreen,
       timestamp: new Date().toISOString()
     });
-  }, [nodeDimensions]);
+  }, [nodeDimensions, isFullScreen]);
 
   function resizeCanvas() {
     const parent = canvasElParent.current;
@@ -606,7 +615,7 @@ export default function ImageViewer({
 
   // Add effect to handle node dimension changes
   useEffect(() => {
-    if (!nodeDimensions) {
+    if (!nodeDimensions || isFullScreen) {
       return;
     }
 
@@ -616,15 +625,28 @@ export default function ImageViewer({
     }, 0);
 
     return () => clearTimeout(timeoutId);
-  }, [nodeDimensions]);
+  }, [nodeDimensions, isFullScreen]);
+
+  // Add effect to handle fullscreen resizing
+  useEffect(() => {
+    if (!isFullScreen) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      resizeCanvas();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [isFullScreen]);
 
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
-        width: '100%',
-        height: '100%',
+        width: isFullScreen ? '100vw' : '100%',
+        height: isFullScreen ? '100vh' : '100%',
         gap: '1px'
       }}
     >
@@ -655,23 +677,34 @@ export default function ImageViewer({
       )}
 
       <div
-        ref={canvasElParent}
-        className={'nodrag nowheel widget common-input-style'}
         style={{
-          width: nodeDimensions?.width
-            ? `${nodeDimensions.width - 23}px`
-            : '100%',
-          height: nodeDimensions?.height
-            ? `${nodeDimensions.height - 80}px`
-            : '150px',
-          padding: 0,
-          overflow: 'hidden'
+          width: isFullScreen
+            ? '100%'
+            : nodeDimensions?.width
+              ? `${nodeDimensions.width - 23}px`
+              : '100%',
+          height: isFullScreen
+            ? '100%'
+            : nodeDimensions?.height
+              ? `${nodeDimensions.height - 80}px`
+              : '150px'
         }}
       >
-        <canvas
-          ref={canvasElement}
-          className={`nodrag nowheel widget imageview ${isPanning.current ? 'grabbing' : 'grab'}`}
-        />
+        <div
+          ref={canvasElParent}
+          className={'nodrag nowheel widget common-input-style'}
+          style={{
+            width: isFullScreen ? '100vw' : '100%',
+            height: isFullScreen ? 'calc(100vh - 24px)' : '100%',
+            padding: 0,
+            overflow: 'hidden'
+          }}
+        >
+          <canvas
+            ref={canvasElement}
+            className={`nodrag nowheel widget imageview ${isPanning.current ? 'grabbing' : 'grab'}`}
+          />
+        </div>
       </div>
       {image && heatmapOverlay && (
         <div
