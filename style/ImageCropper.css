@@ -1,6 +1,7 @@
 .crop-input-container {
     display: flex;
     align-items: center;
+    gap: 10px;
 }
 
 .crop-input-button {
@@ -9,6 +10,8 @@
     border: none;
     cursor: pointer;
     color: var(--vpl-ui-font-color1);
+    flex-shrink: 0;
+    margin-top: 4px;
 }
 
 .crop-input-button:hover {
@@ -50,12 +53,13 @@
 .crop-inputs {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    flex: 1;
 }
 
 .input-row {
     display: flex;
-    gap: 10px;
+    gap: 12px;
 }
 
 .input-group {
@@ -68,18 +72,7 @@
 .input-group label {
     color: var(--vpl-ui-font-color1);
     min-width: 45px;
-}
-
-.input-group input {
-    flex: 1;
-    border: none;
-    background: none;
-    color: var(--vpl-ui-font-color1);
-    width: 100%;
-}
-
-.input-group input:focus {
-    outline: none;
+    font-size: 0.9em;
 }
 
 .crop-dialog-buttons {
@@ -113,4 +106,13 @@
 
 .apply-button:hover {
     background-color: var(--vpl-blue-0);
+}
+
+/* Add styles for the widget version to be more compact */
+.crop-input-container .crop-inputs {
+    gap: 8px;
+}
+
+.crop-input-container .input-group label {
+    min-width: 35px;
 }

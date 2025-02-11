@@ -59,7 +59,9 @@ export default class CodeGenerator {
       imageVar: string;
       targetHandle: string;
     }> = [];
-    const imageInspections: string[] = [];
+    const imageInspections: Array<
+      string | { imageVar: string; handleId: string }
+    > = [];
     const heatmapInspections: Array<{
       inputImageVar: string;
       outputImageVar: string;
@@ -81,6 +83,13 @@ export default class CodeGenerator {
 
       if (input.name === 'image' && edge) {
         imageInputVar = inputValues[input.name];
+      }
+
+      if (input.widget?.type === 'ImageCropper' && imageInputVar) {
+        imageInspections.push({
+          imageVar: imageInputVar,
+          handleId: uniqueHandleName(editorID, id, input.id)
+        });
       }
 
       if (input.widget?.type === 'HistogramRange' && imageInputVar) {
@@ -122,7 +131,11 @@ export default class CodeGenerator {
     if (inspect_included) {
       // Image captures
       imageInspections.forEach(inspection => {
-        code += `\n${captureImageCode(inspection)}`;
+        if (typeof inspection === 'string') {
+          code += `\n${captureImageCode(inspection)}`;
+        } else {
+          code += `\n${captureImageCode(inspection.imageVar, inspection.handleId)}`;
+        }
       });
 
       // Heatmap captures

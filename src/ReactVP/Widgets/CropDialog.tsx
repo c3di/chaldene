@@ -3,10 +3,17 @@ import ReactCrop, { type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { type WidgetProps } from './Widget';
 import { createPortal } from 'react-dom';
+import { NumberInput } from './Input';
 
 interface ICropDialogProps extends WidgetProps {
   imageUrl: string;
   onClose: () => void;
+  initialCrop?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 }
 
 const CropDialogPortal = ({ children }: { children: React.ReactNode }) => {
@@ -21,14 +28,15 @@ export default function CropDialog({
   value,
   setValue,
   forWhom,
-  onClose
+  onClose,
+  initialCrop
 }: ICropDialogProps) {
   const [crop, setCrop] = useState<Crop>({
     unit: 'px',
-    x: value?.x ?? 0,
-    y: value?.y ?? 0,
-    width: value?.width ?? 0,
-    height: value?.height ?? 0
+    x: initialCrop?.x ?? value?.[0] ?? 0,
+    y: initialCrop?.y ?? value?.[1] ?? 0,
+    width: initialCrop?.width ?? value?.[2] ?? 0,
+    height: initialCrop?.height ?? value?.[3] ?? 0
   });
 
   const [imageElement, setImageElement] = useState<HTMLImageElement | null>(
@@ -40,20 +48,26 @@ export default function CropDialog({
     img.src = imageUrl;
     img.onload = () => {
       setImageElement(img);
-      // Set initial crop to 50% of image size, centered
-      const width = Math.min(img.width * 0.5, img.width);
-      const height = Math.min(img.height * 0.5, img.height);
-      const x = Math.max(0, (img.width - width) / 2);
-      const y = Math.max(0, (img.height - height) / 2);
-      setCrop({
-        unit: 'px',
-        x,
-        y,
-        width,
-        height
-      });
+
+      // Only set default centered crop if no initialCrop is provided
+      if (
+        !initialCrop ||
+        (initialCrop.width === 0 && initialCrop.height === 0)
+      ) {
+        const width = Math.min(img.width * 0.5, img.width);
+        const height = Math.min(img.height * 0.5, img.height);
+        const x = Math.max(0, (img.width - width) / 2);
+        const y = Math.max(0, (img.height - height) / 2);
+        setCrop({
+          unit: 'px',
+          x,
+          y,
+          width,
+          height
+        });
+      }
     };
-  }, [imageUrl]);
+  }, [imageUrl, initialCrop]);
 
   const handleManualInput = (field: string, value: string) => {
     const numValue = parseInt(value) || 0;
@@ -122,38 +136,46 @@ export default function CropDialog({
 
           <div className="crop-inputs">
             <div className="input-row">
-              <div className="input-group common-input-style">
+              <div className="input-group">
                 <label>X:</label>
-                <input
-                  type="number"
+                <NumberInput
+                  forWhom={forWhom}
                   value={Math.round(crop.x)}
-                  onChange={e => handleManualInput('x', e.target.value)}
+                  setValue={(_, val) => handleManualInput('x', val.toString())}
+                  min={0}
                 />
               </div>
-              <div className="input-group common-input-style">
+              <div className="input-group">
                 <label>Y:</label>
-                <input
-                  type="number"
+                <NumberInput
+                  forWhom={forWhom}
                   value={Math.round(crop.y)}
-                  onChange={e => handleManualInput('y', e.target.value)}
+                  setValue={(_, val) => handleManualInput('y', val.toString())}
+                  min={0}
                 />
               </div>
             </div>
             <div className="input-row">
-              <div className="input-group common-input-style">
+              <div className="input-group">
                 <label>Width:</label>
-                <input
-                  type="number"
+                <NumberInput
+                  forWhom={forWhom}
                   value={Math.round(crop.width)}
-                  onChange={e => handleManualInput('width', e.target.value)}
+                  setValue={(_, val) =>
+                    handleManualInput('width', val.toString())
+                  }
+                  min={1}
                 />
               </div>
-              <div className="input-group common-input-style">
+              <div className="input-group">
                 <label>Height:</label>
-                <input
-                  type="number"
+                <NumberInput
+                  forWhom={forWhom}
                   value={Math.round(crop.height)}
-                  onChange={e => handleManualInput('height', e.target.value)}
+                  setValue={(_, val) =>
+                    handleManualInput('height', val.toString())
+                  }
+                  min={1}
                 />
               </div>
             </div>
