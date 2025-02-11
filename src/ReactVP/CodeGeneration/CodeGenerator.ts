@@ -16,10 +16,6 @@ import {
   captureHistogramCode,
   HistogramCaptureDependencies
 } from './CaptureHistogramInJupyterlab';
-import {
-  captureDifferenceCode,
-  DifferenceCaptureDependencies
-} from './CaptureDifferenceInJupyterlab';
 
 export default class CodeGenerator {
   protected name: string;
@@ -60,13 +56,9 @@ export default class CodeGenerator {
       targetHandle: string;
     }> = [];
     const imageInspections: Array<
-      string | { imageVar: string; handleId: string }
+      | string
+      | { imageVar: string; handleId: string; referenceImageVar?: string }
     > = [];
-    const heatmapInspections: Array<{
-      inputImageVar: string;
-      outputImageVar: string;
-      handleId: string;
-    }> = [];
 
     let imageInputVar: string | null = null;
 
@@ -106,13 +98,14 @@ export default class CodeGenerator {
       outputValues[output.name] = outputVar;
 
       if (isImageType(output.type) || output.widget?.type === 'ImageViewer') {
-        imageInspections.push(outputVar);
         if (output.widget?.heatmapOverlay && imageInputVar) {
-          heatmapInspections.push({
-            inputImageVar: imageInputVar,
-            outputImageVar: outputVar,
-            handleId: outputVar
+          imageInspections.push({
+            imageVar: outputVar,
+            handleId: outputVar,
+            referenceImageVar: imageInputVar
           });
+        } else {
+          imageInspections.push(outputVar);
         }
       }
     });
@@ -129,21 +122,18 @@ export default class CodeGenerator {
     code += generator(inputValues, outputValues);
 
     if (inspect_included) {
-      // Image captures
+      // Image captures (including heatmap overlays)
       imageInspections.forEach(inspection => {
         if (typeof inspection === 'string') {
           code += `\n${captureImageCode(inspection)}`;
         } else {
-          code += `\n${captureImageCode(inspection.imageVar, inspection.handleId)}`;
+          code += `\n${captureImageCode(
+            inspection.imageVar,
+            inspection.handleId,
+            inspection.referenceImageVar
+          )}`;
         }
       });
-
-      // Heatmap captures
-      heatmapInspections.forEach(
-        ({ inputImageVar, outputImageVar, handleId }) => {
-          code += `\n${captureDifferenceCode(inputImageVar, outputImageVar, handleId)}`;
-        }
-      );
     }
 
     return code;
@@ -176,10 +166,9 @@ export default class CodeGenerator {
       '\n' +
       HistogramCaptureDependencies +
       '\n' +
-      DifferenceCaptureDependencies +
-      '\n' +
       code.join('\n');
 
+    console.log(finalCode);
     return finalCode;
   }
 }
