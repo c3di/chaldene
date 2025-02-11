@@ -250,35 +250,29 @@ export default function ImageViewer({
       return 1;
     }
 
-    const currentDimensions = isFullScreen
-      ? fullscreenDimensions.current
-      : originalCanvasDimensions.current;
+    // const currentDimensions = isFullScreen
+    //   ? fullscreenDimensions.current
+    //   : originalCanvasDimensions.current;
 
     const originalWidth = originalCanvasDimensions.current.width;
     const originalHeight = originalCanvasDimensions.current.height;
 
-    const ratio = isFullScreen
-      ? Math.min(
-          currentDimensions.width / originalWidth,
-          currentDimensions.height / originalHeight
-        )
-      : 1 /
-        Math.min(
-          fullscreenDimensions.current.width / originalWidth,
-          fullscreenDimensions.current.height / originalHeight
-        );
+    // Calculate the scale ratio based on the current mode
+    const fullscreenRatio = Math.min(
+      fullscreenDimensions.current.width / originalWidth,
+      fullscreenDimensions.current.height / originalHeight
+    );
 
     // console.log('Scale ratio calculation:', {
     //   currentDimensions,
     //   originalDimensions: originalCanvasDimensions.current,
-    //   ratio,
     //   isFullScreen,
     //   calculation: isFullScreen
     //     ? 'fullscreen/original'
     //     : '1/(fullscreen/original)'
     // });
-
-    return ratio;
+    // When in fullscreen, scale up. When in normal mode, scale down.
+    return isFullScreen ? fullscreenRatio : 1 / fullscreenRatio;
   };
 
   const updateGlobalTransform = () => {
@@ -477,46 +471,49 @@ export default function ImageViewer({
     const scaledZoom =
       asyncZoom !== undefined ? asyncZoom * scaleRatio : undefined;
 
-    const scaleFactor =
-      scaledZoom ??
-      Math.min(
-        canvas.current.width / image.width,
-        canvas.current.height / image.height
-      );
+    // Calculate default scale if no zoom is provided
+    const defaultScale = Math.min(
+      canvas.current.width / (image.width ?? 1),
+      canvas.current.height / (image.height ?? 1)
+    );
 
-    canvas.current.setZoom(scaleFactor);
+    // Use scaled zoom or default scale
+    const finalZoom = scaledZoom ?? defaultScale;
+    canvas.current.setZoom(finalZoom);
 
+    // Update laser dot scale if it exists
     const laserDot = (canvas.current as any).laserDot;
-    laserDot?.set({
-      scaleX: 2 / scaleFactor,
-      scaleY: 2 / scaleFactor
-    });
-
-    canvas.current!.backgroundImage = image;
-    if (showDiffMap && value?.differences) {
-      const diffImage = genDiffMap(
-        value.differences,
-        isBinary ? 'binary' : 'turbo'
-      );
-      canvas.current!.overlayImage = diffImage;
-    } else {
-      canvas.current!.overlayImage = undefined;
+    if (laserDot) {
+      laserDot.set({
+        scaleX: 2 / finalZoom,
+        scaleY: 2 / finalZoom
+      });
     }
 
-    const zoom = canvas.current!.getZoom();
-    const viewportTransform = canvas.current!.viewportTransform;
+    // Set background and overlay images
+    canvas.current.backgroundImage = image;
+    canvas.current.overlayImage =
+      showDiffMap && value?.differences
+        ? genDiffMap(value.differences, isBinary ? 'binary' : 'turbo')
+        : undefined;
 
+    // Apply transformation
+    const viewportTransform = canvas.current.viewportTransform;
     if (scaledX !== undefined && scaledY !== undefined) {
       viewportTransform[4] = scaledX;
       viewportTransform[5] = scaledY;
     } else {
-      const centerX = (canvas.current!.width - image.width * zoom) / 2;
-      const centerY = (canvas.current!.height - image.height * zoom) / 2;
+      // Center the image if no position is specified
+      const centerX =
+        (canvas.current.width - (image.width ?? 0) * finalZoom) / 2;
+      const centerY =
+        (canvas.current.height - (image.height ?? 0) * finalZoom) / 2;
       viewportTransform[4] = centerX;
       viewportTransform[5] = centerY;
     }
 
-    canvas.current!.renderAll();
+    canvas.current.renderAll();
+    updateGlobalTransform(); // Update the global transform after applying changes
   }, [
     editorContext?.getImageViewTransform(),
     image,
