@@ -112,6 +112,8 @@ function isSameCode(
       ) {
         return false;
       }
+    } else if (edgeA || edgeB) {
+      return false;
     } else if (inputsA[i].defaultValue !== inputsB[i].defaultValue) {
       return false;
     }
