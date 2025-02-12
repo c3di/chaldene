@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { WidgetProps } from './Widget';
 import DiffMapTrigger from './DiffMapTrigger';
 import { genDiffMap } from './genDiffMap';
+import CloseBackgroundTrigger from './CloseBackgroundTrigger';
 
 const getMousePosition = (e: Event) => {
   if (e instanceof MouseEvent) {
@@ -240,6 +241,8 @@ export default function ImageViewer({
     width: number;
     height: number;
   } | null>(null);
+
+  const [showBackground, setShowBackground] = useState(true);
 
   useEffect(() => {
     const parent = canvasElParent.current;
@@ -575,7 +578,8 @@ export default function ImageViewer({
       scaleY: 2 / scaleFactor
     });
 
-    canvas.current!.backgroundImage = image;
+    // Only set background image if showBackground is true
+    canvas.current!.backgroundImage = showBackground ? image : undefined;
     if (showDiffMap && value?.differences) {
       const diffImage = genDiffMap(
         value.differences,
@@ -597,7 +601,13 @@ export default function ImageViewer({
       viewportTransform[5] = centerY;
     }
     canvas.current.renderAll();
-  }, [editorContext?.getImageViewTransform(), image, isFullScreen]);
+  }, [
+    editorContext?.getImageViewTransform(),
+    image,
+    isFullScreen,
+    showBackground,
+    showDiffMap
+  ]);
 
   useEffect(() => {
     if (!canvas.current || !image) {
@@ -795,10 +805,12 @@ export default function ImageViewer({
         <div
           style={{
             display: 'flex',
-            justifyContent: 'flex-start',
+            flexDirection: 'column',
+            gap: '0px',
             position: isFullScreen ? 'absolute' : 'relative',
             bottom: isFullScreen ? '20px' : 'auto',
             left: isFullScreen ? '20px' : 'auto',
+            marginTop: '4px',
             zIndex: isFullScreen ? 10000 : 'auto',
             backgroundColor: isFullScreen
               ? 'rgba(0, 0, 0, 0.7)'
@@ -812,6 +824,10 @@ export default function ImageViewer({
             toggled={showDiffMap}
             toggle={() => setShowDiffMap(!showDiffMap)}
             isBinary={isBinary ?? false}
+          />
+          <CloseBackgroundTrigger
+            toggled={showBackground}
+            toggle={() => setShowBackground(!showBackground)}
           />
         </div>
       )}
