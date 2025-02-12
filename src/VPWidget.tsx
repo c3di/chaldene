@@ -143,7 +143,8 @@ export class VPWidget extends ReactWidget {
       comm.onMsg = (msg: any) => {
         const data = msg.content.data;
         if (data.handle_id) {
-          this?.updateInspection(data.handle_id, data);
+          const { handle_id, ...inspectionData } = data;
+          this?.updateInspection(handle_id, inspectionData);
         }
       };
     });
