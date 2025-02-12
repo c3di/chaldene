@@ -101,7 +101,7 @@ export default function ImageCropper({
       <div className="crop-inputs">
         <div className="input-row">
           <div className="input-group">
-            <label>X:</label>
+            <label>X</label>
             <NumberInput
               forWhom={forWhom}
               value={localCrop.x}
@@ -110,7 +110,7 @@ export default function ImageCropper({
             />
           </div>
           <div className="input-group">
-            <label>Y:</label>
+            <label>Y</label>
             <NumberInput
               forWhom={forWhom}
               value={localCrop.y}
@@ -121,7 +121,7 @@ export default function ImageCropper({
         </div>
         <div className="input-row">
           <div className="input-group">
-            <label>Width:</label>
+            <label>Width</label>
             <NumberInput
               forWhom={forWhom}
               value={localCrop.width}
@@ -130,7 +130,7 @@ export default function ImageCropper({
             />
           </div>
           <div className="input-group">
-            <label>Height:</label>
+            <label>Height</label>
             <NumberInput
               forWhom={forWhom}
               value={localCrop.height}

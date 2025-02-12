@@ -22,12 +22,13 @@ export function InputHandle({
 }: IHandleProps): JSX.Element {
   const Widget = useWidget(
     'inputs',
-
     widget,
     defaultValue,
     editorContext,
     identifier
   );
+
+  const showLabel = widget?.type !== 'ImageCropper';
 
   return (
     <div
@@ -51,15 +52,28 @@ export function InputHandle({
           />
         </div>
       )}
-      <span
-        className="label"
-        style={{
-          marginRight: '12px'
-        }}
-      >
-        {displayLabel}
-      </span>
-      {Widget ?? null}
+      {showLabel && (
+        <span
+          className="label"
+          style={{
+            marginRight: '12px'
+          }}
+        >
+          {displayLabel}
+        </span>
+      )}
+      {Widget && (
+        <div
+          className={`widget-container ${
+            !showLabel ? 'widget-container-no-label' : ''
+          }`}
+          style={{
+            width: showLabel ? '100%' : 'calc(100% - 25px)'
+          }}
+        >
+          {Widget}
+        </div>
+      )}
     </div>
   );
 }
@@ -86,7 +100,6 @@ export function OutputHandle({
   );
 
   const showLabel = widget?.type !== 'ImageViewer';
-  const isImageViewer = widget?.type === 'ImageViewer';
 
   return (
     <div
@@ -104,7 +117,7 @@ export function OutputHandle({
             !showLabel ? 'widget-container-no-label' : ''
           }`}
           style={{
-            width: isImageViewer ? 'calc(100% - 25px)' : '100%'
+            width: showLabel ? '100%' : 'calc(100% - 25px)'
           }}
         >
           {Widget}

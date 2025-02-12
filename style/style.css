@@ -1,24 +1,18 @@
 :root {
   /* Box Shadows */
   --vpl-shadow-base-lightness: 0;
-  --vpl-shadow-umbra-color: rgba(
-    var(--vpl-shadow-base-lightness),
-    var(--vpl-shadow-base-lightness),
-    var(--vpl-shadow-base-lightness),
-    0.2
-  );
-  --vpl-shadow-penumbra-color: rgba(
-    var(--vpl-shadow-base-lightness),
-    var(--vpl-shadow-base-lightness),
-    var(--vpl-shadow-base-lightness),
-    0.14
-  );
-  --vpl-shadow-ambient-color: rgba(
-    var(--vpl-shadow-base-lightness),
-    var(--vpl-shadow-base-lightness),
-    var(--vpl-shadow-base-lightness),
-    0.12
-  );
+  --vpl-shadow-umbra-color: rgba(var(--vpl-shadow-base-lightness),
+      var(--vpl-shadow-base-lightness),
+      var(--vpl-shadow-base-lightness),
+      0.2);
+  --vpl-shadow-penumbra-color: rgba(var(--vpl-shadow-base-lightness),
+      var(--vpl-shadow-base-lightness),
+      var(--vpl-shadow-base-lightness),
+      0.14);
+  --vpl-shadow-ambient-color: rgba(var(--vpl-shadow-base-lightness),
+      var(--vpl-shadow-base-lightness),
+      var(--vpl-shadow-base-lightness),
+      0.12);
   --vpl-box-shadow-1: 0 2px 1px -1px var(--vpl-shadow-umbra-color),
     0 1px 1px 0 var(--vpl-shadow-penumbra-color),
     0 1px 3px 0 var(--vpl-shadow-ambient-color);
@@ -80,7 +74,7 @@
   --vpl-blue-gray-1: #54617b;
   --vpl-blue-gray-2: #718096;
   --vpl-blue-gray-3: #cbd5e0;
-  --vpl-blue-gray-4: #ebf2fa;
+  --vpl-blue-gray-4: rgb(235, 242, 250);
 
   --vpl-scrollbar-color: #cbd5e0 #ffffff;
 

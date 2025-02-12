@@ -137,7 +137,7 @@ export default function CropDialog({
           <div className="crop-inputs">
             <div className="input-row">
               <div className="input-group">
-                <label>X:</label>
+                <label>X</label>
                 <NumberInput
                   forWhom={forWhom}
                   value={Math.round(crop.x)}
@@ -146,7 +146,7 @@ export default function CropDialog({
                 />
               </div>
               <div className="input-group">
-                <label>Y:</label>
+                <label>Y</label>
                 <NumberInput
                   forWhom={forWhom}
                   value={Math.round(crop.y)}
@@ -157,7 +157,7 @@ export default function CropDialog({
             </div>
             <div className="input-row">
               <div className="input-group">
-                <label>Width:</label>
+                <label>Width</label>
                 <NumberInput
                   forWhom={forWhom}
                   value={Math.round(crop.width)}
@@ -168,7 +168,7 @@ export default function CropDialog({
                 />
               </div>
               <div className="input-group">
-                <label>Height:</label>
+                <label>Height</label>
                 <NumberInput
                   forWhom={forWhom}
                   value={Math.round(crop.height)}
