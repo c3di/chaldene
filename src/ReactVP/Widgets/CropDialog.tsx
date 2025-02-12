@@ -83,11 +83,6 @@ export default function CropDialog({
       Math.max(1, Math.round(crop.height))
     ];
 
-    console.log('CropDialog - Before setValue:', {
-      cropData,
-      forWhom
-    });
-
     // Update the output value which will trigger backend processing
     setValue?.(forWhom, cropData);
     onClose();

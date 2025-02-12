@@ -168,7 +168,6 @@ export default class CodeGenerator {
       '\n' +
       code.join('\n');
 
-    console.log(finalCode);
     return finalCode;
   }
 }

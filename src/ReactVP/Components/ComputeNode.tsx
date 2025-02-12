@@ -68,13 +68,13 @@ export default function ComputeNode({
     []
   );
 
-  useEffect(() => {
-    console.log('Node dimensions updated:', {
-      nodeId: id,
-      dimensions: nodeDimensions,
-      timestamp: new Date().toISOString()
-    });
-  }, [nodeDimensions, id]);
+  // useEffect(() => {
+  //   console.log('Node dimensions updated:', {
+  //     nodeId: id,
+  //     dimensions: nodeDimensions,
+  //     timestamp: new Date().toISOString()
+  //   });
+  // }, [nodeDimensions, id]);
 
   return (
     <div

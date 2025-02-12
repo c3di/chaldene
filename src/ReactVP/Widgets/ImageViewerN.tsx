@@ -14,6 +14,13 @@ const getMousePosition = (e: Event) => {
   return { x: 0, y: 0 };
 };
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
+interface Transform {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
 interface IImageViewerProps extends WidgetProps {
   value?: {
     imageUrl: string;
@@ -27,7 +34,12 @@ interface IImageViewerProps extends WidgetProps {
   isBinary?: boolean;
   isFullScreenControl?: {
     isFullScreen: boolean;
-    setIsFullScreen: (value: boolean) => void;
+    setIsFullScreen: (value: boolean, transform?: Transform) => void;
+    lastTransform?: Transform;
+  };
+  originalDimensions?: {
+    width: number;
+    height: number;
   };
 }
 
@@ -119,13 +131,72 @@ const ScreenToggleButton = memo(
   }
 );
 
+const createLaserDot = (x: number, y: number, zoom: number): fabric.Circle => {
+  const radius = 10;
+  const gradient = new fabric.Gradient({
+    type: 'radial',
+    coords: {
+      x1: radius,
+      y1: radius,
+      r1: 0,
+      x2: radius,
+      y2: radius,
+      r2: radius
+    },
+    colorStops: [
+      { offset: 0, color: 'rgba(255, 0, 0, 0.8)' },
+      { offset: 1, color: 'rgba(255, 255, 255, 0)' }
+    ]
+  });
+
+  return new fabric.Circle({
+    left: x - radius,
+    top: y - radius,
+    radius,
+    fill: gradient,
+    selectable: false,
+    hasControls: false,
+    hasBorders: false,
+    evented: false,
+    originX: 'center',
+    originY: 'center',
+    centeredScaling: true,
+    scaleX: 2 / zoom,
+    scaleY: 2 / zoom
+  });
+};
+
+const DimensionsText = memo(
+  ({
+    dimensions,
+    isFullScreen
+  }: {
+    dimensions?: {
+      width: number;
+      height: number;
+    };
+    isFullScreen: boolean;
+  }) => (
+    <div
+      style={{
+        fontSize: isFullScreen ? '16px' : 'var(--vpl-ui-font-size1)',
+        fontFamily: 'var(--vpl-ui-font-family)',
+        color: isFullScreen ? 'white' : 'var(--vpl-ui-font-color2)'
+      }}
+    >
+      {dimensions && <span>{`${dimensions.width}×${dimensions.height}`}</span>}
+    </div>
+  )
+);
+
 export default function ImageViewer({
   value,
   editorContext,
   heatmapOverlay,
   isBinary,
   isFullScreenControl,
-  nodeDimensions
+  nodeDimensions,
+  originalDimensions
 }: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
@@ -143,6 +214,12 @@ export default function ImageViewer({
   const [imageDimensions, setImageDimensions] = useState<
     { width: number; height: number } | undefined
   >();
+
+  const lastTransform = useRef<{
+    x: number;
+    y: number;
+    zoom: number;
+  } | null>(null);
 
   const updateMousePosition = (
     x: number | undefined,
@@ -166,6 +243,40 @@ export default function ImageViewer({
 
   useEffect(() => {
     const parent = canvasElParent.current;
+    if (!parent) {
+      return;
+    }
+
+    // Use provided original dimensions or calculate them
+    if (!originalCanvasDimensions.current) {
+      originalCanvasDimensions.current = originalDimensions || {
+        width: parent.clientWidth,
+        height: parent.clientHeight
+      };
+    }
+
+    // Always update fullscreen dimensions
+    fullscreenDimensions.current = {
+      width: window.innerWidth,
+      height: window.innerHeight - 24
+    };
+
+    console.log('Dimensions updated:', {
+      original: originalCanvasDimensions.current,
+      fullscreen: fullscreenDimensions.current,
+      isFullScreen,
+      parentSize: { width: parent.clientWidth, height: parent.clientHeight }
+    });
+
+    // Delay resize to ensure dimensions are set
+    requestAnimationFrame(() => {
+      resizeCanvas();
+    });
+  }, [isFullScreen, originalDimensions]);
+
+  // Add a separate effect to initialize original dimensions once
+  useEffect(() => {
+    const parent = canvasElParent.current;
     if (!parent || originalCanvasDimensions.current) {
       return;
     }
@@ -174,40 +285,7 @@ export default function ImageViewer({
       width: parent.clientWidth,
       height: parent.clientHeight
     };
-
-    fullscreenDimensions.current = {
-      width: window.innerWidth,
-      height: window.innerHeight
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log('ImageViewer dimensions:', {
-      nodeDimensions,
-      canvasParentSize: canvasElParent.current
-        ? {
-            width: canvasElParent.current.clientWidth,
-            height: canvasElParent.current.clientHeight
-          }
-        : null,
-      canvasSize: canvasElement.current
-        ? {
-            width: canvasElement.current.width,
-            height: canvasElement.current.height
-          }
-        : null,
-      histogramSize: document.querySelector('.histogram-widget')
-        ? {
-            width: (document.querySelector('.histogram-widget') as HTMLElement)
-              .clientWidth,
-            height: (document.querySelector('.histogram-widget') as HTMLElement)
-              .clientHeight
-          }
-        : null,
-      isFullScreen,
-      timestamp: new Date().toISOString()
-    });
-  }, [nodeDimensions, isFullScreen]);
+  }, []); // Run once on mount
 
   function resizeCanvas() {
     const parent = canvasElParent.current;
@@ -215,8 +293,15 @@ export default function ImageViewer({
       return;
     }
 
+    const scaleRatio = getScaleRatio();
     const parentWidth = parent.clientWidth;
     const parentHeight = parent.clientHeight;
+
+    console.log('Resizing canvas:', {
+      parentDims: { width: parentWidth, height: parentHeight },
+      scaleRatio,
+      isFullScreen
+    });
 
     // Update canvas dimensions
     canvas.current.setDimensions({
@@ -231,12 +316,14 @@ export default function ImageViewer({
         parentHeight / (image.height ?? 1)
       );
 
-      canvas.current.setZoom(scaleFactor);
+      // Apply scale ratio in fullscreen mode
+      const finalScale = isFullScreen ? scaleFactor * scaleRatio : scaleFactor;
+      canvas.current.setZoom(finalScale);
 
       // Center the image
       const viewportTransform = canvas.current.viewportTransform;
-      const centerX = (parentWidth - (image.width ?? 0) * scaleFactor) / 2;
-      const centerY = (parentHeight - (image.height ?? 0) * scaleFactor) / 2;
+      const centerX = (parentWidth - (image.width ?? 0) * finalScale) / 2;
+      const centerY = (parentHeight - (image.height ?? 0) * finalScale) / 2;
       viewportTransform[4] = centerX;
       viewportTransform[5] = centerY;
     }
@@ -246,39 +333,28 @@ export default function ImageViewer({
 
   const getScaleRatio = () => {
     if (!originalCanvasDimensions.current || !fullscreenDimensions.current) {
-      console.log('Cannot calculate scale ratio - missing dimensions');
-      return 1;
+      console.log('Cannot calculate scale ratio - missing dimensions', {
+        original: originalCanvasDimensions.current,
+        fullscreen: fullscreenDimensions.current
+      });
+      return isFullScreen ? 3 : 1 / 3; // Return 1 to maintain current scale
     }
-
-    const currentDimensions = isFullScreen
-      ? fullscreenDimensions.current
-      : originalCanvasDimensions.current;
 
     const originalWidth = originalCanvasDimensions.current.width;
     const originalHeight = originalCanvasDimensions.current.height;
+    const ratio = Math.min(
+      fullscreenDimensions.current.width / originalWidth,
+      fullscreenDimensions.current.height / originalHeight
+    );
 
-    const ratio = isFullScreen
-      ? Math.min(
-          currentDimensions.width / originalWidth,
-          currentDimensions.height / originalHeight
-        )
-      : 1 /
-        Math.min(
-          fullscreenDimensions.current.width / originalWidth,
-          fullscreenDimensions.current.height / originalHeight
-        );
+    console.log('Scale ratio calculation:', {
+      original: { width: originalWidth, height: originalHeight },
+      fullscreen: fullscreenDimensions.current,
+      ratio,
+      isFullScreen
+    });
 
-    // console.log('Scale ratio calculation:', {
-    //   currentDimensions,
-    //   originalDimensions: originalCanvasDimensions.current,
-    //   ratio,
-    //   isFullScreen,
-    //   calculation: isFullScreen
-    //     ? 'fullscreen/original'
-    //     : '1/(fullscreen/original)'
-    // });
-
-    return ratio;
+    return isFullScreen ? ratio : 1 / ratio;
   };
 
   const updateGlobalTransform = () => {
@@ -290,32 +366,67 @@ export default function ImageViewer({
     const currentZoom = canvas.current.getZoom();
     const scaleRatio = getScaleRatio();
 
-    // console.log('Updating global transform:', {
-    //   before: {
-    //     x: viewportTransform[4],
-    //     y: viewportTransform[5],
-    //     zoom: currentZoom
-    //   },
-    //   after: {
-    //     x: viewportTransform[4] / scaleRatio,
-    //     y: viewportTransform[5] / scaleRatio,
-    //     zoom: currentZoom / scaleRatio
-    //   },
-    //   scaleRatio,
-    //   isFullScreen
-    // });
-
-    editorContext.updateGlobalTransform({
-      x: viewportTransform[4] / scaleRatio,
-      y: viewportTransform[5] / scaleRatio,
-      zoom: currentZoom / scaleRatio
-    });
+    if (isFullScreen) {
+      // When in fullscreen:
+      // 1. Get current fullscreen transform
+      const fullscreenTransform = {
+        x: viewportTransform[4],
+        y: viewportTransform[5],
+        zoom: currentZoom
+      };
+      // 2. Convert to non-fullscreen space by dividing by ratio
+      const normalTransform = {
+        x: fullscreenTransform.x / scaleRatio,
+        y: fullscreenTransform.y / scaleRatio,
+        zoom: fullscreenTransform.zoom / scaleRatio
+      };
+      // 3. Update global transform with the non-fullscreen transform
+      editorContext.updateGlobalTransform(normalTransform);
+    } else {
+      // When in non-fullscreen:
+      // Just update global transform with current transform
+      editorContext.updateGlobalTransform({
+        x: viewportTransform[4],
+        y: viewportTransform[5],
+        zoom: currentZoom
+      });
+    }
   };
 
   const updateLastPox = (x: number, y: number) => {
     lastPosX.current = x;
     lastPosY.current = y;
-    updateGlobalTransform();
+
+    if (!canvas.current || !editorContext) {
+      return;
+    }
+
+    const viewportTransform = canvas.current.viewportTransform;
+    const currentZoom = canvas.current.getZoom();
+    const scaleRatio = getScaleRatio();
+
+    // When in fullscreen, convert coordinates back to non-fullscreen space before updating global
+    const globalTransform = isFullScreen
+      ? {
+          x: viewportTransform[4] / scaleRatio,
+          y: viewportTransform[5] / scaleRatio,
+          zoom: currentZoom / scaleRatio
+        }
+      : {
+          x: viewportTransform[4],
+          y: viewportTransform[5],
+          zoom: currentZoom
+        };
+
+    console.log('Updating global transform:', {
+      viewportTransform: { x: viewportTransform[4], y: viewportTransform[5] },
+      currentZoom,
+      scaleRatio,
+      globalTransform,
+      isFullScreen
+    });
+
+    editorContext.updateGlobalTransform(globalTransform);
   };
 
   useEffect(() => {
@@ -461,24 +572,32 @@ export default function ImageViewer({
 
     const scaleRatio = getScaleRatio();
 
-    // console.log('Applying transform:', {
-    //   before: { x: asyncX, y: asyncY, zoom: asyncZoom },
-    //   after: {
-    //     x: asyncX !== undefined ? asyncX * scaleRatio : undefined,
-    //     y: asyncY !== undefined ? asyncY * scaleRatio : undefined,
-    //     zoom: asyncZoom !== undefined ? asyncZoom * scaleRatio : undefined
-    //   },
-    //   scaleRatio,
-    //   isFullScreen
-    // });
+    // Only scale coordinates and zoom in fullscreen mode
+    const viewportX = isFullScreen
+      ? asyncX !== undefined
+        ? asyncX * scaleRatio
+        : undefined
+      : asyncX;
+    const viewportY = isFullScreen
+      ? asyncY !== undefined
+        ? asyncY * scaleRatio
+        : undefined
+      : asyncY;
+    const viewportZoom = isFullScreen
+      ? asyncZoom !== undefined
+        ? asyncZoom * scaleRatio
+        : undefined
+      : asyncZoom;
 
-    const scaledX = asyncX !== undefined ? asyncX * scaleRatio : undefined;
-    const scaledY = asyncY !== undefined ? asyncY * scaleRatio : undefined;
-    const scaledZoom =
-      asyncZoom !== undefined ? asyncZoom * scaleRatio : undefined;
+    console.log('Applying transform:', {
+      input: { x: asyncX, y: asyncY, zoom: asyncZoom },
+      viewport: { x: viewportX, y: viewportY, zoom: viewportZoom },
+      scaleRatio,
+      isFullScreen
+    });
 
     const scaleFactor =
-      scaledZoom ??
+      viewportZoom ??
       Math.min(
         canvas.current.width / image.width,
         canvas.current.height / image.height
@@ -503,28 +622,18 @@ export default function ImageViewer({
       canvas.current!.overlayImage = undefined;
     }
 
-    const zoom = canvas.current!.getZoom();
-    const viewportTransform = canvas.current!.viewportTransform;
-
-    if (scaledX !== undefined && scaledY !== undefined) {
-      viewportTransform[4] = scaledX;
-      viewportTransform[5] = scaledY;
+    const viewportTransform = canvas.current.viewportTransform;
+    if (viewportX !== undefined && viewportY !== undefined) {
+      viewportTransform[4] = viewportX;
+      viewportTransform[5] = viewportY;
     } else {
-      const centerX = (canvas.current!.width - image.width * zoom) / 2;
-      const centerY = (canvas.current!.height - image.height * zoom) / 2;
+      const centerX = (canvas.current.width - image.width * scaleFactor) / 2;
+      const centerY = (canvas.current.height - image.height * scaleFactor) / 2;
       viewportTransform[4] = centerX;
       viewportTransform[5] = centerY;
     }
-
-    canvas.current!.renderAll();
-  }, [
-    editorContext?.getImageViewTransform(),
-    image,
-    showDiffMap,
-    value?.differences,
-    isBinary,
-    isFullScreen
-  ]);
+    canvas.current.renderAll();
+  }, [editorContext?.getImageViewTransform(), image, isFullScreen]);
 
   useEffect(() => {
     if (!canvas.current || !image) {
@@ -544,41 +653,11 @@ export default function ImageViewer({
     }
 
     if (!laserDot) {
-      const radius = 10;
-      const gradient = new fabric.Gradient({
-        type: 'radial',
-        coords: {
-          x1: radius,
-          y1: radius,
-          r1: 0,
-          x2: radius,
-          y2: radius,
-          r2: radius
-        },
-        colorStops: [
-          { offset: 0, color: 'rgba(255, 0, 0, 0.8)' },
-          { offset: 1, color: 'rgba(255, 255, 255, 0)' }
-        ]
-      });
-
-      laserDot = new fabric.Circle({
-        left: mousePos.x! - radius,
-        top: mousePos.y! - radius,
-        radius: radius,
-        fill: gradient,
-        selectable: false,
-        hasControls: false,
-        hasBorders: false,
-        evented: false,
-        originX: 'center',
-        originY: 'center',
-        centeredScaling: true
-      });
-
-      laserDot.set({
-        scaleX: 2 / (canvas.current?.getZoom() ?? 1),
-        scaleY: 2 / (canvas.current?.getZoom() ?? 1)
-      });
+      laserDot = createLaserDot(
+        mousePos.x!,
+        mousePos.y!,
+        canvas.current?.getZoom() ?? 1
+      );
       canvas.current!.add(laserDot);
       (canvas.current as any).laserDot = laserDot;
     } else {
@@ -591,27 +670,69 @@ export default function ImageViewer({
     }
   }, [editorContext?.getMousePosition()]);
 
-  const DimensionsText = ({
-    dimensions,
-    isFullScreen
-  }: {
-    dimensions?: { width: number; height: number };
-    isFullScreen: boolean;
-  }) => (
-    <div
-      style={{
-        fontSize: isFullScreen ? '16px' : 'var(--vpl-ui-font-size1)',
-        fontFamily: 'var(--vpl-ui-font-family)',
-        color: isFullScreen ? 'white' : 'var(--vpl-ui-font-color2)'
-      }}
-    >
-      {dimensions && <span>{`${dimensions.width}×${dimensions.height}`}</span>}
-    </div>
-  );
-
   const handleScreenToggle = useCallback(() => {
-    setIsFullScreen(!isFullScreen);
+    if (!canvas.current) {
+      return;
+    }
+
+    const viewportTransform = canvas.current.viewportTransform;
+    const currentZoom = canvas.current.getZoom();
+    const scaleRatio = getScaleRatio();
+
+    // Store transform in the coordinate space of the target mode
+    const transform = {
+      x: isFullScreen
+        ? viewportTransform[4] / scaleRatio
+        : viewportTransform[4] * scaleRatio,
+      y: isFullScreen
+        ? viewportTransform[5] / scaleRatio
+        : viewportTransform[5] * scaleRatio,
+      zoom: isFullScreen ? currentZoom / scaleRatio : currentZoom * scaleRatio
+    };
+
+    console.log('Toggling screen mode:', {
+      from: isFullScreen ? 'fullscreen' : 'normal',
+      transform,
+      scaleRatio
+    });
+
+    // Pass the transform through the callback
+    setIsFullScreen(!isFullScreen, transform);
   }, [isFullScreen, setIsFullScreen]);
+
+  // Update the restore transform effect to use the passed transform
+  useEffect(() => {
+    if (!canvas.current) {
+      return;
+    }
+
+    const transform =
+      isFullScreenControl?.lastTransform ?? lastTransform.current;
+    if (!transform) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (!canvas.current) {
+        return;
+      }
+
+      console.log('Restoring transform:', {
+        transform,
+        isFullScreen,
+        mode: isFullScreenControl ? 'controlled' : 'local'
+      });
+
+      canvas.current.setZoom(transform.zoom);
+      const viewportTransform = canvas.current.viewportTransform;
+      viewportTransform[4] = transform.x;
+      viewportTransform[5] = transform.y;
+
+      canvas.current.renderAll();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [isFullScreen, isFullScreenControl?.lastTransform]);
 
   // Add effect to handle node dimension changes
   useEffect(() => {
@@ -739,9 +860,16 @@ export default function ImageViewer({
             isBinary={isBinary}
             isFullScreenControl={{
               isFullScreen: true,
-              setIsFullScreen
+              setIsFullScreen: (value, transform) => {
+                // Convert transform back to non-fullscreen space
+                if (transform) {
+                  lastTransform.current = transform;
+                }
+                setIsFullScreen(value);
+              }
             }}
             nodeDimensions={nodeDimensions}
+            originalDimensions={originalCanvasDimensions.current ?? undefined}
           />
         </FullScreenPortal>
       )}
