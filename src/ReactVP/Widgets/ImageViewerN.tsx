@@ -366,47 +366,8 @@ export default function ImageViewer({
     const currentZoom = canvas.current.getZoom();
     const scaleRatio = getScaleRatio();
 
-    if (isFullScreen) {
-      // When in fullscreen:
-      // 1. Get current fullscreen transform
-      const fullscreenTransform = {
-        x: viewportTransform[4],
-        y: viewportTransform[5],
-        zoom: currentZoom
-      };
-      // 2. Convert to non-fullscreen space by dividing by ratio
-      const normalTransform = {
-        x: fullscreenTransform.x / scaleRatio,
-        y: fullscreenTransform.y / scaleRatio,
-        zoom: fullscreenTransform.zoom / scaleRatio
-      };
-      // 3. Update global transform with the non-fullscreen transform
-      editorContext.updateGlobalTransform(normalTransform);
-    } else {
-      // When in non-fullscreen:
-      // Just update global transform with current transform
-      editorContext.updateGlobalTransform({
-        x: viewportTransform[4],
-        y: viewportTransform[5],
-        zoom: currentZoom
-      });
-    }
-  };
-
-  const updateLastPox = (x: number, y: number) => {
-    lastPosX.current = x;
-    lastPosY.current = y;
-
-    if (!canvas.current || !editorContext) {
-      return;
-    }
-
-    const viewportTransform = canvas.current.viewportTransform;
-    const currentZoom = canvas.current.getZoom();
-    const scaleRatio = getScaleRatio();
-
-    // When in fullscreen, convert coordinates back to non-fullscreen space before updating global
-    const globalTransform = isFullScreen
+    // First convert to local (non-fullscreen) space
+    const localTransform = isFullScreen
       ? {
           x: viewportTransform[4] / scaleRatio,
           y: viewportTransform[5] / scaleRatio,
@@ -418,15 +379,22 @@ export default function ImageViewer({
           zoom: currentZoom
         };
 
-    console.log('Updating global transform:', {
+    console.log('Updating local transform:', {
       viewportTransform: { x: viewportTransform[4], y: viewportTransform[5] },
       currentZoom,
       scaleRatio,
-      globalTransform,
+      localTransform,
       isFullScreen
     });
 
-    editorContext.updateGlobalTransform(globalTransform);
+    // Always update global transform with local (non-fullscreen) transform
+    editorContext.updateGlobalTransform(localTransform);
+  };
+
+  const updateLastPos = (x: number, y: number) => {
+    lastPosX.current = x;
+    lastPosY.current = y;
+    updateGlobalTransform();
   };
 
   useEffect(() => {
@@ -441,7 +409,7 @@ export default function ImageViewer({
     canvas.current.on('mouse:down', opt => {
       isPanning.current = true;
       const { x, y } = getMousePosition(opt.e);
-      updateLastPox(x, y);
+      updateLastPos(x, y);
     });
 
     canvas.current.on('mouse:move', opt => {
@@ -451,7 +419,7 @@ export default function ImageViewer({
         viewportTransform[4] += x - lastPosX.current;
         viewportTransform[5] += y - lastPosY.current;
         canvas.current?.renderAll();
-        updateLastPox(x, y);
+        updateLastPos(x, y);
       }
 
       const pointer = canvas.current?.getScenePoint(opt.e);
