@@ -10,9 +10,17 @@ export const watershedNodeSpec: computeNodeSpec = {
     {
       name: 'image',
       type: ['binary image', 'image'],
-      displayLabel: 'image(binary, gray, rgb)',
+      displayLabel: 'image (binary, gray, rgb)',
       description:
         'The interesting objects are assumed to be brighter than the background.'
+    },
+    {
+      name: 'underlay_image',
+      type: ['image'],
+      displayLabel: 'underlay image (shape as image)',
+      description:
+        'Image used as underlay for segments. It should have the same shape as image (first parameter), optionally with an additional RGB (channels) axis. If is an RGB image, it is converted to grayscale.',
+      defaultValue: 'None'
     },
     {
       name: 'granularity',
@@ -54,7 +62,11 @@ elif in_im.raw_image.ndim ==3 and in_im.raw_image.shape[2] ==3:
 gradient = filters.sobel(in_im.raw_image)
 markers = ndi.label(gradient < ${inputs.granularity})[0]
 ${outputs.segments} = segmentation.watershed(gradient, markers=markers, mask=region_of_interest)
-${outputs.vis} = IM(label2rgb(${outputs.segments}, bg_label=0), {**in_im.metadata, 'color_channel': 'rgb', 'channel_order': 'channel last'})`;
+if ${inputs.underlay_image} is not None:
+    underlay_im = ${inputs.underlay_image}.raw_image
+else:
+    underlay_im = None
+${outputs.vis} = IM(label2rgb(${outputs.segments}, bg_label=0, image=underlay_im), {**in_im.metadata, 'color_channel': 'rgb', 'channel_order': 'channel last'})`;
     }
   }
 };
