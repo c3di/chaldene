@@ -333,11 +333,7 @@ export default function ImageViewer({
 
   const getScaleRatio = () => {
     if (!originalCanvasDimensions.current || !fullscreenDimensions.current) {
-      console.log('Cannot calculate scale ratio - missing dimensions', {
-        original: originalCanvasDimensions.current,
-        fullscreen: fullscreenDimensions.current
-      });
-      return isFullScreen ? 3 : 1 / 3; // Return 1 to maintain current scale
+      return isFullScreen ? 3 : 1 / 3; // Special default value for debugging
     }
 
     const originalWidth = originalCanvasDimensions.current.width;
@@ -347,12 +343,12 @@ export default function ImageViewer({
       fullscreenDimensions.current.height / originalHeight
     );
 
-    console.log('Scale ratio calculation:', {
-      original: { width: originalWidth, height: originalHeight },
-      fullscreen: fullscreenDimensions.current,
-      ratio,
-      isFullScreen
-    });
+    // console.log('Scale ratio calculation:', {
+    //   original: { width: originalWidth, height: originalHeight },
+    //   fullscreen: fullscreenDimensions.current,
+    //   ratio,
+    //   isFullScreen
+    // });
 
     return isFullScreen ? ratio : 1 / ratio;
   };
@@ -379,13 +375,13 @@ export default function ImageViewer({
           zoom: currentZoom
         };
 
-    console.log('Updating local transform:', {
-      viewportTransform: { x: viewportTransform[4], y: viewportTransform[5] },
-      currentZoom,
-      scaleRatio,
-      localTransform,
-      isFullScreen
-    });
+    // console.log('Updating local transform:', {
+    //   viewportTransform: { x: viewportTransform[4], y: viewportTransform[5] },
+    //   currentZoom,
+    //   scaleRatio,
+    //   localTransform,
+    //   isFullScreen
+    // });
 
     // Always update global transform with local (non-fullscreen) transform
     editorContext.updateGlobalTransform(localTransform);
@@ -557,12 +553,12 @@ export default function ImageViewer({
         : undefined
       : asyncZoom;
 
-    console.log('Applying transform:', {
-      input: { x: asyncX, y: asyncY, zoom: asyncZoom },
-      viewport: { x: viewportX, y: viewportY, zoom: viewportZoom },
-      scaleRatio,
-      isFullScreen
-    });
+    // console.log('Applying transform:', {
+    //   input: { x: asyncX, y: asyncY, zoom: asyncZoom },
+    //   viewport: { x: viewportX, y: viewportY, zoom: viewportZoom },
+    //   scaleRatio,
+    //   isFullScreen
+    // });
 
     const scaleFactor =
       viewportZoom ??
@@ -658,11 +654,11 @@ export default function ImageViewer({
       zoom: isFullScreen ? currentZoom / scaleRatio : currentZoom * scaleRatio
     };
 
-    console.log('Toggling screen mode:', {
-      from: isFullScreen ? 'fullscreen' : 'normal',
-      transform,
-      scaleRatio
-    });
+    // console.log('Toggling screen mode:', {
+    //   from: isFullScreen ? 'fullscreen' : 'normal',
+    //   transform,
+    //   scaleRatio
+    // });
 
     // Pass the transform through the callback
     setIsFullScreen(!isFullScreen, transform);
@@ -685,11 +681,11 @@ export default function ImageViewer({
         return;
       }
 
-      console.log('Restoring transform:', {
-        transform,
-        isFullScreen,
-        mode: isFullScreenControl ? 'controlled' : 'local'
-      });
+      // console.log('Restoring transform:', {
+      //   transform,
+      //   isFullScreen,
+      //   mode: isFullScreenControl ? 'controlled' : 'local'
+      // });
 
       canvas.current.setZoom(transform.zoom);
       const viewportTransform = canvas.current.viewportTransform;
