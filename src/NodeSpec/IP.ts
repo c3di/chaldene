@@ -4,8 +4,8 @@ import { type computeNodeSpec } from '../ReactVP';
 
 export const cropNodeSpec: computeNodeSpec = {
   name: 'crop',
-  displayLabel: 'Crop',
-  category: 'Image Processing',
+  displayLabel: 'crop',
+  category: 'image editing',
   inputs: [
     {
       name: 'image',
@@ -16,7 +16,7 @@ export const cropNodeSpec: computeNodeSpec = {
     {
       name: 'cropArea',
       type: 'tuple4',
-      displayLabel: 'Crop',
+      displayLabel: 'crop',
       description: 'Crop coordinates [x, y, width, height]',
       defaultValue: [0, 0, 0, 0],
       widget: {
