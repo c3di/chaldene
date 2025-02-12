@@ -9,7 +9,7 @@ export const cropNodeSpec: computeNodeSpec = {
   inputs: [
     {
       name: 'image',
-      type: 'image',
+      type: ['image', 'binary image'],
       displayLabel: 'image',
       description: 'Input image.'
     },
