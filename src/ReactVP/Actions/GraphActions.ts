@@ -234,6 +234,7 @@ export default class GraphActions extends StateActions {
     return graph;
   };
 
+  // only entry point for all applying graph to avoid multiple state update and re-render
   public applyGraphChanges = (changes: GraphChange[]): void => {
     let graph = this.graph ?? { nodes: [], edges: [] };
     for (const change of changes) {
@@ -732,10 +733,12 @@ export default class GraphActions extends StateActions {
             edge => edge.target === node.id && edge.targetHandle === input.id
           )
         ) {
-          notReadyNodes[node.id] = [
-            ...(notReadyNodes[node.id] ?? []),
-            input.name
-          ];
+          if (input.defaultValue === undefined || input.defaultValue === null) {
+            notReadyNodes[node.id] = [
+              ...(notReadyNodes[node.id] ?? []),
+              input.name
+            ];
+          }
         }
       }
     }
