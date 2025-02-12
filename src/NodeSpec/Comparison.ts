@@ -1,32 +1,32 @@
 import { computeNodeSpec } from '../ReactVP';
 
 export const differenceHeatmapNodeSpec: computeNodeSpec = {
-  name: 'blend images',
-  displayLabel: 'blend images',
-  description: 'Blends two images together.',
+  name: 'Binary Image Difference',
+  displayLabel: 'binary image difference',
+  description: 'The difference between two binary images.',
   category: 'comparison',
   inputs: [
     {
       name: 'image1',
-      type: 'image',
+      type: 'binary image',
       displayLabel: 'underlay image',
-      description: 'The first image to compare.'
+      description: 'The underlay image.'
     },
     {
       name: 'image2',
-      type: 'image',
-      displayLabel: 'overlay image',
-      description: 'The second image to compare.'
+      type: 'binary image',
+      displayLabel: 'reference image',
+      description: 'The reference image to compare.'
     }
   ],
   outputs: [
     {
-      name: 'outputImage',
-      type: 'image',
-      displayLabel: 'Image comparison',
+      name: 'image',
+      type: 'binary image diff',
       widget: {
         type: 'ImageViewer',
-        heatmapOverlay: true
+        heatmapOverlay: true,
+        isBinary: true
       }
     }
   ],
@@ -35,13 +35,14 @@ export const differenceHeatmapNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      return `
-import numpy as np
-image1 = im2im(${inputs.image1}, 'numpy.gray_float64(0to1)').raw_image
-image2 = im2im(${inputs.image2}, 'numpy.gray_float64(0to1)').raw_image
-# absolute value of the difference and normalize to the range [0, 1] for visualization
-# overlay
-${outputs.heatmap} = IM((colored_diff * 255).astype(np.uint8), 'numpy.rgb_uint8')`;
+      const import1 = 'from skimage import io';
+      const import2 = 'from im2im import Image as IM';
+      return `${import1}
+${import2}
+from skimage import img_as_float
+
+in_im1 = ${inputs.image1}
+${outputs.image} = IM(in_im1.raw_image, in_im1.metadata)`;
     }
   }
 };

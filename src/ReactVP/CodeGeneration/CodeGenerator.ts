@@ -98,7 +98,13 @@ export default class CodeGenerator {
       outputValues[output.name] = outputVar;
 
       if (isImageType(output.type) || output.widget?.type === 'ImageViewer') {
-        if (output.widget?.heatmapOverlay && imageInputVar) {
+        if (output.type === 'binary image diff') {
+          imageInspections.push({
+            imageVar: outputVar,
+            handleId: outputVar,
+            referenceImageVar: inputValues['image2']
+          });
+        } else if (output.widget?.heatmapOverlay && imageInputVar) {
           imageInspections.push({
             imageVar: outputVar,
             handleId: outputVar,

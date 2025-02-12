@@ -31,7 +31,6 @@ export const thresholdNodeSpec: computeNodeSpec = {
     {
       name: 'image',
       type: 'binary image',
-      displayLabel: 'binary image',
       description: 'The resulting binary image after thresholding.'
     }
   ],
@@ -56,6 +55,7 @@ ${outputs.image} = IM(binarized_image, in_im.metadata)`;
     }
   }
 };
+
 export const invertNodeSpec: computeNodeSpec = {
   name: 'Invert',
   displayLabel: 'invert',
