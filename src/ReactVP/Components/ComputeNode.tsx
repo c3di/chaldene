@@ -20,9 +20,9 @@ export default function ComputeNode({
     inputs,
     outputs,
     editorContext,
-    repeatable
+    extraRun
   } = data;
-  const [repeatCount, setRepeatCount] = useState(1);
+
   const [nodeDimensions, setNodeDimensions] = useState({
     width: DEFAULT_NODE_WIDTH,
     height: 0
@@ -120,7 +120,7 @@ export default function ComputeNode({
         }}
       >
         <span>{displayLabel}</span>
-        {repeatable && (
+        {extraRun !== undefined && (
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span
               style={{
@@ -130,14 +130,16 @@ export default function ComputeNode({
                 fontWeight: 300
               }}
             >
-              repeat
+              extra run
             </span>
             <NumberInput
               forWhom={undefined}
-              value={repeatCount}
-              setValue={(_, value) => setRepeatCount(value)}
-              min={1}
-              defaultValue={1}
+              value={data.extraRun}
+              setValue={(_, value) => {
+                data.extraRun = value;
+              }}
+              min={0}
+              defaultValue={extraRun}
               style={{
                 width: '30px',
                 height: '16px',

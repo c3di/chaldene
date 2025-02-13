@@ -116,6 +116,7 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
       showDiff: true
     }
   ],
+  extraRun: 1,
   codeGenerators: {
     Python: (
       inputs: Record<string, string>,

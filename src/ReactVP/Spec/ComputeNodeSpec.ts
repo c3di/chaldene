@@ -12,7 +12,7 @@ export default interface IComputeNodeSpec extends INodeSpec {
     }
   >;
   codeGenerators?: NodeCodeGenerators;
-  repeatable?: boolean;
+  extraRun?: number;
 }
 
 export function spec2ComputeNode({
@@ -23,7 +23,7 @@ export function spec2ComputeNode({
   position,
   editorContext
 }: ISpec2NodeDataParams & { spec: IComputeNodeSpec }): Node {
-  const { displayLabel, description, inputs, outputs, repeatable } = spec;
+  const { displayLabel, description, inputs, outputs, extraRun } = spec;
   const node = {
     id: nodeId,
     position,
@@ -32,7 +32,7 @@ export function spec2ComputeNode({
       editorContext,
       displayLabel,
       description,
-      repeatable,
+      extraRun,
       inputs: (inputs ?? []).map((input, index) => ({
         id: `in${index}`,
         ...input
