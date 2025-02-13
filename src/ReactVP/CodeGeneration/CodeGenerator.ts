@@ -98,7 +98,7 @@ export default class CodeGenerator {
       outputValues[output.name] = outputVar;
 
       if (isImageType(output.type) || output.widget?.type === 'ImageViewer') {
-        if (output.type === 'binary image diff') {
+        if (output.type === 'image diff') {
           imageInspections.push({
             imageVar: outputVar,
             handleId: outputVar,
