@@ -5,6 +5,7 @@ import { WidgetProps } from './Widget';
 import DiffMapTrigger from './DiffMapTrigger';
 import { genDiffMap } from './genDiffMap';
 import CloseBackgroundTrigger from './CloseBackgroundTrigger';
+import ColorBar from './ColorBar';
 
 const getMousePosition = (e: Event) => {
   if (e instanceof MouseEvent) {
@@ -189,6 +190,8 @@ const DimensionsText = memo(
     </div>
   )
 );
+
+const MemoizedColorBar = memo(ColorBar);
 
 export default function ImageViewer({
   value,
@@ -820,15 +823,21 @@ export default function ImageViewer({
             color: isFullScreen ? 'white' : 'inherit'
           }}
         >
-          <DiffMapTrigger
-            toggled={showDiffMap}
-            toggle={() => setShowDiffMap(!showDiffMap)}
-            isBinary={isBinary ?? false}
-          />
-          <CloseBackgroundTrigger
-            toggled={showBackground}
-            toggle={() => setShowBackground(!showBackground)}
-          />
+          <div className="triggers-row">
+            <DiffMapTrigger
+              toggled={showDiffMap}
+              toggle={() => setShowDiffMap(!showDiffMap)}
+            />
+            <CloseBackgroundTrigger
+              toggled={showBackground}
+              toggle={() => setShowBackground(!showBackground)}
+            />
+          </div>
+          {showDiffMap && (
+            <div className="color-bar-container">
+              <MemoizedColorBar colormap={isBinary ? 'binary' : 'turbo'} />
+            </div>
+          )}
         </div>
       )}
       {isFullScreen && !isFullScreenControl && (
@@ -841,7 +850,6 @@ export default function ImageViewer({
             isFullScreenControl={{
               isFullScreen: true,
               setIsFullScreen: (value, transform) => {
-                // Convert transform back to non-fullscreen space
                 if (transform) {
                   lastTransform.current = transform;
                 }
