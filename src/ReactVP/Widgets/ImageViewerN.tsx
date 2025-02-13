@@ -31,7 +31,7 @@ interface IImageViewerProps extends WidgetProps {
     };
     differences?: number[][];
   };
-  heatmapOverlay?: boolean;
+  showDiff?: boolean;
   isBinary?: boolean;
   isFullScreenControl?: {
     isFullScreen: boolean;
@@ -193,7 +193,7 @@ const DimensionsText = memo(
 export default function ImageViewer({
   value,
   editorContext,
-  heatmapOverlay,
+  showDiff,
   isBinary,
   isFullScreenControl,
   nodeDimensions,
@@ -801,7 +801,7 @@ export default function ImageViewer({
           />
         </div>
       </div>
-      {image && heatmapOverlay && (
+      {image && showDiff && (
         <div
           style={{
             display: 'flex',
@@ -836,7 +836,7 @@ export default function ImageViewer({
           <ImageViewer
             value={portalValue}
             editorContext={editorContext}
-            heatmapOverlay={heatmapOverlay}
+            showDiff={showDiff}
             isBinary={isBinary}
             isFullScreenControl={{
               isFullScreen: true,

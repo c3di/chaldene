@@ -104,7 +104,7 @@ export default class CodeGenerator {
             handleId: outputVar,
             referenceImageVar: inputValues['image2']
           });
-        } else if (output.widget?.heatmapOverlay && imageInputVar) {
+        } else if (output.widget?.showDiff && imageInputVar) {
           imageInspections.push({
             imageVar: outputVar,
             handleId: outputVar,

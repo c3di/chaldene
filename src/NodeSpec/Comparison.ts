@@ -25,7 +25,7 @@ export const differenceHeatmapNodeSpec: computeNodeSpec = {
       type: 'binary image diff',
       widget: {
         type: 'ImageViewer',
-        heatmapOverlay: true,
+        showDiff: true,
         isBinary: true
       }
     }

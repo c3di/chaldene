@@ -80,7 +80,7 @@ export const denoiseBilateralNodeSpec: computeNodeSpec = {
       type: 'image',
       displayLabel: 'image',
       description: 'The denoised output image.',
-      heatmapOverlay: true
+      showDiff: true
     }
   ],
 
@@ -117,7 +117,7 @@ export const CLAHENodeSpec: computeNodeSpec = {
       type: 'image',
       displayLabel: 'image',
       description: 'The local contrast image.',
-      heatmapOverlay: true
+      showDiff: true
     }
   ],
 
@@ -155,7 +155,7 @@ export const CannyNodeSpec: computeNodeSpec = {
       name: 'outputImage',
       type: 'binary image',
       displayLabel: 'binary image'
-      // heatmapOverlay: true
+      // showDiff: true
     }
   ],
 

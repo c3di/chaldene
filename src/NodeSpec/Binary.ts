@@ -113,7 +113,7 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'image',
       description: 'The dilated output image.',
-      heatmapOverlay: true
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -149,7 +149,7 @@ export const binaryErosionNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'binary image',
       description: 'The eroded output image.',
-      heatmapOverlay: true
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -185,7 +185,7 @@ export const binaryOpeningNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'image',
       description: 'The opened output image.',
-      heatmapOverlay: true
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -221,7 +221,7 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'image',
       description: 'The closed output image.',
-      heatmapOverlay: true
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -270,7 +270,7 @@ export const removeSmallHolesNodeSpec: computeNodeSpec = {
       displayLabel: 'image',
       description:
         'The input image with small holes within connected components removed.',
-      heatmapOverlay: true
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -318,7 +318,7 @@ export const removeSmallObjectsNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'image',
       description: 'The input image with small connected components removed.',
-      heatmapOverlay: true
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -367,7 +367,7 @@ export const splitTouchingObjectsNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'image',
       description: 'The input image with small connected components removed.',
-      heatmapOverlay: true
+      showDiff: true
     }
   ],
   codeGenerators: {
