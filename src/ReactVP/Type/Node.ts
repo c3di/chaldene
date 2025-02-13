@@ -11,6 +11,8 @@ export interface INodeData extends Record<string, unknown> {
   outputs?: IHandle[];
   editorContext?: EditorContext;
   specName?: string;
+  // number of extra runs to perform, when not defined, the node is not repeatedly executable.
+  // when defined, the node will be executed once with the initial inputs, and then repeatedly with the previous outputs as inputs for extraRun times.
   extraRun?: number;
   // todo: add image preview or others interactive visualizations
 }

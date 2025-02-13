@@ -124,8 +124,28 @@ export default class CodeGenerator {
         code += `${captureHistogramCode(imageVar, targetHandle)}\n`;
       });
     }
+
     // Main node code
-    code += generator(inputValues, outputValues);
+    code += `${generator(inputValues, outputValues)}\n`;
+
+    if (data.extraRun) {
+      // Add a loop for repeated operations
+      code += `for i in range(${data.extraRun}):\n`;
+      // Generate iteration code without imports, using previous output as input
+      const iterationCode = generator(
+        {
+          [Object.keys(inputValues)[0]]:
+            outputValues[Object.keys(outputValues)[0]]
+        },
+        outputValues
+      )
+        .split('\n')
+        .filter(line => !line.startsWith('from') && !line.startsWith('import'))
+        .join('\n');
+
+      // Add the operation code with proper indentation
+      code += `    ${iterationCode.replace(/\n/g, '\n    ')}\n`;
+    }
 
     if (inspect_included) {
       // Image captures (including heatmap overlays)

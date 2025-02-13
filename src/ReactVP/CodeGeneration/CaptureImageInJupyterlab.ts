@@ -35,18 +35,24 @@ def ${captureImageFunctionName}(image, handleIdentifier, reference_image=None, o
         image1 = im2im(reference_image, 'numpy.gray_float64(0to1)').raw_image
         image2 = im2im(original_image, 'numpy.gray_float64(0to1)').raw_image
         
-        # Calculate raw difference
-        diff = image2 - image1
-        
         # Check if images are binary 
         is_binary = np.all(np.logical_or(np.isclose(image1, 0), np.isclose(image1, 1))) and \
                     np.all(np.logical_or(np.isclose(image2, 0), np.isclose(image2, 1)))
         
         if is_binary:
-            # For binary images: round to exact -1, 0, 1 values
-            normalized_diff = np.round(diff, decimals=3)
+            # For binary images: use XOR to compute differences
+            # Convert to boolean arrays first
+            bool1 = np.isclose(image1, 1)
+            bool2 = np.isclose(image2, 1)
+            # XOR the boolean arrays and convert to float
+            diff = np.logical_xor(bool1, bool2).astype(float)
+            normalized_diff = diff  # Already in correct range [0, 1]
+            # Convert to [-1, 1] range where 1 means added pixels and -1 means removed pixels
+            normalized_diff = np.where(np.logical_and(bool2, ~bool1), 1, 
+                                     np.where(np.logical_and(bool1, ~bool2), -1, 0))
         else:
             # For non-binary images: normalize to [-1, 1] range
+            diff = image2 - image1
             max_diff = np.max(np.abs(diff))
             if max_diff > 0:
                 normalized_diff = diff / max_diff
