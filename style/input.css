@@ -35,8 +35,9 @@ input[type="number"]::-webkit-inner-spin-button {
   background-color: var(--vpl-blue-gray-4);
   border: 1px solid var(--vpl-border-light);
   border-radius: var(--vpl-border-radius);
-  padding: 0px 8px;
-  width: 100%;
+  padding: 0px 0px 0px 8px;
+  width: calc(100% - 5px);
+  min-width: 30px;
   height: 20px;
   font-size: var(--vpl-ui-font-size1);
   outline: none;
