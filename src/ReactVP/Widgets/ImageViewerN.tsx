@@ -202,11 +202,18 @@ export default function ImageViewer({
   isFullScreenControl,
   nodeDimensions,
   originalDimensions,
-  syncGroup
+  syncGroup,
+  forWhom
 }: IImageViewerProps): JSX.Element {
+  console.log('[Debug] ImageViewer mounted/updated:', {
+    nodeId: forWhom?.nodeID,
+    syncGroup,
+    widget: value
+  });
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const canvas = useRef<fabric.Canvas | null>(null);
+  const currentSyncGroup = useRef<number | undefined>(syncGroup);
   const [image, setImage] = useState<fabric.FabricImage | null>(null);
   const isPanning = useRef(false);
   const lastPosX = useRef(0);
@@ -366,11 +373,16 @@ export default function ImageViewer({
       return;
     }
 
+    console.log('[Debug] updateGlobalTransform called with:', {
+      currentSyncGroup: currentSyncGroup.current,
+      widget: forWhom,
+      caller: new Error().stack?.split('\n')[2]
+    });
+
     const viewportTransform = canvas.current.viewportTransform;
     const currentZoom = canvas.current.getZoom();
     const scaleRatio = getScaleRatio();
 
-    // First convert to local (non-fullscreen) space
     const localTransform = isFullScreen
       ? {
           x: viewportTransform[4] / scaleRatio,
@@ -384,8 +396,8 @@ export default function ImageViewer({
         };
 
     editorContext.updateGlobalTransform({
-      ...localTransform,
-      syncGrouptoUpdate: syncGroup
+      syncGrouptoUpdate: currentSyncGroup.current,
+      ...localTransform
     });
   };
 
@@ -733,6 +745,11 @@ export default function ImageViewer({
 
     return () => clearTimeout(timeoutId);
   }, [isFullScreen]);
+
+  // Update ref when syncGroup changes
+  useEffect(() => {
+    currentSyncGroup.current = syncGroup;
+  }, [syncGroup]);
 
   return (
     <div

@@ -32,11 +32,12 @@ export default class EditorContext {
   private nextEdgeId: number = 0;
   private runningInProcessCount: number = 0;
   public isAsyncImageViewTransform: boolean = true;
-  private imageViewTransforms: Record<
-    string,
-    { x?: number; y?: number; zoom?: number }
-  > = {
-    global: { x: undefined, y: undefined, zoom: undefined }
+  private imageViewTransforms: {
+    ungrouped: { x?: number; y?: number; zoom?: number };
+    grouped: { [key: number]: { x?: number; y?: number; zoom?: number } };
+  } = {
+    ungrouped: { x: undefined, y: undefined, zoom: undefined },
+    grouped: {}
   };
   // for jupyterlab
   public parentContext?: any = undefined;
@@ -211,7 +212,8 @@ export default class EditorContext {
     this.isAsyncImageViewTransform = !this.isAsyncImageViewTransform;
     if (!this.isAsyncImageViewTransform) {
       this.imageViewTransforms = {
-        global: { x: undefined, y: undefined, zoom: undefined }
+        ungrouped: { x: undefined, y: undefined, zoom: undefined },
+        grouped: {}
       };
     }
   };
@@ -234,9 +236,9 @@ export default class EditorContext {
   } => {
     return this.isAsyncImageViewTransform
       ? syncGrouptoGet === undefined
-        ? this.imageViewTransforms.global
-        : (this.imageViewTransforms[syncGrouptoGet] ??
-          this.imageViewTransforms.global)
+        ? this.imageViewTransforms.ungrouped
+        : (this.imageViewTransforms.grouped[syncGrouptoGet] ??
+          this.imageViewTransforms.ungrouped)
       : { x: undefined, y: undefined, zoom: undefined };
   };
 
@@ -254,11 +256,11 @@ export default class EditorContext {
     syncGrouptoUpdate?: number;
   }): void => {
     if (this.isAsyncImageViewTransform || force) {
-      const transformKey =
-        syncGrouptoUpdate === undefined ? 'global' : syncGrouptoUpdate;
-      const beforeTransform = { ...this.imageViewTransforms[transformKey] };
-
-      this.imageViewTransforms[transformKey] = { x, y, zoom };
+      if (syncGrouptoUpdate === undefined) {
+        this.imageViewTransforms.ungrouped = { x, y, zoom };
+      } else {
+        this.imageViewTransforms.grouped[syncGrouptoUpdate] = { x, y, zoom };
+      }
 
       this.action('graph').overrideGraph({
         ...this.graph,
@@ -269,44 +271,11 @@ export default class EditorContext {
               output.widget?.syncGroup === syncGrouptoUpdate
           );
 
-          const shouldUpdate =
-            syncGrouptoUpdate === undefined || hasMatchingSyncGroup;
-
-          console.log('[Debug] Transform update decision:', {
-            nodeId: node.type,
-            hasMatchingSyncGroup,
-            syncGrouptoUpdate,
-            shouldUpdate,
-            beforeTransform,
-            newTransform: { x, y, zoom },
-            transformKey,
-            outputs: node.data.outputs?.map(o => ({
-              type: o.widget?.type,
-              syncGroup: o.widget?.syncGroup
-            }))
-          });
-
-          if (shouldUpdate) {
+          if (hasMatchingSyncGroup) {
             return { ...node };
           }
           return node;
         })
-      });
-
-      console.log('[Debug] Transform change:', {
-        before: beforeTransform,
-        after: this.imageViewTransforms[transformKey],
-        syncGrouptoUpdate,
-        affectedNodes: this.graph?.nodes
-          .filter(n =>
-            n.data.outputs?.some(
-              o =>
-                o.widget?.type === 'ImageViewer' &&
-                (syncGrouptoUpdate === undefined ||
-                  o.widget?.syncGroup === syncGrouptoUpdate)
-            )
-          )
-          .map(n => n.id)
       });
     }
   };

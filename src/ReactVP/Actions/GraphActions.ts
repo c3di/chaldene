@@ -241,10 +241,8 @@ export default class GraphActions extends StateActions {
     for (const change of changes) {
       if (change.type === 'add') {
         graph = this._addElements(change.changedGraph, graph);
-        graph = this._updateSyncGroups(graph);
       } else if (change.type === 'remove') {
         graph = this._removeElements(change.changedGraph, graph);
-        graph = this._updateSyncGroups(graph);
       } else if (change.type === 'select') {
         graph = this._handleSelectAllElements(graph, true);
       } else if (change.type === 'deselect') {
@@ -252,6 +250,7 @@ export default class GraphActions extends StateActions {
       }
     }
 
+    graph = this._updateSyncGroups(graph);
     this.stateAction(graph);
   };
 
@@ -803,15 +802,35 @@ export default class GraphActions extends StateActions {
   private _updateSyncGroups = (graph: Graph): Graph => {
     const nodeGroups = findNodeGroupsBetweenCrops(graph);
 
+    console.log('[Debug] Found node groups:', {
+      groups: nodeGroups.map(group =>
+        group.map(n => ({
+          id: n.id,
+          type: n.type
+        }))
+      ),
+      allNodes: graph.nodes.map(n => ({
+        id: n.id,
+        type: n.type
+      }))
+    });
+
     if (nodeGroups.length > 0) {
-      const updatedGraph = {
+      return {
         ...graph,
         nodes: graph.nodes.map(node => {
           const groupIndex = nodeGroups.findIndex(group =>
             group.some(groupNode => groupNode.id === node.id)
           );
 
-          const updatedNode = {
+          console.log('[Debug] Node sync group assignment:', {
+            nodeId: node.id,
+            type: node.type,
+            groupIndex,
+            isInGroup: groupIndex !== -1
+          });
+
+          return {
             ...node,
             data: {
               ...node.data,
@@ -829,12 +848,8 @@ export default class GraphActions extends StateActions {
               })
             }
           };
-
-          return updatedNode;
         })
       };
-
-      return updatedGraph;
     }
     return graph;
   };
