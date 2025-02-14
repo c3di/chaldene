@@ -220,3 +220,96 @@ export function findCodeChangedGraph(
   const nodes = findCodeChangeNodes(prevGraph, nextGraph);
   return findConnectedSubgraph(nextGraph, nodes);
 }
+
+/**
+ * Find all groups of nodes that are between crop nodes in the graph.
+ * Each group contains nodes that are reachable from one crop node until the next crop node(s).
+ */
+export function findNodeGroupsBetweenCrops(graph: Graph): Node[][] {
+  const { nodes: graphNodes, edges: graphEdges } = graph;
+  const visited = new Set<string>();
+  const nodeGroups: Node[][] = [];
+
+  // Create adjacency list for faster lookups
+  const adjacencyList: Record<string, Edge[]> = {};
+  graphEdges.forEach(edge => {
+    if (!adjacencyList[edge.source]) {
+      adjacencyList[edge.source] = [];
+    }
+    adjacencyList[edge.source].push(edge);
+  });
+
+  function isCropNode(node: Node): boolean {
+    return node.data.name === 'crop';
+  }
+
+  // Check if there are any crop nodes in the graph
+  const hasCropNodes = graphNodes.some(node => isCropNode(node));
+  if (!hasCropNodes) {
+    return [];
+  }
+
+  function collectGroup(startNodeId: string): void {
+    const currentGroup = new Set<string>();
+    const nextCropNodes = new Set<string>();
+
+    function dfs(nodeId: string): void {
+      if (visited.has(nodeId)) {
+        return;
+      }
+
+      const node = graphNodes.find(n => n.id === nodeId);
+      if (!node) {
+        return;
+      }
+
+      visited.add(nodeId);
+
+      // Add to current group if it's the start node or not a crop node
+      if (nodeId === startNodeId || !isCropNode(node)) {
+        currentGroup.add(nodeId);
+      }
+
+      // Process neighbors
+      const neighbors = adjacencyList[nodeId] || [];
+      for (const edge of neighbors) {
+        const targetNode = graphNodes.find(n => n.id === edge.target);
+        if (!targetNode) {
+          continue;
+        }
+
+        if (isCropNode(targetNode)) {
+          // Found a crop node, mark it for next processing
+          nextCropNodes.add(targetNode.id);
+        } else if (!visited.has(targetNode.id)) {
+          dfs(targetNode.id);
+        }
+      }
+    }
+
+    // Start DFS from the start node
+    dfs(startNodeId);
+
+    // Save current group if not empty
+    if (currentGroup.size > 0) {
+      const groupNodes = graphNodes.filter(node => currentGroup.has(node.id));
+      nodeGroups.push(groupNodes);
+    }
+
+    // Process next crop nodes
+    nextCropNodes.forEach(nodeId => {
+      if (!visited.has(nodeId)) {
+        collectGroup(nodeId);
+      }
+    });
+  }
+
+  // Start from each crop node
+  for (const node of graphNodes) {
+    if (isCropNode(node) && !visited.has(node.id)) {
+      collectGroup(node.id);
+    }
+  }
+
+  return nodeGroups;
+}

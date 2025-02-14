@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="6" failures="0" errors="0" time="5.592">
+  <testsuite name="findNodeGroupsBetweenCrops" errors="0" failures="0" skipped="0" timestamp="2025-02-14T10:50:40" time="4.963" tests="6">
+    <testcase classname="findNodeGroupsBetweenCrops should return empty array for empty graph" name="findNodeGroupsBetweenCrops should return empty array for empty graph" time="0.004">
+    </testcase>
+    <testcase classname="findNodeGroupsBetweenCrops should return empty array for graph with no crop nodes" name="findNodeGroupsBetweenCrops should return empty array for graph with no crop nodes" time="0">
+    </testcase>
+    <testcase classname="findNodeGroupsBetweenCrops should group nodes between two crop nodes" name="findNodeGroupsBetweenCrops should group nodes between two crop nodes" time="0.001">
+    </testcase>
+    <testcase classname="findNodeGroupsBetweenCrops should handle multiple branches between crop nodes" name="findNodeGroupsBetweenCrops should handle multiple branches between crop nodes" time="0.001">
+    </testcase>
+    <testcase classname="findNodeGroupsBetweenCrops should handle disconnected components" name="findNodeGroupsBetweenCrops should handle disconnected components" time="0.001">
+    </testcase>
+    <testcase classname="findNodeGroupsBetweenCrops should handle single crop node" name="findNodeGroupsBetweenCrops should handle single crop node" time="0.001">
+    </testcase>
+  </testsuite>
+</testsuites>
