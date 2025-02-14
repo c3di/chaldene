@@ -43,6 +43,7 @@ interface IImageViewerProps extends WidgetProps {
     width: number;
     height: number;
   };
+  syncGroup?: number;
 }
 
 function FullScreenPortal({
@@ -200,7 +201,8 @@ export default function ImageViewer({
   isBinary,
   isFullScreenControl,
   nodeDimensions,
-  originalDimensions
+  originalDimensions,
+  syncGroup
 }: IImageViewerProps): JSX.Element {
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
@@ -381,16 +383,10 @@ export default function ImageViewer({
           zoom: currentZoom
         };
 
-    // console.log('Updating local transform:', {
-    //   viewportTransform: { x: viewportTransform[4], y: viewportTransform[5] },
-    //   currentZoom,
-    //   scaleRatio,
-    //   localTransform,
-    //   isFullScreen
-    // });
-
-    // Always update global transform with local (non-fullscreen) transform
-    editorContext.updateGlobalTransform(localTransform);
+    editorContext.updateGlobalTransform({
+      ...localTransform,
+      syncGrouptoUpdate: syncGroup
+    });
   };
 
   const updateLastPos = (x: number, y: number) => {
@@ -538,7 +534,7 @@ export default function ImageViewer({
       x: asyncX,
       y: asyncY,
       zoom: asyncZoom
-    } = editorContext?.getImageViewTransform() ?? {};
+    } = editorContext?.getImageViewTransform(syncGroup) ?? {};
 
     const scaleRatio = getScaleRatio();
 
@@ -605,7 +601,7 @@ export default function ImageViewer({
     }
     canvas.current.renderAll();
   }, [
-    editorContext?.getImageViewTransform(),
+    editorContext?.getImageViewTransform(syncGroup),
     image,
     isFullScreen,
     showBackground,

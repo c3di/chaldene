@@ -239,56 +239,17 @@ export default class GraphActions extends StateActions {
     let graph = this.graph ?? { nodes: [], edges: [] };
 
     for (const change of changes) {
-
       if (change.type === 'add') {
         graph = this._addElements(change.changedGraph, graph);
+        graph = this._updateSyncGroups(graph);
       } else if (change.type === 'remove') {
         graph = this._removeElements(change.changedGraph, graph);
+        graph = this._updateSyncGroups(graph);
       } else if (change.type === 'select') {
         graph = this._handleSelectAllElements(graph, true);
       } else if (change.type === 'deselect') {
         graph = this._handleSelectAllElements(graph, false);
       }
-    }
-
-    // Find groups between crop nodes and assign syncGroup
-    const nodeGroups = findNodeGroupsBetweenCrops(graph);
-    console.log('[Debug] Found node groups:', 
-      nodeGroups.map(group => ({
-        nodes: group.map(n => ({ id: n.id, name: n.data.name }))
-      }))
-    );
-
-    if (nodeGroups.length > 0) {
-      // Create new graph with updated syncGroups
-      graph = {
-        ...graph,
-        nodes: graph.nodes.map(node => {
-          // Find which group contains this node
-          const groupIndex = nodeGroups.findIndex(group =>
-            group.some(groupNode => groupNode.id === node.id)
-          );
-
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              // Assign syncGroup if node is in a group, otherwise remove syncGroup
-              ...(groupIndex !== -1
-                ? { syncGroup: groupIndex }
-                : { syncGroup: undefined })
-            }
-          };
-        })
-      };
-
-      console.log('[Debug] Updated graph nodes:', 
-        graph.nodes.map(n => ({
-          id: n.id,
-          name: n.data.name,
-          syncGroup: n.data.syncGroup
-        }))
-      );
     }
 
     this.stateAction(graph);
@@ -837,5 +798,44 @@ export default class GraphActions extends StateActions {
         }))
       };
     });
+  };
+
+  private _updateSyncGroups = (graph: Graph): Graph => {
+    const nodeGroups = findNodeGroupsBetweenCrops(graph);
+
+    if (nodeGroups.length > 0) {
+      const updatedGraph = {
+        ...graph,
+        nodes: graph.nodes.map(node => {
+          const groupIndex = nodeGroups.findIndex(group =>
+            group.some(groupNode => groupNode.id === node.id)
+          );
+
+          const updatedNode = {
+            ...node,
+            data: {
+              ...node.data,
+              outputs: node.data.outputs?.map(output => {
+                return {
+                  ...output,
+                  widget:
+                    output.widget?.type === 'ImageViewer'
+                      ? {
+                          ...output.widget,
+                          syncGroup: groupIndex !== -1 ? groupIndex : undefined
+                        }
+                      : output.widget
+                };
+              })
+            }
+          };
+
+          return updatedNode;
+        })
+      };
+
+      return updatedGraph;
+    }
+    return graph;
   };
 }
