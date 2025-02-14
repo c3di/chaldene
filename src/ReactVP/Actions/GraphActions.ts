@@ -27,7 +27,7 @@ import {
   graphToJSON
 } from '../Utils';
 import { Spec2Node } from '../Spec';
-import { findCycle } from '../Type';
+import { findCycle, findNodeGroupsBetweenCrops } from '../Type';
 
 type GraphChange = {
   type: 'add' | 'remove' | 'select' | 'deselect';
@@ -237,7 +237,9 @@ export default class GraphActions extends StateActions {
   // only entry point for all applying graph to avoid multiple state update and re-render
   public applyGraphChanges = (changes: GraphChange[]): void => {
     let graph = this.graph ?? { nodes: [], edges: [] };
+
     for (const change of changes) {
+
       if (change.type === 'add') {
         graph = this._addElements(change.changedGraph, graph);
       } else if (change.type === 'remove') {
@@ -248,6 +250,47 @@ export default class GraphActions extends StateActions {
         graph = this._handleSelectAllElements(graph, false);
       }
     }
+
+    // Find groups between crop nodes and assign syncGroup
+    const nodeGroups = findNodeGroupsBetweenCrops(graph);
+    console.log('[Debug] Found node groups:', 
+      nodeGroups.map(group => ({
+        nodes: group.map(n => ({ id: n.id, name: n.data.name }))
+      }))
+    );
+
+    if (nodeGroups.length > 0) {
+      // Create new graph with updated syncGroups
+      graph = {
+        ...graph,
+        nodes: graph.nodes.map(node => {
+          // Find which group contains this node
+          const groupIndex = nodeGroups.findIndex(group =>
+            group.some(groupNode => groupNode.id === node.id)
+          );
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              // Assign syncGroup if node is in a group, otherwise remove syncGroup
+              ...(groupIndex !== -1
+                ? { syncGroup: groupIndex }
+                : { syncGroup: undefined })
+            }
+          };
+        })
+      };
+
+      console.log('[Debug] Updated graph nodes:', 
+        graph.nodes.map(n => ({
+          id: n.id,
+          name: n.data.name,
+          syncGroup: n.data.syncGroup
+        }))
+      );
+    }
+
     this.stateAction(graph);
   };
 

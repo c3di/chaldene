@@ -1,6 +1,11 @@
 import { type IHandleIdentifier } from './Handle';
 
-export { findCodeChangedGraph, topologicalSortDAG, findCycle } from './Utils';
+export {
+  findCodeChangedGraph,
+  topologicalSortDAG,
+  findCycle,
+  findNodeGroupsBetweenCrops
+} from './Utils';
 export { type Edge } from './Edge';
 export { isUsedAsInput, uniqueHandleName } from './Handle';
 export { default as Registry } from './Registry';

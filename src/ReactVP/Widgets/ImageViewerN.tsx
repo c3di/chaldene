@@ -267,12 +267,12 @@ export default function ImageViewer({
       height: window.innerHeight - 24
     };
 
-    console.log('Dimensions updated:', {
-      original: originalCanvasDimensions.current,
-      fullscreen: fullscreenDimensions.current,
-      isFullScreen,
-      parentSize: { width: parent.clientWidth, height: parent.clientHeight }
-    });
+    // console.log('Dimensions updated:', {
+    //   original: originalCanvasDimensions.current,
+    //   fullscreen: fullscreenDimensions.current,
+    //   isFullScreen,
+    //   parentSize: { width: parent.clientWidth, height: parent.clientHeight }
+    // });
 
     // Delay resize to ensure dimensions are set
     requestAnimationFrame(() => {
@@ -303,11 +303,11 @@ export default function ImageViewer({
     const parentWidth = parent.clientWidth;
     const parentHeight = parent.clientHeight;
 
-    console.log('Resizing canvas:', {
-      parentDims: { width: parentWidth, height: parentHeight },
-      scaleRatio,
-      isFullScreen
-    });
+    // console.log('Resizing canvas:', {
+    //   parentDims: { width: parentWidth, height: parentHeight },
+    //   scaleRatio,
+    //   isFullScreen
+    // });
 
     // Update canvas dimensions
     canvas.current.setDimensions({

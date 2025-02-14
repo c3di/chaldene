@@ -240,7 +240,7 @@ export function findNodeGroupsBetweenCrops(graph: Graph): Node[][] {
   });
 
   function isCropNode(node: Node): boolean {
-    return node.data.name === 'crop';
+    return node.data.specName === 'crop';
   }
 
   // Check if there are any crop nodes in the graph

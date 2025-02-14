@@ -1,7 +1,7 @@
-import { findNodeGroupsBetweenCrops } from './Utils';
-import { type Graph } from './Graph';
-import { type Node } from './Node';
-import { type Edge } from './Edge';
+import { findNodeGroupsBetweenCrops } from '../ReactVP/Type/Utils';
+import { type Graph } from '../ReactVP/Type/Graph';
+import { type Node } from '../ReactVP/Type/Node';
+import { type Edge } from '../ReactVP/Type/Edge';
 
 describe('findNodeGroupsBetweenCrops', () => {
   // Helper function to create a test node
