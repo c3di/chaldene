@@ -802,19 +802,6 @@ export default class GraphActions extends StateActions {
   private _updateSyncGroups = (graph: Graph): Graph => {
     const nodeGroups = findNodeGroupsBetweenCrops(graph);
 
-    console.log('[Debug] Found node groups:', {
-      groups: nodeGroups.map(group =>
-        group.map(n => ({
-          id: n.id,
-          type: n.type
-        }))
-      ),
-      allNodes: graph.nodes.map(n => ({
-        id: n.id,
-        type: n.type
-      }))
-    });
-
     if (nodeGroups.length > 0) {
       return {
         ...graph,
@@ -822,13 +809,6 @@ export default class GraphActions extends StateActions {
           const groupIndex = nodeGroups.findIndex(group =>
             group.some(groupNode => groupNode.id === node.id)
           );
-
-          console.log('[Debug] Node sync group assignment:', {
-            nodeId: node.id,
-            type: node.type,
-            groupIndex,
-            isInGroup: groupIndex !== -1
-          });
 
           return {
             ...node,

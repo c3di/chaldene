@@ -205,11 +205,11 @@ export default function ImageViewer({
   syncGroup,
   forWhom
 }: IImageViewerProps): JSX.Element {
-  console.log('[Debug] ImageViewer mounted/updated:', {
-    nodeId: forWhom?.nodeID,
-    syncGroup,
-    widget: value
-  });
+  // console.log('[Debug] ImageViewer mounted/updated:', {
+  //   nodeId: forWhom?.nodeID,
+  //   syncGroup,
+  //   widget: value
+  // });
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const canvas = useRef<fabric.Canvas | null>(null);
