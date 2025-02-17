@@ -174,3 +174,54 @@ ${outputs.outputImage} = IM(canny(in_im.raw_image), in_im.metadata)`;
     }
   }
 };
+
+export const batchProcessNodeSpec: computeNodeSpec = {
+  name: 'batch_process',
+  displayLabel: 'batch process',
+  category: 'image editing',
+  inputs: [
+    {
+      name: 'folderPath',
+      type: 'string',
+      displayLabel: 'folder',
+      description: 'Select a folder containing JPEG or PNG images.',
+      widget: {
+        type: 'FileInputFromServer',
+        extensions: [] // Empty array indicates folder selection
+      }
+    },
+    {
+      name: 'selectedImages',
+      type: 'string[]',
+      displayLabel: 'images',
+      description: 'Select images to process',
+      widget: {
+        type: 'ImageGallery',
+        sourcePath: 'folderPath' // References the folderPath input to load images
+      }
+    }
+  ],
+  outputs: [
+    {
+      name: 'outputImage',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'The processed image.'
+    }
+  ],
+
+  codeGenerators: {
+    Python: (inputs: Record<string, any>, outputs: Record<string, any>) => {
+      return `from im2im import Image as IM
+import os
+
+folder_path = ${inputs.folderPath}
+selected_images = ${inputs.selectedImages}
+
+# Process the first selected image for now
+if selected_images:
+    image_path = os.path.join(folder_path, selected_images[0])
+    ${outputs.outputImage} = IM.read(image_path)`;
+    }
+  }
+};
