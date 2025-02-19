@@ -191,22 +191,27 @@ export const batchProcessNodeSpec: computeNodeSpec = {
       }
     },
     {
-      name: 'selectedImages',
+      name: 'imageGallery',
       type: 'string[]',
-      displayLabel: 'images',
+      displayLabel: 'gallery',
       description: 'Select images to process',
       widget: {
-        type: 'ImageGallery',
-        sourcePath: 'folderPath' // References the folderPath input to load images
+        type: 'ImageGallery' // No need for sourcePath here
       }
     }
   ],
   outputs: [
     {
-      name: 'outputImage',
+      name: 'processedImage',
       type: 'image',
-      displayLabel: 'image',
+      displayLabel: 'processed image',
       description: 'The processed image.'
+    },
+    {
+      name: 'outputImages',
+      type: 'image[]',
+      displayLabel: 'batch results',
+      description: 'The processed images.'
     }
   ],
 
@@ -216,12 +221,19 @@ export const batchProcessNodeSpec: computeNodeSpec = {
 import os
 
 folder_path = ${inputs.folderPath}
-selected_images = ${inputs.selectedImages}
+selected_images = ${inputs.imageGallery}
 
-# Process the first selected image for now
 if selected_images:
-    image_path = os.path.join(folder_path, selected_images[0])
-    ${outputs.outputImage} = IM.read(image_path)`;
+    if len(selected_images) == 1:
+        image_path = os.path.join(folder_path, selected_images[0])
+        ${outputs.outputImage} = IM.read(image_path)
+        ${outputs.outputImages} = None
+    else:
+        # For multiple selections, set last image as outputImage
+        last_image_path = os.path.join(folder_path, selected_images[-1])
+        ${outputs.outputImage} = IM.read(last_image_path)
+        # Process all selected images for outputImages
+        ${outputs.outputImages} = [IM.read(os.path.join(folder_path, img)) for img in selected_images]`;
     }
   }
 };

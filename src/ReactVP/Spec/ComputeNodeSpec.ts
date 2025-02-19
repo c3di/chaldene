@@ -41,7 +41,10 @@ export function spec2ComputeNode({
         id: `out${index}`,
         ...output,
         widget:
-          isImageType(output.type) && !output.widget
+          isImageType(output.type) &&
+          !output.widget &&
+          output.type !== 'image[]' &&
+          output.name !== 'processedImage' //Avoid showing image viewer for batch processing node
             ? {
                 type: 'ImageViewer',
                 showDiff: output.showDiff ?? false,

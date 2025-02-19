@@ -39,6 +39,11 @@ export const thresholdNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
+      console.log('Debug threshold inputs.range:', {
+        value: inputs.range,
+        type: typeof inputs.range
+      });
+
       return `import numpy as np
 from im2im import Image as IM
 
@@ -170,7 +175,7 @@ export const binaryOpeningNodeSpec: computeNodeSpec = {
   name: 'binary opening',
   displayLabel: 'binary opening',
   description:
-    'Opening can remove small bright spots (i.e. “salt”) and connect small dark cracks. This tends to “open” up (dark) gaps between (bright) features.',
+    'Opening can remove small bright spots (i.e. "salt") and connect small dark cracks. This tends to "open" up (dark) gaps between (bright) features.',
   category: 'binary',
   inputs: [
     {
@@ -206,7 +211,7 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
   name: 'binary closing',
   displayLabel: 'binary closing',
   description:
-    'Closing can remove small dark spots (i.e. “pepper”) and connect small bright cracks. This tends to “close” up (dark) gaps between (bright) features.',
+    'Closing can remove small dark spots (i.e. "pepper") and connect small bright cracks. This tends to "close" up (dark) gaps between (bright) features.',
   category: 'binary',
   inputs: [
     {

@@ -62,33 +62,67 @@ export default class CodeGenerator {
 
     let imageInputVar: string | null = null;
 
-    // Process inputs
+    // First pass: Process folder path inputs
     inputs?.forEach(input => {
-      const edge = incomingEdges.find(e => e.targetHandle === input.id);
-
-      inputValues[input.name] = edge
-        ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
-        : this.widgetValueToCodeLiteral(
-            this.widgetsRegistry.getOutputType(input.widget?.type),
-            input.defaultValue
-          );
-
-      if (input.name === 'image' && edge) {
-        imageInputVar = inputValues[input.name];
-      }
-
-      if (input.widget?.type === 'ImageCropper' && imageInputVar) {
-        imageInspections.push({
-          imageVar: imageInputVar,
-          handleId: uniqueHandleName(editorID, id, input.id)
+      if (input.widget?.type === 'FileInputFromServer') {
+        const edge = incomingEdges.find(e => e.targetHandle === input.id);
+        console.log('[Debug] CodeGenerator - Processing folder input:', {
+          inputName: input.name,
+          edge,
+          defaultValue: input.defaultValue
         });
-      }
 
-      if (input.widget?.type === 'HistogramRange' && imageInputVar) {
-        histogramInspections.push({
-          imageVar: imageInputVar,
-          targetHandle: uniqueHandleName(editorID, id, input.id)
+        inputValues[input.name] = edge
+          ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
+          : this.widgetValueToCodeLiteral(
+              this.widgetsRegistry.getOutputType(input.widget?.type),
+              input.defaultValue
+            );
+      }
+    });
+
+    // Second pass: Process gallery inputs and other inputs
+    inputs?.forEach(input => {
+      if (input.widget?.type === 'ImageGallery') {
+        const edge = incomingEdges.find(e => e.targetHandle === input.id);
+
+        inputValues[input.name] = edge
+          ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
+          : this.widgetValueToCodeLiteral('string[]', input.defaultValue);
+      } else if (input.widget?.type !== 'FileInputFromServer') {
+        const edge = incomingEdges.find(e => e.targetHandle === input.id);
+
+        const outputType = this.widgetsRegistry.getOutputType(
+          input.widget?.type
+        );
+        console.log('Debug widget input:', {
+          name: input.name,
+          widgetType: input.widget?.type,
+          outputType,
+          defaultValue: input.defaultValue
         });
+
+        inputValues[input.name] = edge
+          ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
+          : this.widgetValueToCodeLiteral(outputType, input.defaultValue);
+
+        if (input.name === 'image' && edge) {
+          imageInputVar = inputValues[input.name];
+        }
+
+        if (input.widget?.type === 'ImageCropper' && imageInputVar) {
+          imageInspections.push({
+            imageVar: imageInputVar,
+            handleId: uniqueHandleName(editorID, id, input.id)
+          });
+        }
+
+        if (input.widget?.type === 'HistogramRange' && imageInputVar) {
+          histogramInspections.push({
+            imageVar: imageInputVar,
+            targetHandle: uniqueHandleName(editorID, id, input.id)
+          });
+        }
       }
     });
 
@@ -194,6 +228,7 @@ export default class CodeGenerator {
       '\n' +
       code.join('\n');
 
+    console.log(finalCode);
     return finalCode;
   }
 }
