@@ -52,13 +52,6 @@ export function ImageGallery({
         ?.find(node => node.id === forWhom?.nodeID)
         ?.data.inputs?.find(input => input.name === 'folderPath')?.defaultValue;
 
-      console.log('[Debug] ImageGallery - Found folder path:', folderPath);
-      console.log('[Debug] ImageGallery - Node ID:', forWhom?.nodeID);
-      console.log(
-        '[Debug] ImageGallery - Graph nodes:',
-        editorContext?.graph?.nodes
-      );
-
       if (!folderPath) {
         setError('Please select a folder first');
         return;
@@ -73,7 +66,6 @@ export function ImageGallery({
       setImages([]);
 
       // Request images from the folder
-      console.log('[Debug] ImageGallery - Requesting images from folder');
       editorContext?.parentContext
         ?.getImagesFromFolder?.(folderPath)
         .then((imageList: { filename: string; base64: string }[]) => {

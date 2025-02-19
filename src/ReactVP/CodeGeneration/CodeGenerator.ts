@@ -16,6 +16,10 @@ import {
   captureHistogramCode,
   HistogramCaptureDependencies
 } from './CaptureHistogramInJupyterlab';
+import {
+  captureFolderImagesCode,
+  FolderImageCaptureDependencies
+} from './CaptureFolderImages';
 
 export default class CodeGenerator {
   protected name: string;
@@ -59,48 +63,82 @@ export default class CodeGenerator {
       | string
       | { imageVar: string; handleId: string; referenceImageVar?: string }
     > = [];
+    const folderInspections: Array<{
+      folderVar: string;
+      handleId: string;
+    }> = [];
 
     let imageInputVar: string | null = null;
 
-    // First pass: Process folder path inputs
+    // First pass: Process file path inputs and folder path inputs
     inputs?.forEach(input => {
       if (input.widget?.type === 'FileInputFromServer') {
         const edge = incomingEdges.find(e => e.targetHandle === input.id);
-        console.log('[Debug] CodeGenerator - Processing folder input:', {
-          inputName: input.name,
-          edge,
-          defaultValue: input.defaultValue
-        });
-
-        inputValues[input.name] = edge
+        const inputValue = edge
           ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
           : this.widgetValueToCodeLiteral(
               this.widgetsRegistry.getOutputType(input.widget?.type),
               input.defaultValue
             );
+
+        inputValues[input.name] = inputValue;
+
+        if (input.widget.extensions && input.widget.extensions.length === 0) {
+          const handleId = uniqueHandleName(editorID, id, input.id);
+          // If this is folderPath input, directly set the imageGallery input value
+          if (input.name === 'folderPath') {
+            console.log(
+              `[CodeGenerator] Found folderPath input: ${input.name}`
+            );
+            console.log(
+              `[CodeGenerator] Setting imageGallery value to handleId: ${handleId}`
+            );
+            inputValues['imageGallery'] = handleId;
+          }
+          folderInspections.push({
+            folderVar: inputValue,
+            handleId: handleId
+          });
+          console.log('[CodeGenerator] Added folder inspection:', {
+            folderVar: inputValue,
+            handleId: handleId
+          });
+        }
       }
     });
 
     // Second pass: Process gallery inputs and other inputs
     inputs?.forEach(input => {
       if (input.widget?.type === 'ImageGallery') {
-        const edge = incomingEdges.find(e => e.targetHandle === input.id);
+        console.log(
+          `[CodeGenerator] Processing ImageGallery input: ${input.name}`
+        );
+        console.log('[CodeGenerator] Current value:', inputValues[input.name]);
 
-        inputValues[input.name] = edge
-          ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
-          : this.widgetValueToCodeLiteral('string[]', input.defaultValue);
+        const edge = incomingEdges.find(e => e.targetHandle === input.id);
+        if (edge) {
+          // If there's an edge, use the normal connection
+          const galleryValue = uniqueHandleName(
+            editorID,
+            edge.source,
+            edge.sourceHandle!
+          );
+          console.log(
+            `[CodeGenerator] Found edge connection, setting value to: ${galleryValue}`
+          );
+          inputValues[input.name] = galleryValue;
+        } else {
+          console.log(
+            '[CodeGenerator] No edge found, using existing value from folder input'
+          );
+        }
+        // No else needed since we already set imageGallery value if there was a folderPath
       } else if (input.widget?.type !== 'FileInputFromServer') {
         const edge = incomingEdges.find(e => e.targetHandle === input.id);
 
         const outputType = this.widgetsRegistry.getOutputType(
           input.widget?.type
         );
-        console.log('Debug widget input:', {
-          name: input.name,
-          widgetType: input.widget?.type,
-          outputType,
-          defaultValue: input.defaultValue
-        });
 
         inputValues[input.name] = edge
           ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
@@ -153,9 +191,18 @@ export default class CodeGenerator {
     let code = '';
 
     if (inspect_included) {
+      // Folder captures - must happen before main node code
+      console.log(
+        '[CodeGenerator] Processing folder inspections:',
+        folderInspections
+      );
+      folderInspections.forEach(({ folderVar, handleId }) => {
+        code += captureFolderImagesCode(folderVar, handleId) + '\n';
+      });
+
       // Histogram captures
       histogramInspections.forEach(({ imageVar, targetHandle }) => {
-        code += `${captureHistogramCode(imageVar, targetHandle)}\n`;
+        code += captureHistogramCode(imageVar, targetHandle) + '\n';
       });
     }
 
@@ -204,15 +251,20 @@ export default class CodeGenerator {
     graph: Graph,
     inspect_included: boolean = true
   ): string {
+    console.log('[CodeGenerator] Generating code from graph:', {
+      editorID,
+      nodeCount: graph.nodes.length,
+      inspect_included
+    });
+
     const nodes = topologicalSortDAG(graph);
     const edges = graph.edges;
 
     const code = nodes.map(node => {
-      const incomingEdges = edges.filter(e => e.target === node.id);
       return this.generateNodeCode(
         editorID,
         node,
-        incomingEdges,
+        edges.filter(e => e.target === node.id),
         inspect_included
       );
     });
@@ -224,11 +276,13 @@ export default class CodeGenerator {
     const finalCode =
       ImageCaptureDependencies +
       '\n' +
+      FolderImageCaptureDependencies +
+      '\n' +
       HistogramCaptureDependencies +
       '\n' +
       code.join('\n');
 
-    console.log(finalCode);
+    console.log('[CodeGenerator] Final generated code:', finalCode);
     return finalCode;
   }
 }

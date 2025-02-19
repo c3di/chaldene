@@ -724,6 +724,18 @@ export default class GraphActions extends StateActions {
         continue;
       }
       for (const input of node.data.inputs) {
+        // Special case: ImageGallery input with a folderPath input in the same node
+        if (input.widget?.type === 'ImageGallery') {
+          const hasFolderInput = node.data.inputs?.some(
+            otherInput =>
+              otherInput.name === 'folderPath' &&
+              otherInput.defaultValue !== undefined
+          );
+          if (hasFolderInput) {
+            continue; // Skip checking this input if it has a folder input
+          }
+        }
+
         if (input.widget?.type) {
           if (input.defaultValue === undefined || input.defaultValue === null) {
             notReadyNodes[node.id] = [

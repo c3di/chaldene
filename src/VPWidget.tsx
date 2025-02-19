@@ -135,7 +135,17 @@ export class VPWidget extends ReactWidget {
   }
 
   updateInspection(id: string, data: any) {
-    this._context?.action('graph').updateInspection(id, data);
+    if (data.type === 'folder' && data.images) {
+      // For folder inspections, transform the data to match what ImageGallery expects
+      const transformedData = data.images.map((img: any) => ({
+        filename: img.filename,
+        base64: img.imageUrl
+      }));
+      this._context?.action('graph').updateInspection(id, transformedData);
+    } else {
+      // Handle other inspection types normally
+      this._context?.action('graph').updateInspection(id, data);
+    }
   }
 
   listenToInspectResult(currentKernel: any): void {
@@ -144,6 +154,7 @@ export class VPWidget extends ReactWidget {
         const data = msg.content.data;
         if (data.handle_id) {
           const { handle_id, ...inspectionData } = data;
+
           this?.updateInspection(handle_id, inspectionData);
         }
       };
