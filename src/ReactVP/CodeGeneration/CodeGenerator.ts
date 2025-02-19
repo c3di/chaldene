@@ -84,22 +84,23 @@ export default class CodeGenerator {
         inputValues[input.name] = inputValue;
 
         if (input.widget.extensions && input.widget.extensions.length === 0) {
-          const handleId = uniqueHandleName(editorID, id, input.id);
-          // If this is folderPath input, directly set the imageGallery input value
-          if (input.name === 'folderPath') {
-            console.log(
-              `[CodeGenerator] Found folderPath input: ${input.name}`
-            );
-            console.log(
-              `[CodeGenerator] Setting imageGallery value to handleId: ${handleId}`
-            );
-            inputValues['imageGallery'] = handleId;
-          }
-          folderInspections.push({
+          // Find the ImageGallery input to use its handle
+          const galleryInput = inputs.find(
+            i => i.widget?.type === 'ImageGallery'
+          );
+          const handleId = uniqueHandleName(
+            editorID,
+            id,
+            galleryInput?.id || input.id
+          );
+
+          console.log('[CodeGenerator] Setting up folder inspection:', {
             folderVar: inputValue,
-            handleId: handleId
+            handleId,
+            isGalleryInput: !!galleryInput
           });
-          console.log('[CodeGenerator] Added folder inspection:', {
+
+          folderInspections.push({
             folderVar: inputValue,
             handleId: handleId
           });

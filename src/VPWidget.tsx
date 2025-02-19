@@ -135,17 +135,7 @@ export class VPWidget extends ReactWidget {
   }
 
   updateInspection(id: string, data: any) {
-    if (data.type === 'folder' && data.images) {
-      // For folder inspections, transform the data to match what ImageGallery expects
-      const transformedData = data.images.map((img: any) => ({
-        filename: img.filename,
-        base64: img.imageUrl
-      }));
-      this._context?.action('graph').updateInspection(id, transformedData);
-    } else {
-      // Handle other inspection types normally
-      this._context?.action('graph').updateInspection(id, data);
-    }
+    this._context?.action('graph').updateInspection(id, data);
   }
 
   listenToInspectResult(currentKernel: any): void {

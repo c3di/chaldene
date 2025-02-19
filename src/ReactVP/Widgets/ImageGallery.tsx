@@ -1,213 +1,313 @@
-import { useEffect, useState } from 'react';
+/* eslint-disable @typescript-eslint/naming-convention */
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import * as fabric from 'fabric';
 import { WidgetProps } from './Widget';
 
-interface IThumbnailImage {
+declare module 'fabric' {
+  interface Canvas {
+    isDisposed: boolean;
+  }
+  interface Object {
+    data?: Record<string, any>;
+  }
+}
+
+interface IGalleryImage {
   filename: string;
-  selected: boolean;
+  base64: string;
+  imageUrl?: string;
   fabricObject?: fabric.Image;
+}
+
+interface IImageGalleryProps extends WidgetProps {
+  images?: IGalleryImage[];
+  value?: string[];
 }
 
 export function ImageGallery({
   forWhom,
-  value,
   setValue,
-  editorContext
-}: WidgetProps): JSX.Element {
-  const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
-  const [images, setImages] = useState<IThumbnailImage[]>([]);
+  images
+}: IImageGalleryProps): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const thumbnailSize = 100;
   const padding = 10;
 
-  // Initialize canvas
-  useEffect(() => {
-    const canvasElement = document.getElementById(`gallery-canvas-${forWhom}`);
-    if (!canvasElement) {
-      return;
-    }
+  const canvasRef = useRef<fabric.Canvas | null>(null);
+  const selectionRef = useRef<fabric.Image | null>(null);
+  const isMounted = useRef(false);
 
-    const newCanvas = new fabric.Canvas(`gallery-canvas-${forWhom}`, {
-      width: 500,
-      height: 300,
-      selection: false
+  // Stable canvas key based on forWhom ID
+  const canvasKey = useMemo(() => {
+    const id = typeof forWhom === 'object' ? forWhom.id : String(forWhom);
+    console.log('[Canvas] Generated canvas key for:', id);
+    return `gallery-${id}`;
+  }, [typeof forWhom === 'object' ? forWhom.id : forWhom]);
+
+  // Deep compare images to prevent unnecessary reloads
+  const stableImages = useMemo(
+    () => images,
+    [
+      JSON.stringify(
+        images?.map(img => ({
+          filename: img.filename,
+          hash: img.base64?.slice(-20)
+        }))
+      )
+    ]
+  );
+
+  const createFabricImage = useCallback(async (src: string) => {
+    console.log('[Image] Creating image from:', src.substring(0, 50));
+    return new Promise<fabric.Image>((resolve, reject) => {
+      fabric.FabricImage.fromURL(src).then(img => {
+        console.log('[Image] Created successfully');
+        img.set({
+          originX: 'left',
+          originY: 'top',
+          borderColor: 'transparent',
+          cornerColor: 'transparent',
+          cornerSize: 8,
+          transparentCorners: false
+        });
+        resolve(img);
+      }, reject);
     });
-    setCanvas(newCanvas);
+  }, []);
 
-    return () => {
-      newCanvas.dispose();
-    };
-  }, [forWhom]);
+  const calculateScale = useCallback((img: fabric.Image) => {
+    const scale = Math.min(
+      thumbnailSize / img.width!,
+      thumbnailSize / img.height!
+    );
+    console.log('[Scale] Calculated:', scale);
+    return scale;
+  }, []);
 
-  // Load images when folder path changes
-  useEffect(() => {
+  const processImages = useCallback(
+    async (images: IGalleryImage[]) => {
+      console.log('[Process] Starting processing for', images.length, 'images');
+      const currentObjects = canvasRef.current?.getObjects() || [];
+
+      return Promise.all(
+        images.map(async img => {
+          const existing = currentObjects.find(
+            o => (o as fabric.Image).data?.filename === img.filename
+          ) as fabric.Image | undefined;
+
+          if (existing) {
+            console.log('[Process] Reusing existing:', img.filename);
+            return { ...img, fabricObject: existing };
+          }
+
+          console.log('[Process] Creating new:', img.filename);
+          const fabricImg = await createFabricImage(
+            img.base64 || img.imageUrl!
+          );
+          return {
+            ...img,
+            fabricObject: fabricImg.set({
+              scaleX: calculateScale(fabricImg),
+              scaleY: calculateScale(fabricImg),
+              data: { filename: img.filename }
+            })
+          };
+        })
+      );
+    },
+    [createFabricImage, calculateScale]
+  );
+
+  const updateSelection = useCallback((selected?: fabric.Image) => {
+    console.log('[Selection] Updating visual');
+    const canvas = canvasRef.current;
     if (!canvas) {
       return;
     }
 
-    try {
-      // Get the folder path value from the graph
-      const folderPath = editorContext?.graph?.nodes
-        ?.find(node => node.id === forWhom?.nodeID)
-        ?.data.inputs?.find(input => input.name === 'folderPath')?.defaultValue;
+    // Clear previous selection
+    if (selectionRef.current) {
+      selectionRef.current.set({
+        borderColor: 'transparent',
+        cornerColor: 'transparent'
+      });
+      console.log('[Selection] Cleared previous');
+    }
 
-      if (!folderPath) {
-        setError('Please select a folder first');
-        return;
-      }
+    // Apply new selection
+    if (selected) {
+      selected.set({
+        borderColor: '#2196f3',
+        cornerColor: '#2196f3',
+        borderScaleFactor: 2
+      });
+      selectionRef.current = selected;
+      console.log('[Selection] Applied new');
+    }
 
-      setLoading(true);
-      setError(null);
+    canvas.requestRenderAll();
+  }, []);
 
-      // Clear existing images
-      canvas.getObjects().forEach(obj => canvas.remove(obj));
-      canvas.renderAll();
-      setImages([]);
+  const arrangeThumbnails = useCallback(
+    (thumbnails: IGalleryImage[], canvas: fabric.Canvas) => {
+      try {
+        console.log('[Arrange] Starting for', thumbnails.length, 'items');
+        if (canvas.isDisposed) {
+          return;
+        }
 
-      // Request images from the folder
-      editorContext?.parentContext
-        ?.getImagesFromFolder?.(folderPath)
-        .then((imageList: { filename: string; base64: string }[]) => {
-          console.log(
-            '[Debug] ImageGallery - Received images:',
-            imageList.length
-          );
-          if (!canvas) {
-            console.log('[Debug] ImageGallery - Canvas no longer exists');
+        const currentObjects = canvas.getObjects();
+        console.log('[Arrange] Current objects:', currentObjects.length);
+
+        // Remove obsolete objects
+        currentObjects.forEach(obj => {
+          if (!thumbnails.some(t => t.fabricObject === obj)) {
+            console.log(
+              '[Arrange] Removing:',
+              (obj as fabric.Image).data?.filename
+            );
+            canvas.remove(obj);
+          }
+        });
+
+        // Add/update objects
+        thumbnails.forEach(({ fabricObject }, index) => {
+          if (!fabricObject) {
             return;
           }
 
-          Promise.all(
-            imageList.map(
-              img =>
-                new Promise<IThumbnailImage>(resolve => {
-                  console.log(
-                    '[Debug] ImageGallery - Loading image:',
-                    img.filename
-                  );
-                  fabric.FabricImage.fromURL(img.base64).then(
-                    (fabricImg: fabric.Image) => {
-                      // Scale image to thumbnail size
-                      const scale = Math.min(
-                        thumbnailSize / fabricImg.width!,
-                        thumbnailSize / fabricImg.height!
-                      );
-                      fabricImg.scale(scale);
+          const position = {
+            left: (index % 4) * (thumbnailSize + padding) + padding,
+            top: Math.floor(index / 4) * (thumbnailSize + padding) + padding
+          };
 
-                      fabricImg.set({
-                        selectable: true,
-                        hasBorders: true,
-                        hasControls: false
-                      });
-
-                      resolve({
-                        filename: img.filename,
-                        selected: false,
-                        fabricObject: fabricImg
-                      });
-                    }
-                  );
-                })
-            )
-          ).then(thumbnails => {
+          if (!canvas.contains(fabricObject)) {
+            console.log('[Arrange] Adding:', fabricObject.data?.filename);
+            fabricObject.set(position);
+            canvas.add(fabricObject);
+          } else {
             console.log(
-              '[Debug] ImageGallery - Loaded thumbnails:',
-              thumbnails.length
+              '[Arrange] Updating position:',
+              fabricObject.data?.filename
             );
-            if (!canvas) {
-              return;
-            }
-            setImages(thumbnails);
-            arrangeThumbnails(thumbnails, canvas);
-          });
-        })
-        .catch((err: Error) => {
-          console.error('[Debug] ImageGallery - Error loading images:', err);
-          setError(`Error loading images: ${err.message}`);
-        })
-        .finally(() => {
-          console.log('[Debug] ImageGallery - Finished loading attempt');
-          setLoading(false);
-        });
-    } catch (error) {
-      console.error('[Debug] ImageGallery - Error in effect:', error);
-      setError('Failed to load images');
-      setLoading(false);
-    }
-  }, [canvas, editorContext?.graph]);
-
-  // Arrange thumbnails in a grid
-  const arrangeThumbnails = (
-    thumbnails: IThumbnailImage[],
-    canvas: fabric.Canvas
-  ) => {
-    try {
-      // Clear existing objects
-      canvas.getObjects().forEach(obj => canvas.remove(obj));
-      canvas.renderAll();
-
-      let row = 0;
-      let col = 0;
-      const maxCols = Math.floor(canvas.getWidth() / (thumbnailSize + padding));
-
-      thumbnails.forEach(({ fabricObject }) => {
-        if (fabricObject) {
-          fabricObject.set({
-            left: col * (thumbnailSize + padding) + padding,
-            top: row * (thumbnailSize + padding) + padding
-          });
-          canvas.add(fabricObject);
-
-          col++;
-          if (col >= maxCols) {
-            col = 0;
-            row++;
+            fabricObject.set(position);
           }
+        });
+
+        canvas.renderAll();
+        console.log('[Arrange] Final count:', canvas.getObjects().length);
+      } catch (error) {
+        console.error('[Arrange] Error:', error);
+      }
+    },
+    [thumbnailSize, padding]
+  );
+
+  const loadImages = useCallback(
+    async (canvas: fabric.Canvas, images: IGalleryImage[]) => {
+      console.log('[Load] Starting load for', images.length, 'images');
+      try {
+        if (canvas.isDisposed) {
+          console.warn('[Load] Canvas disposed');
+          return;
         }
-      });
 
-      canvas.renderAll();
-    } catch (error) {
-      console.error('Error arranging thumbnails:', error);
-    }
-  };
+        setLoading(true);
+        setError(null);
 
-  // Handle selection changes
+        const processed = await processImages(images);
+        if (canvas.isDisposed) {
+          return;
+        }
+
+        arrangeThumbnails(processed, canvas);
+        console.log('[Load] Completed successfully');
+      } catch (err) {
+        console.error('[Load] Failed:', err);
+        setError('Failed to load images');
+      } finally {
+        if (!canvas.isDisposed) {
+          setLoading(false);
+        }
+      }
+    },
+    [processImages, arrangeThumbnails]
+  );
+
+  // Canvas initialization and cleanup
   useEffect(() => {
-    if (!canvas) {
+    console.log('[Canvas] Mounting');
+    isMounted.current = true;
+    const canvasElement = document.getElementById(canvasKey);
+
+    if (!canvasElement) {
+      console.error('[Canvas] Element not found');
       return;
     }
 
-    canvas.on('selection:created', e => handleSelection(e));
-    canvas.on('selection:updated', e => handleSelection(e));
-    canvas.on('selection:cleared', () => handleSelection());
+    // Clean existing elements
+    while (canvasElement.firstChild) {
+      canvasElement.removeChild(canvasElement.firstChild);
+    }
+
+    const newCanvas = new fabric.Canvas(canvasKey, {
+      width: 500,
+      height: 300,
+      selection: true,
+      renderOnAddRemove: false
+    });
+
+    canvasRef.current = newCanvas;
+    console.log('[Canvas] Initialized');
+
+    // Load initial images
+    if (stableImages) {
+      loadImages(newCanvas, stableImages);
+    }
+
+    // Selection handlers
+    const handleSelection = (e?: { selected?: fabric.Object[] }) => {
+      const selected = e?.selected?.[0] as fabric.Image | undefined;
+      console.log('[Selection] Detected:', selected?.data?.filename);
+      setValue?.(forWhom, selected ? [selected.data?.filename || ''] : []);
+      updateSelection(selected);
+    };
+
+    newCanvas.on('selection:created', handleSelection);
+    newCanvas.on('selection:updated', handleSelection);
 
     return () => {
-      canvas.off('selection:created');
-      canvas.off('selection:updated');
-      canvas.off('selection:cleared');
+      console.log('[Canvas] Unmounting');
+      isMounted.current = false;
+
+      if (newCanvas) {
+        console.log('[Canvas] Disposing');
+        newCanvas.off('selection:created');
+        newCanvas.off('selection:updated');
+        newCanvas.dispose();
+      }
+      canvasRef.current = null;
     };
-  }, [canvas, images]);
+  }, [canvasKey]);
 
-  const handleSelection = (e?: { selected?: fabric.Object[] }) => {
-    const selectedObject = e?.selected?.[0];
-    const updatedImages = images.map(img => ({
-      ...img,
-      selected: img.fabricObject === selectedObject
-    }));
-    setImages(updatedImages);
-
-    // Update the widget value with selected filenames or empty array if nothing selected
-    const selectedFilenames = updatedImages
-      .filter(img => img.selected)
-      .map(img => img.filename); // Just use filename without path
-    setValue?.(forWhom, selectedFilenames.length > 0 ? selectedFilenames : []);
-  };
+  // Handle image updates
+  useEffect(() => {
+    if (!canvasRef.current || !stableImages) {
+      return;
+    }
+    console.log('[Images] Update detected');
+    loadImages(canvasRef.current, stableImages);
+  }, [stableImages, loadImages]);
 
   return (
     <div className="image-gallery-widget widget">
-      <canvas id={`gallery-canvas-${forWhom}`} width={500} height={300} />
+      <canvas
+        id={canvasKey}
+        width={500}
+        height={300}
+        style={{ contain: 'strict' }}
+      />
       {loading && <div className="gallery-loading">Loading images...</div>}
       {error && <div className="gallery-error">{error}</div>}
     </div>
