@@ -32,3 +32,29 @@
 canvas {
     outline: none !important;
 }
+
+.gallery-controls {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    justify-content: flex-end;
+    background: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+}
+
+.gallery-controls button {
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+}
+
+.gallery-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.gallery-controls button:hover:not(:disabled) {
+    background: #f0f0f0;
+}

@@ -279,7 +279,7 @@ export function ImageGallery({
         if (event.e.shiftKey) {
           handleMultiSelection(newCanvas, target);
         } else {
-          handleSingleSelection(newCanvas, target);
+          handleSingleSelection(newCanvas, target, pendingSelectionRef);
         }
       });
 
@@ -288,12 +288,7 @@ export function ImageGallery({
 
     newCanvas.on('selection:cleared', () => {
       if (!pendingSelectionRef.current) {
-        selectedRef.current.forEach(obj => {
-          obj.set({ borderColor: 'transparent' });
-        });
-        selectedRef.current = [];
-        newCanvas.requestRenderAll();
-        setValue?.(forWhom, []);
+        handleDiscardSelection(newCanvas, handleSelection);
       }
     });
 
@@ -318,6 +313,69 @@ export function ImageGallery({
 
   return (
     <div className="image-gallery-widget widget">
+      <div className="gallery-controls">
+        <button
+          onClick={() =>
+            canvasRef.current &&
+            handleMoveSelection(
+              canvasRef.current,
+              'left',
+              handleSelection,
+              pendingSelectionRef
+            )
+          }
+          disabled={
+            !canvasRef.current ||
+            canvasRef.current.getActiveObjects().length === 0 ||
+            canvasRef.current.getActiveObjects().length ===
+              canvasRef.current.getObjects().length
+          }
+        >
+          ←
+        </button>
+        <button
+          onClick={() =>
+            canvasRef.current &&
+            handleMoveSelection(
+              canvasRef.current,
+              'right',
+              handleSelection,
+              pendingSelectionRef
+            )
+          }
+          disabled={
+            !canvasRef.current ||
+            canvasRef.current.getActiveObjects().length === 0 ||
+            canvasRef.current.getActiveObjects().length ===
+              canvasRef.current.getObjects().length
+          }
+        >
+          →
+        </button>
+        <button
+          onClick={() =>
+            canvasRef.current &&
+            handleSelectAll(canvasRef.current, handleSelection)
+          }
+          disabled={
+            !canvasRef.current || canvasRef.current.getObjects().length === 0
+          }
+        >
+          Select All
+        </button>
+        <button
+          onClick={() =>
+            canvasRef.current &&
+            handleDiscardSelection(canvasRef.current, handleSelection)
+          }
+          disabled={
+            !canvasRef.current ||
+            canvasRef.current.getActiveObjects().length === 0
+          }
+        >
+          Clear Selection
+        </button>
+      </div>
       <canvas
         id={canvasKey}
         width="100%"
@@ -364,7 +422,11 @@ function handleMultiSelection(canvas: fabric.Canvas, target: fabric.Object) {
   }
 }
 
-function handleSingleSelection(canvas: fabric.Canvas, target: fabric.Object) {
+function handleSingleSelection(
+  canvas: fabric.Canvas,
+  target: fabric.Object,
+  pendingRef: React.MutableRefObject<boolean>
+) {
   canvas.getActiveObjects().forEach(obj => {
     obj.set({
       hasBorders: false,
@@ -379,7 +441,72 @@ function handleSingleSelection(canvas: fabric.Canvas, target: fabric.Object) {
     borderScaleFactor: 2
   });
 
+  pendingRef.current = true;
   canvas.discardActiveObject();
   canvas.setActiveObject(target);
   canvas.renderAll();
+}
+
+function handleSelectAll(canvas: fabric.Canvas, handleSelection: () => void) {
+  const activeSelection = new fabric.ActiveSelection(canvas.getObjects(), {
+    canvas: canvas,
+    hasControls: false,
+    hasBorders: false,
+    selectable: false,
+    evented: false,
+    padding: 0
+  });
+
+  canvas.setActiveObject(activeSelection);
+  activeSelection.forEachObject(obj => {
+    obj.set({
+      borderColor: '#2196f3',
+      borderScaleFactor: 2,
+      hasBorders: true
+    });
+  });
+  canvas.renderAll();
+  handleSelection();
+}
+
+function handleDiscardSelection(
+  canvas: fabric.Canvas,
+  handleSelection: () => void
+) {
+  canvas.discardActiveObject();
+  canvas.getObjects().forEach(obj => {
+    obj.set({
+      hasBorders: false,
+      borderColor: 'transparent'
+    });
+  });
+  canvas.renderAll();
+  handleSelection();
+}
+
+function handleMoveSelection(
+  canvas: fabric.Canvas,
+  direction: 'left' | 'right',
+  handleSelection: () => void,
+  pendingRef: React.MutableRefObject<boolean>
+) {
+  const objects = canvas.getObjects();
+  const activeObjects = canvas.getActiveObjects();
+  if (activeObjects.length === 0) {
+    return;
+  }
+
+  const currentIndex = objects.indexOf(activeObjects[0]);
+  const newIndex =
+    direction === 'left'
+      ? Math.max(0, currentIndex - 1)
+      : Math.min(objects.length - 1, currentIndex + 1);
+
+  if (currentIndex === newIndex) {
+    return;
+  }
+
+  const targetObject = objects[newIndex];
+  handleSingleSelection(canvas, targetObject, pendingRef);
+  handleSelection();
 }
