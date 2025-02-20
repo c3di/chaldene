@@ -33,7 +33,7 @@ export function ImageGallery({
   const [error, setError] = useState<string | null>(null);
 
   const canvasRef = useRef<fabric.Canvas | null>(null);
-  const selectionRef = useRef<fabric.Image | null>(null);
+  const selectedRef = useRef<fabric.Image[]>([]);
   const isMounted = useRef(false);
 
   // Stable canvas key based on forWhom ID
@@ -109,6 +109,12 @@ export function ImageGallery({
               originX: 'left',
               originY: 'top',
               borderColor: 'transparent',
+              hasControls: false,
+              hasBorders: true,
+              lockMovementX: true,
+              lockMovementY: true,
+              selectable: true,
+              hoverCursor: 'pointer',
               cornerColor: 'transparent'
             })
           };
@@ -118,35 +124,40 @@ export function ImageGallery({
     [createFabricImage]
   );
 
-  const updateSelection = useCallback((selected?: fabric.Image) => {
-    console.log('[Selection] Updating visual');
+  const handleSelection = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
     }
 
-    // Clear previous selection
-    if (selectionRef.current) {
-      selectionRef.current.set({
-        borderColor: 'transparent',
-        cornerColor: 'transparent'
-      });
-      console.log('[Selection] Cleared previous');
-    }
+    const selected = canvas.getActiveObjects() as fabric.Image[];
+    console.log('[Selection] Selected items:', selected.length);
 
-    // Apply new selection
-    if (selected) {
-      selected.set({
+    // Clear previous selections
+    selectedRef.current?.forEach(obj => {
+      if (!selected.includes(obj)) {
+        obj.set({
+          borderColor: 'transparent',
+          borderScaleFactor: 1
+        });
+      }
+    });
+
+    // Update new selections
+    selected.forEach(obj => {
+      obj.set({
         borderColor: '#2196f3',
-        cornerColor: '#2196f3',
         borderScaleFactor: 2
       });
-      selectionRef.current = selected;
-      console.log('[Selection] Applied new');
-    }
+    });
 
+    selectedRef.current = selected;
     canvas.requestRenderAll();
-  }, []);
+
+    // Update parent with selected filenames
+    const filenames = selected.map(o => o.data?.filename).filter(Boolean);
+    setValue?.(forWhom, filenames as string[]);
+  }, [forWhom, setValue]);
 
   const arrangeThumbnails = useCallback(
     (thumbnails: IGalleryImage[], canvas: fabric.Canvas) => {
@@ -260,7 +271,6 @@ export function ImageGallery({
   // Canvas initialization and cleanup
   useEffect(() => {
     console.log('[Canvas] Mounting');
-    isMounted.current = true;
     const canvasElement = document.getElementById(canvasKey);
 
     if (!canvasElement) {
@@ -275,13 +285,18 @@ export function ImageGallery({
 
     // Get parent container dimensions
     const parentWidth = canvasElement.parentElement?.clientWidth || 500;
-    const parentHeight = 300; // Fixed height or calculate from parent
+    const parentHeight = 300;
 
     const newCanvas = new fabric.Canvas(canvasKey, {
       width: parentWidth,
       height: parentHeight,
       selection: true,
-      renderOnAddRemove: false
+      renderOnAddRemove: false,
+      allowMultipleSelection: true,
+      selectionKey: 'shiftKey',
+      selectionColor: 'rgba(33, 150, 243, 0.3)',
+      selectionBorderColor: '#2196f3',
+      selectionLineWidth: 2
     });
 
     canvasRef.current = newCanvas;
@@ -292,16 +307,16 @@ export function ImageGallery({
       loadImages(newCanvas, stableImages);
     }
 
-    // Selection handlers
-    const handleSelection = (e?: { selected?: fabric.Object[] }) => {
-      const selected = e?.selected?.[0] as fabric.Image | undefined;
-      console.log('[Selection] Detected:', selected?.data?.filename);
-      setValue?.(forWhom, selected ? [selected.data?.filename || ''] : []);
-      updateSelection(selected);
-    };
-
     newCanvas.on('selection:created', handleSelection);
     newCanvas.on('selection:updated', handleSelection);
+    newCanvas.on('selection:cleared', () => {
+      selectedRef.current.forEach(obj => {
+        obj.set({ borderColor: 'transparent' });
+      });
+      selectedRef.current = [];
+      newCanvas.requestRenderAll();
+      setValue?.(forWhom, []);
+    });
 
     return () => {
       console.log('[Canvas] Unmounting');

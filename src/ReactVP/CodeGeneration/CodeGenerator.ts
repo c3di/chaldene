@@ -94,12 +94,6 @@ export default class CodeGenerator {
             galleryInput?.id || input.id
           );
 
-          console.log('[CodeGenerator] Setting up folder inspection:', {
-            folderVar: inputValue,
-            handleId,
-            isGalleryInput: !!galleryInput
-          });
-
           folderInspections.push({
             folderVar: inputValue,
             handleId: handleId
@@ -111,11 +105,6 @@ export default class CodeGenerator {
     // Second pass: Process gallery inputs and other inputs
     inputs?.forEach(input => {
       if (input.widget?.type === 'ImageGallery') {
-        console.log(
-          `[CodeGenerator] Processing ImageGallery input: ${input.name}`
-        );
-        console.log('[CodeGenerator] Current value:', inputValues[input.name]);
-
         const edge = incomingEdges.find(e => e.targetHandle === input.id);
         if (edge) {
           // If there's an edge, use the normal connection
@@ -124,16 +113,8 @@ export default class CodeGenerator {
             edge.source,
             edge.sourceHandle!
           );
-          console.log(
-            `[CodeGenerator] Found edge connection, setting value to: ${galleryValue}`
-          );
           inputValues[input.name] = galleryValue;
-        } else {
-          console.log(
-            '[CodeGenerator] No edge found, using existing value from folder input'
-          );
         }
-        // No else needed since we already set imageGallery value if there was a folderPath
       } else if (input.widget?.type !== 'FileInputFromServer') {
         const edge = incomingEdges.find(e => e.targetHandle === input.id);
 
@@ -193,10 +174,6 @@ export default class CodeGenerator {
 
     if (inspect_included) {
       // Folder captures - must happen before main node code
-      console.log(
-        '[CodeGenerator] Processing folder inspections:',
-        folderInspections
-      );
       folderInspections.forEach(({ folderVar, handleId }) => {
         code += captureFolderImagesCode(folderVar, handleId) + '\n';
       });
@@ -252,12 +229,6 @@ export default class CodeGenerator {
     graph: Graph,
     inspect_included: boolean = true
   ): string {
-    console.log('[CodeGenerator] Generating code from graph:', {
-      editorID,
-      nodeCount: graph.nodes.length,
-      inspect_included
-    });
-
     const nodes = topologicalSortDAG(graph);
     const edges = graph.edges;
 
@@ -283,7 +254,7 @@ export default class CodeGenerator {
       '\n' +
       code.join('\n');
 
-    console.log('[CodeGenerator] Final generated code:', finalCode);
+    //console.log('[CodeGenerator] Final generated code:', finalCode);
     return finalCode;
   }
 }
