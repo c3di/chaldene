@@ -29,6 +29,7 @@ export function InputHandle({
   );
 
   const showLabel = widget?.type !== 'ImageCropper';
+  const fullWidthWidget = widget?.type === 'ImageGallery';
 
   return (
     <div
@@ -36,6 +37,10 @@ export function InputHandle({
       title={
         type ? `type: ${type}. ` : '' + description ? `${description}` : ''
       }
+      style={{
+        flexDirection: fullWidthWidget ? 'column' : 'row',
+        alignItems: fullWidthWidget ? 'flex-start' : 'center'
+      }}
     >
       {!Widget && (
         <div className="handle-container-input">
@@ -56,7 +61,8 @@ export function InputHandle({
         <span
           className="label"
           style={{
-            marginRight: '12px'
+            marginRight: '12px',
+            marginBottom: fullWidthWidget ? '8px' : '0'
           }}
         >
           {displayLabel}
@@ -68,7 +74,7 @@ export function InputHandle({
             !showLabel ? 'widget-container-no-label' : ''
           }`}
           style={{
-            width: showLabel ? '100%' : 'calc(100% - 25px)'
+            width: fullWidthWidget || showLabel ? '100%' : 'calc(100% - 25px)'
           }}
         >
           {Widget}

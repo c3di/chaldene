@@ -31,8 +31,6 @@ export function ImageGallery({
 }: IImageGalleryProps): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const thumbnailSize = 100;
-  const padding = 10;
 
   const canvasRef = useRef<fabric.Canvas | null>(null);
   const selectionRef = useRef<fabric.Image | null>(null);
@@ -76,18 +74,18 @@ export function ImageGallery({
     });
   }, []);
 
-  const calculateScale = useCallback((img: fabric.Image) => {
-    const scale = Math.min(
-      thumbnailSize / img.width!,
-      thumbnailSize / img.height!
-    );
-    console.log('[Scale] Calculated:', scale);
-    return scale;
-  }, []);
+  const calculateScale = useCallback(
+    (img: fabric.Image, finalThumbSize: number) => {
+      return Math.min(
+        finalThumbSize / img.width!,
+        finalThumbSize / img.height!
+      );
+    },
+    []
+  );
 
   const processImages = useCallback(
     async (images: IGalleryImage[]) => {
-      console.log('[Process] Starting processing for', images.length, 'images');
       const currentObjects = canvasRef.current?.getObjects() || [];
 
       return Promise.all(
@@ -97,26 +95,27 @@ export function ImageGallery({
           ) as fabric.Image | undefined;
 
           if (existing) {
-            console.log('[Process] Reusing existing:', img.filename);
             return { ...img, fabricObject: existing };
           }
 
-          console.log('[Process] Creating new:', img.filename);
           const fabricImg = await createFabricImage(
             img.base64 || img.imageUrl!
           );
+
           return {
             ...img,
             fabricObject: fabricImg.set({
-              scaleX: calculateScale(fabricImg),
-              scaleY: calculateScale(fabricImg),
-              data: { filename: img.filename }
+              data: { filename: img.filename },
+              originX: 'left',
+              originY: 'top',
+              borderColor: 'transparent',
+              cornerColor: 'transparent'
             })
           };
         })
       );
     },
-    [createFabricImage, calculateScale]
+    [createFabricImage]
   );
 
   const updateSelection = useCallback((selected?: fabric.Image) => {
@@ -152,56 +151,79 @@ export function ImageGallery({
   const arrangeThumbnails = useCallback(
     (thumbnails: IGalleryImage[], canvas: fabric.Canvas) => {
       try {
-        console.log('[Arrange] Starting for', thumbnails.length, 'items');
         if (canvas.isDisposed) {
           return;
         }
 
         const currentObjects = canvas.getObjects();
-        console.log('[Arrange] Current objects:', currentObjects.length);
-
-        // Remove obsolete objects
         currentObjects.forEach(obj => {
           if (!thumbnails.some(t => t.fabricObject === obj)) {
-            console.log(
-              '[Arrange] Removing:',
-              (obj as fabric.Image).data?.filename
-            );
             canvas.remove(obj);
           }
         });
 
-        // Add/update objects
+        // Calculate optimal layout
+        const containerWidth = canvas.width - 15;
+        const padding = 15;
+        const minThumbSize = 80;
+
+        // Calculate number of columns
+        const numCols = Math.max(
+          1,
+          Math.floor((containerWidth + padding) / (minThumbSize + padding))
+        );
+
+        // Calculate thumbnail size
+        const calculatedThumbSize = Math.floor(
+          (containerWidth - (numCols - 1) * padding) / numCols
+        );
+
+        let maxBottom = 0;
+
+        // Position objects and track max height
         thumbnails.forEach(({ fabricObject }, index) => {
           if (!fabricObject) {
             return;
           }
 
+          const col = index % numCols;
+          const row = Math.floor(index / numCols);
+
+          const scale = calculateScale(fabricObject, calculatedThumbSize);
+          const scaledHeight = fabricObject.height! * scale;
+
           const position = {
-            left: (index % 4) * (thumbnailSize + padding) + padding,
-            top: Math.floor(index / 4) * (thumbnailSize + padding) + padding
+            left: col * (calculatedThumbSize + padding),
+            top: row * (scaledHeight + padding)
           };
 
+          // Track maximum bottom position
+          maxBottom = Math.max(maxBottom, position.top + scaledHeight);
+
           if (!canvas.contains(fabricObject)) {
-            console.log('[Arrange] Adding:', fabricObject.data?.filename);
-            fabricObject.set(position);
+            fabricObject.set({
+              ...position,
+              scaleX: scale,
+              scaleY: scale
+            });
             canvas.add(fabricObject);
           } else {
-            console.log(
-              '[Arrange] Updating position:',
-              fabricObject.data?.filename
-            );
-            fabricObject.set(position);
+            fabricObject.set({
+              ...position,
+              scaleX: scale,
+              scaleY: scale
+            });
           }
         });
 
+        // Set canvas height to fit all thumbnails plus bottom padding
+        canvas.setHeight(maxBottom + padding);
         canvas.renderAll();
-        console.log('[Arrange] Final count:', canvas.getObjects().length);
       } catch (error) {
         console.error('[Arrange] Error:', error);
       }
     },
-    [thumbnailSize, padding]
+    [calculateScale]
   );
 
   const loadImages = useCallback(
@@ -251,9 +273,13 @@ export function ImageGallery({
       canvasElement.removeChild(canvasElement.firstChild);
     }
 
+    // Get parent container dimensions
+    const parentWidth = canvasElement.parentElement?.clientWidth || 500;
+    const parentHeight = 300; // Fixed height or calculate from parent
+
     const newCanvas = new fabric.Canvas(canvasKey, {
-      width: 500,
-      height: 300,
+      width: parentWidth,
+      height: parentHeight,
       selection: true,
       renderOnAddRemove: false
     });
@@ -304,8 +330,8 @@ export function ImageGallery({
     <div className="image-gallery-widget widget">
       <canvas
         id={canvasKey}
-        width={500}
-        height={300}
+        width="100%"
+        height="100%"
         style={{ contain: 'strict' }}
       />
       {loading && <div className="gallery-loading">Loading images...</div>}
