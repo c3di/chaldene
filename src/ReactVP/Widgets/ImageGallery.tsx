@@ -3,9 +3,11 @@ import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import * as fabric from 'fabric';
 import { WidgetProps } from './Widget';
 
+// Module augmentation to add missing properties
 declare module 'fabric' {
   interface Canvas {
     isDisposed: boolean;
+    renderSelection(ctx: CanvasRenderingContext2D): void;
   }
   interface Object {
     data?: Record<string, any>;
@@ -34,12 +36,12 @@ export function ImageGallery({
 
   const canvasRef = useRef<fabric.Canvas | null>(null);
   const selectedRef = useRef<fabric.Image[]>([]);
-  const isMounted = useRef(false);
+  const pendingSelectionRef = useRef(false);
+  const lastSelectionRef = useRef<string[]>([]);
 
   // Stable canvas key based on forWhom ID
   const canvasKey = useMemo(() => {
     const id = typeof forWhom === 'object' ? forWhom.id : String(forWhom);
-    console.log('[Canvas] Generated canvas key for:', id);
     return `gallery-${id}`;
   }, [typeof forWhom === 'object' ? forWhom.id : forWhom]);
 
@@ -57,10 +59,8 @@ export function ImageGallery({
   );
 
   const createFabricImage = useCallback(async (src: string) => {
-    console.log('[Image] Creating image from:', src.substring(0, 50));
     return new Promise<fabric.Image>((resolve, reject) => {
       fabric.FabricImage.fromURL(src).then(img => {
-        console.log('[Image] Created successfully');
         img.set({
           originX: 'left',
           originY: 'top',
@@ -131,9 +131,18 @@ export function ImageGallery({
     }
 
     const selected = canvas.getActiveObjects() as fabric.Image[];
-    console.log('[Selection] Selected items:', selected.length);
+    const filenames = selected
+      .map(o => o.data?.filename)
+      .filter(Boolean) as string[];
 
-    // Clear previous selections
+    // Check if selection has actually changed
+    if (
+      JSON.stringify(filenames) === JSON.stringify(lastSelectionRef.current)
+    ) {
+      return; // Skip if selection hasn't changed
+    }
+
+    // Update selections
     selectedRef.current?.forEach(obj => {
       if (!selected.includes(obj)) {
         obj.set({
@@ -143,7 +152,6 @@ export function ImageGallery({
       }
     });
 
-    // Update new selections
     selected.forEach(obj => {
       obj.set({
         borderColor: '#2196f3',
@@ -152,12 +160,11 @@ export function ImageGallery({
     });
 
     selectedRef.current = selected;
-    canvas.requestRenderAll();
+    lastSelectionRef.current = filenames;
+    canvas.renderAll();
 
-    // Update parent with selected filenames
-    const filenames = selected.map(o => o.data?.filename).filter(Boolean);
-    setValue?.(forWhom, filenames as string[]);
-  }, [forWhom, setValue]);
+    setValue?.(forWhom, filenames);
+  }, [setValue]);
 
   const arrangeThumbnails = useCallback(
     (thumbnails: IGalleryImage[], canvas: fabric.Canvas) => {
@@ -204,8 +211,8 @@ export function ImageGallery({
           const scaledHeight = fabricObject.height! * scale;
 
           const position = {
-            left: col * (calculatedThumbSize + padding),
-            top: row * (scaledHeight + padding)
+            left: 5 + col * (calculatedThumbSize + padding),
+            top: 5 + row * (scaledHeight + padding)
           };
 
           // Track maximum bottom position
@@ -239,7 +246,6 @@ export function ImageGallery({
 
   const loadImages = useCallback(
     async (canvas: fabric.Canvas, images: IGalleryImage[]) => {
-      console.log('[Load] Starting load for', images.length, 'images');
       try {
         if (canvas.isDisposed) {
           console.warn('[Load] Canvas disposed');
@@ -255,7 +261,6 @@ export function ImageGallery({
         }
 
         arrangeThumbnails(processed, canvas);
-        console.log('[Load] Completed successfully');
       } catch (err) {
         console.error('[Load] Failed:', err);
         setError('Failed to load images');
@@ -270,7 +275,6 @@ export function ImageGallery({
 
   // Canvas initialization and cleanup
   useEffect(() => {
-    console.log('[Canvas] Mounting');
     const canvasElement = document.getElementById(canvasKey);
 
     if (!canvasElement) {
@@ -299,31 +303,67 @@ export function ImageGallery({
       selectionLineWidth: 2
     });
 
+    // Override renderSelection to hide control frame when multiple objects are selected
+    newCanvas.renderSelection = function (ctx: CanvasRenderingContext2D) {
+      if (this.getActiveObjects().length === 1) {
+        fabric.Canvas.prototype.renderSelection.call(this, ctx);
+      }
+    };
+
+    // mouse:down handles the initial click
+    newCanvas.on('mouse:down', event => {
+      const target = event.target;
+      if (target) {
+        if (event.e.shiftKey) {
+          // Multi-selection case
+          const activeObjects = newCanvas.getActiveObjects();
+          if (!activeObjects.includes(target)) {
+            const newSelection = [...activeObjects, target];
+            newCanvas.discardActiveObject();
+            newCanvas.setActiveObject(
+              new fabric.ActiveSelection(newSelection, { canvas: newCanvas })
+            );
+          }
+        } else {
+          // Single selection case
+          pendingSelectionRef.current = true;
+          newCanvas.discardActiveObject();
+          newCanvas.setActiveObject(target);
+        }
+      }
+    });
+
+    // These events fire after the selection is actually changed
+    newCanvas.on('selection:created', () => {
+      pendingSelectionRef.current = false;
+      handleSelection();
+    });
+
+    newCanvas.on('selection:updated', () => {
+      pendingSelectionRef.current = false;
+      handleSelection();
+    });
+
+    newCanvas.on('selection:cleared', () => {
+      if (!pendingSelectionRef.current) {
+        selectedRef.current.forEach(obj => {
+          obj.set({ borderColor: 'transparent' });
+        });
+        selectedRef.current = [];
+        newCanvas.requestRenderAll();
+        setValue?.(forWhom, []);
+      }
+    });
+
     canvasRef.current = newCanvas;
-    console.log('[Canvas] Initialized');
 
     // Load initial images
     if (stableImages) {
       loadImages(newCanvas, stableImages);
     }
 
-    newCanvas.on('selection:created', handleSelection);
-    newCanvas.on('selection:updated', handleSelection);
-    newCanvas.on('selection:cleared', () => {
-      selectedRef.current.forEach(obj => {
-        obj.set({ borderColor: 'transparent' });
-      });
-      selectedRef.current = [];
-      newCanvas.requestRenderAll();
-      setValue?.(forWhom, []);
-    });
-
     return () => {
-      console.log('[Canvas] Unmounting');
-      isMounted.current = false;
-
       if (newCanvas) {
-        console.log('[Canvas] Disposing');
         newCanvas.off('selection:created');
         newCanvas.off('selection:updated');
         newCanvas.dispose();
@@ -337,7 +377,6 @@ export function ImageGallery({
     if (!canvasRef.current || !stableImages) {
       return;
     }
-    console.log('[Images] Update detected');
     loadImages(canvasRef.current, stableImages);
   }, [stableImages, loadImages]);
 
