@@ -12,6 +12,8 @@
     width: 100% !important;
     height: auto !important;
     overflow: hidden;
+    --active-selection-stroke: none !important;
+    --selection-stroke: none !important;
 }
 
 .canvas-container canvas {
@@ -21,4 +23,12 @@
 
 .fabric-object {
     pointer-events: all !important;
+}
+
+.upper-canvas {
+    border: none !important;
+}
+
+canvas {
+    outline: none !important;
 }
