@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import * as fabric from 'fabric';
 import { WidgetProps } from './Widget';
+import { LeftArrowIcon, RightArrowIcon, SelectionIcon } from '../Style/icons';
 
 // Type definitions
 declare module 'fabric' {
@@ -60,6 +61,8 @@ export function ImageGallery({
   const selectedRef = useRef<fabric.Image[]>([]);
   const pendingSelectionRef = useRef(false);
   const lastSelectionRef = useRef<string[]>([]);
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [canvasHeight, setCanvasHeight] = useState(150);
 
   // Memoized values
   const canvasKey = useMemo(() => {
@@ -178,7 +181,10 @@ export function ImageGallery({
         maxBottom = Math.max(maxBottom, position.top + scaledHeight);
       });
 
-      canvas.setHeight(maxBottom + padding);
+      // Update canvas height
+      const newHeight = thumbnails.length > 0 ? maxBottom + padding : 150;
+      setCanvasHeight(newHeight);
+      canvas.setHeight(newHeight);
       canvas.renderAll();
     },
     [calculateScale]
@@ -228,6 +234,11 @@ export function ImageGallery({
         );
 
         if (!canvas.isDisposed) {
+          // Add class to canvas container when images are present
+          const container = canvas.wrapperEl;
+          if (container) {
+            container.classList.toggle('has-images', images.length > 0);
+          }
           arrangeThumbnails(processed, canvas);
         }
       } catch (err) {
@@ -256,7 +267,7 @@ export function ImageGallery({
     const parentWidth = canvasElement.parentElement?.clientWidth || 500;
     const newCanvas = new fabric.Canvas(canvasKey, {
       width: parentWidth,
-      height: 300,
+      height: canvasHeight,
       selection: true,
       renderOnAddRemove: false,
       allowMultipleSelection: false,
@@ -265,6 +276,11 @@ export function ImageGallery({
       selectionBorderColor: 'transparent',
       selectionLineWidth: 0
     });
+
+    // Add this after canvas initialization
+    if (newCanvas.wrapperEl) {
+      newCanvas.wrapperEl.style.removeProperty('width');
+    }
 
     // Handle selection events
     newCanvas.on('mouse:down', event => {
@@ -301,7 +317,7 @@ export function ImageGallery({
       newCanvas.dispose();
       canvasRef.current = null;
     };
-  }, [canvasKey]);
+  }, [canvasKey, canvasHeight]);
 
   // Handle image updates
   useEffect(() => {
@@ -310,6 +326,21 @@ export function ImageGallery({
     }
     loadImages(canvasRef.current, stableImages);
   }, [stableImages, loadImages]);
+
+  // Modify handleSelectAll to update the selection state
+  const handleSelectAllClick = useCallback(() => {
+    if (!canvasRef.current) {
+      return;
+    }
+
+    if (!isAllSelected) {
+      handleSelectAll(canvasRef.current, handleSelection);
+      setIsAllSelected(true);
+    } else {
+      handleDiscardSelection(canvasRef.current, handleSelection);
+      setIsAllSelected(false);
+    }
+  }, [canvasRef, handleSelection, isAllSelected]);
 
   return (
     <div className="image-gallery-widget widget">
@@ -331,7 +362,7 @@ export function ImageGallery({
               canvasRef.current.getObjects().length
           }
         >
-          ←
+          <LeftArrowIcon />
         </button>
         <button
           onClick={() =>
@@ -350,36 +381,21 @@ export function ImageGallery({
               canvasRef.current.getObjects().length
           }
         >
-          →
+          <RightArrowIcon />
         </button>
         <button
-          onClick={() =>
-            canvasRef.current &&
-            handleSelectAll(canvasRef.current, handleSelection)
-          }
+          onClick={handleSelectAllClick}
           disabled={
             !canvasRef.current || canvasRef.current.getObjects().length === 0
           }
         >
-          Select All
-        </button>
-        <button
-          onClick={() =>
-            canvasRef.current &&
-            handleDiscardSelection(canvasRef.current, handleSelection)
-          }
-          disabled={
-            !canvasRef.current ||
-            canvasRef.current.getActiveObjects().length === 0
-          }
-        >
-          Clear Selection
+          <SelectionIcon showCheck={isAllSelected} />
         </button>
       </div>
       <canvas
         id={canvasKey}
         width="100%"
-        height="100%"
+        height={canvasHeight}
         style={{ contain: 'strict' }}
       />
       {loading && <div className="gallery-loading">Loading images...</div>}
@@ -395,7 +411,7 @@ function handleMultiSelection(canvas: fabric.Canvas, target: fabric.Object) {
     target.set({
       hasControls: false,
       hasBorders: true,
-      borderColor: '#2196f3',
+      borderColor: '#1976d2',
       borderScaleFactor: 2
     });
 
@@ -413,7 +429,7 @@ function handleMultiSelection(canvas: fabric.Canvas, target: fabric.Object) {
     canvas.setActiveObject(activeSelection);
     activeSelection.forEachObject(obj => {
       obj.set({
-        borderColor: '#2196f3',
+        borderColor: '#1976d2',
         borderScaleFactor: 2,
         hasBorders: true
       });
@@ -437,7 +453,7 @@ function handleSingleSelection(
   target.set({
     hasControls: false,
     hasBorders: true,
-    borderColor: '#2196f3',
+    borderColor: '#1976d2',
     borderScaleFactor: 2
   });
 
@@ -460,7 +476,7 @@ function handleSelectAll(canvas: fabric.Canvas, handleSelection: () => void) {
   canvas.setActiveObject(activeSelection);
   activeSelection.forEachObject(obj => {
     obj.set({
-      borderColor: '#2196f3',
+      borderColor: '#1976d2',
       borderScaleFactor: 2,
       hasBorders: true
     });

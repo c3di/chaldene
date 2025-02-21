@@ -20,7 +20,7 @@
   padding: 1px 2px;
   border: 1px solid var(--vpl-blue-3);
   border-radius: 4px;
-  background-color: var(--vpl-blue-gray-6);
+  background-color: var(--vpl-blue-gray-4);
   -webkit-appearance: none;
   -moz-appearance: textfield;
 }

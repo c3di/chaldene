@@ -753,6 +753,7 @@ export default function ImageViewer({
 
   return (
     <div
+      className="image-viewer-widget widget"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -803,7 +804,7 @@ export default function ImageViewer({
       >
         <div
           ref={canvasElParent}
-          className={'nodrag nowheel widget common-input-style'}
+          className={'nodrag nowheel widget'}
           style={{
             width: isFullScreen ? '100vw' : '100%',
             height: isFullScreen ? 'calc(100vh - 24px)' : '100%',
