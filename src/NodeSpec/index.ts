@@ -17,7 +17,12 @@ import {
   cropNodeSpec,
   batchProcessNodeSpec
 } from './IP';
-import { readImageNodeSpec, saveImageNodeSpec, saveToCsvNodeSpec } from './IO';
+import {
+  readImageNodeSpec,
+  saveImageNodeSpec,
+  saveToCsvNodeSpec,
+  processResultNodeSpec
+} from './IO';
 import { regionpropsNodeSpec, watershedNodeSpec } from './Segmentations';
 import {
   BinaryDifferenceNodeSpec,
@@ -25,7 +30,12 @@ import {
 } from './Comparison';
 
 export function defaultNodeSpecs(): void {
-  registerNodeSpec([readImageNodeSpec, saveImageNodeSpec, saveToCsvNodeSpec]);
+  registerNodeSpec([
+    readImageNodeSpec,
+    saveImageNodeSpec,
+    saveToCsvNodeSpec,
+    processResultNodeSpec
+  ]);
   registerNodeSpec([
     thresholdNodeSpec,
     invertNodeSpec,

@@ -17,11 +17,11 @@
   font-weight: 400;
   font-size: 12px;
   flex-shrink: 0;
+  margin-right: 10px;
 }
 
 .widget-container {
   flex-grow: 1;
-  margin-right: 10px;
   width: 100%;
 }
 
@@ -61,4 +61,26 @@
 .react-flow__handle.handle-style:hover {
   transform: scale(1.2) !important;
   transform-origin: center;
+}
+
+.image-gallery-container {
+  position: relative;
+}
+
+.image-gallery-container .image-gallery-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  height: 24px;
+  line-height: 24px;
+  z-index: 1;
+}
+
+.image-gallery-container .widget-container {
+  margin-right: 0;
+}
+
+.image-gallery-container .gallery-controls {
+  padding-left: 80px;
 }
