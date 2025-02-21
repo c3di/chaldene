@@ -36,13 +36,12 @@ input[type="number"]::-webkit-inner-spin-button {
   border: 1px solid var(--vpl-border-light);
   border-radius: var(--vpl-border-radius);
   padding: 0px 0px 0px 8px;
-  width: calc(100% - 5px);
+  width: calc(100% - 10px);
   min-width: 30px;
   height: 20px;
   font-size: var(--vpl-ui-font-size1);
   outline: none;
   box-shadow: none;
-  margin-right: 5px;
   display: flex;
   align-items: center;
   position: relative;
@@ -89,7 +88,8 @@ input[type="range"]::-ms-thumb {
   position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
+  width: calc(100% - 10px);
+  margin-left: auto;
 }
 
 .file-input-container .common-input-style {
