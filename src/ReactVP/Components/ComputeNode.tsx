@@ -1,7 +1,7 @@
-import { type NodeProps as RcNodeProps, NodeResizer } from '@xyflow/react';
+import { type NodeProps as RcNodeProps } from '@xyflow/react';
 import { type IHandle, type Node as nodeType } from '../Type';
 import { OutputHandle, InputHandle } from './Handle';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { NumberInput } from '../Widgets/Input';
 
 export type NodeProps = RcNodeProps<nodeType>;
@@ -57,16 +57,16 @@ export default function ComputeNode({
     });
   }, []);
 
-  const handleNodeResize = useCallback(
-    (_: unknown, params: { width: number; height: number }) => {
-      const newDimensions = {
-        width: params.width,
-        height: Math.max(params.height, MIN_NODE_HEIGHT)
-      };
-      setNodeDimensions(newDimensions);
-    },
-    []
-  );
+  // const handleNodeResize = useCallback(
+  //   (_: unknown, params: { width: number; height: number }) => {
+  //     const newDimensions = {
+  //       width: params.width,
+  //       height: Math.max(params.height, MIN_NODE_HEIGHT)
+  //     };
+  //     setNodeDimensions(newDimensions);
+  //   },
+  //   []
+  // );
 
   // useEffect(() => {
   //   console.log('Node dimensions updated:', {
@@ -95,16 +95,19 @@ export default function ComputeNode({
         transition: 'border-color 0.1s ease-in-out'
       }}
     >
-      {selected && (
-        <NodeResizer
-          minWidth={DEFAULT_NODE_WIDTH}
-          minHeight={MIN_NODE_HEIGHT}
-          isVisible={selected}
-          lineStyle={{ background: 'var(--vpl-blue-1)' }}
-          handleStyle={{ background: 'var(--vpl-blue-1)' }}
-          onResize={handleNodeResize}
-        />
-      )}
+      {
+        selected
+        // && (
+        //   <NodeResizer
+        //     minWidth={DEFAULT_NODE_WIDTH}
+        //     minHeight={MIN_NODE_HEIGHT}
+        //     isVisible={selected}
+        //     lineStyle={{ background: 'var(--vpl-blue-1)' }}
+        //     handleStyle={{ background: 'var(--vpl-blue-1)' }}
+        //     onResize={handleNodeResize}
+        //   />
+        // )
+      }
       <div
         className="node__header"
         style={{
