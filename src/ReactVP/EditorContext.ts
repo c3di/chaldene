@@ -156,6 +156,8 @@ export default class EditorContext {
    */
   public updateInspection = (handleID: string, value: any): void => {
     this.action('graph').updateInspection(handleID, value);
+    // Trigger code generation after inspection update
+    this.triggerLiveExecution();
   };
 
   public getGraphToBeExecuted = (increment: boolean = true): Graph | null => {
@@ -193,10 +195,11 @@ export default class EditorContext {
     }
 
     this.prevExecGraph = this.graph;
-    console.log('flowsToBeExecuted', graphToBeExecuted);
+
     const codes = this.codeGeneratorRegistry
       .get(this.executeLanguage)
       .codeFromGraph(this.editorID, graphToBeExecuted, inspect_included);
+
     return codes;
   };
 

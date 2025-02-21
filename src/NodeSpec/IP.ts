@@ -217,23 +217,49 @@ export const batchProcessNodeSpec: computeNodeSpec = {
 
   codeGenerators: {
     Python: (inputs: Record<string, any>, outputs: Record<string, any>) => {
+      const galleryVar = inputs.imageGallery;
+
       return `from im2im import Image as IM
+from skimage import io
+from skimage import img_as_float
 import os
+from pathlib import Path
 
 folder_path = ${inputs.folderPath}
-selected_images = ${inputs.imageGallery}
+
+# Initialize gallery variable
+${galleryVar} = None
+
+# Get all images from the folder
+image_files = []
+for ext in ['.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG']:
+    files = [f for f in os.listdir(folder_path) if f.endswith(ext)]
+    image_files.extend(files)
+image_files.sort()
+
+# Set default selection to first image if available
+if image_files:
+    ${galleryVar} = [{"filename": image_files[0]}]
+
+# Now use the gallery variable for processing
+selected_images = [img["filename"] for img in ${galleryVar}] if ${galleryVar} else []
 
 if selected_images:
     if len(selected_images) == 1:
         image_path = os.path.join(folder_path, selected_images[0])
-        ${outputs.outputImage} = IM.read(image_path)
+        # Read image same way as readImageNode
+        ${outputs.processedImage} = IM(img_as_float(io.imread(image_path, as_gray=True)), 'numpy.gray_float64(0to1)')
         ${outputs.outputImages} = None
     else:
         # For multiple selections, set last image as outputImage
         last_image_path = os.path.join(folder_path, selected_images[-1])
-        ${outputs.outputImage} = IM.read(last_image_path)
+        ${outputs.processedImage} = IM(img_as_float(io.imread(last_image_path, as_gray=True)), 'numpy.gray_float64(0to1)')
         # Process all selected images for outputImages
-        ${outputs.outputImages} = [IM.read(os.path.join(folder_path, img)) for img in selected_images]`;
+        ${outputs.outputImages} = [IM(img_as_float(io.imread(os.path.join(folder_path, img), as_gray=True)), 'numpy.gray_float64(0to1)') for img in selected_images]
+else:
+    # No images found in folder
+    ${outputs.processedImage} = None
+    ${outputs.outputImages} = None`;
     }
   }
 };

@@ -2,6 +2,7 @@ import WidgetsRegistry from './WidgetsRegistry';
 import ImageViewer from './ImageViewerN';
 import HistogramRangeWidget from './HistogramRangeWidget';
 import ImageCropper from './ImageCropperWidget';
+import { ImageGallery } from './ImageGallery';
 
 import {
   Text,
@@ -22,7 +23,7 @@ export const widgetsRegistry = new WidgetsRegistry();
 export function registerWidget(
   forWhichType: string,
   widget: any,
-  outputType?: string
+  outputType?: string | string[]
 ): void {
   widgetsRegistry.register(forWhichType, widget, outputType);
 }
@@ -36,3 +37,4 @@ registerWidget('ImageViewer', ImageViewer);
 registerWidget('FileInputFromServer', FileInputFromServer, 'string');
 registerWidget('HistogramRange', HistogramRangeWidget, 'tuple2');
 registerWidget('ImageCropper', ImageCropper, 'tuple4');
+registerWidget('ImageGallery', ImageGallery, ['image', 'image[]']);
