@@ -4,11 +4,9 @@ import * as fabric from 'fabric';
 import { WidgetProps } from './Widget';
 import { LeftArrowIcon, RightArrowIcon, SelectionIcon } from '../Style/icons';
 
-// Type definitions
 declare module 'fabric' {
   interface Canvas {
     isDisposed: boolean;
-    renderSelection(ctx: CanvasRenderingContext2D): void;
   }
   interface Object {
     data?: Record<string, any>;
@@ -19,59 +17,70 @@ interface IGalleryImage {
   filename: string;
   base64: string;
   imageUrl?: string;
-  fabricObject?: fabric.Image;
+  fabricObject?: GalleryImage;
 }
 
 interface IImageGalleryProps extends WidgetProps {
   images?: IGalleryImage[];
   value?: string[];
 }
+class GalleryImage extends fabric.FabricImage {
+  public selected: boolean = false;
+  private readonly selectionBorderColor: string = '#1976d2';
+  private readonly selectionBorderWidth: number = 2;
 
-// Configure ActiveSelection defaults
-fabric.ActiveSelection.prototype.stroke = 'transparent';
-fabric.ActiveSelection.prototype.strokeWidth = 0;
-fabric.ActiveSelection.prototype.borderColor = 'transparent';
-fabric.ActiveSelection.prototype.cornerColor = 'transparent';
-fabric.ActiveSelection.prototype.borderOpacityWhenMoving = 0;
-fabric.ActiveSelection.prototype.borderScaleFactor = 0;
-fabric.ActiveSelection.prototype.cornerSize = 0;
-fabric.ActiveSelection.prototype.transparentCorners = true;
-fabric.ActiveSelection.prototype.padding = 0;
-fabric.ActiveSelection.prototype.setControlsVisibility({
-  mtr: false,
-  mt: false,
-  mb: false,
-  ml: false,
-  mr: false,
-  bl: false,
-  br: false,
-  tl: false,
-  tr: false
-});
+  toggleSelection(selected: boolean): void {
+    if (this.selected === selected) {
+      return;
+    }
+
+    this.selected = selected;
+    this.set({
+      stroke: selected ? this.selectionBorderColor : 'transparent',
+      strokeWidth: selected ? this.selectionBorderWidth : 0,
+      hasControls: false,
+      hasBorders: selected ? true : false,
+      borderColor: selected ? this.selectionBorderColor : 'transparent',
+      borderScaleFactor: 1,
+      draggable: false,
+      selectable: false,
+      lockMovementX: true,
+      lockMovementY: true,
+      lockScalingX: true,
+      lockScalingY: true,
+      lockRotation: true,
+      lockScalingFlip: true,
+      lockSkewing: true,
+      lockSkewingFlip: true,
+      hoverCursor: 'pointer'
+    });
+    this.dirty = true;
+
+    if (selected) {
+      (this.canvas as fabric.Canvas)?.setActiveObject(this);
+    }
+  }
+}
 
 export function ImageGallery({
   forWhom,
   setValue,
   images
 }: IImageGalleryProps): JSX.Element {
-  // State and refs
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
-  const selectedRef = useRef<fabric.Image[]>([]);
-  const pendingSelectionRef = useRef(false);
-  const lastSelectionRef = useRef<string[]>([]);
-  const [isAllSelected, setIsAllSelected] = useState(false);
   const [canvasHeight, setCanvasHeight] = useState(150);
+  const [isAllSelected, setIsAllSelected] = useState(false);
 
-  // Memoized values
   const canvasKey = useMemo(() => {
     const id = typeof forWhom === 'object' ? forWhom.id : String(forWhom);
     return `gallery-${id}`;
-  }, [typeof forWhom === 'object' ? forWhom.id : forWhom]);
+  }, [forWhom]);
 
   const stableImages = useMemo(
     () => images,
+
     [
       JSON.stringify(
         images?.map(img => ({
@@ -82,26 +91,8 @@ export function ImageGallery({
     ]
   );
 
-  // Image handling utilities
-  const createFabricImage = useCallback(
-    async (src: string): Promise<fabric.Image> => {
-      return new Promise((resolve, reject) => {
-        fabric.FabricImage.fromURL(src).then(img => {
-          img.set({
-            originX: 'left',
-            originY: 'top',
-            hasBorders: false,
-            hasControls: false
-          });
-          resolve(img);
-        }, reject);
-      });
-    },
-    []
-  );
-
   const calculateScale = useCallback(
-    (img: fabric.Image, finalThumbSize: number) => {
+    (img: GalleryImage, finalThumbSize: number) => {
       return Math.min(
         finalThumbSize / img.width!,
         finalThumbSize / img.height!
@@ -110,30 +101,6 @@ export function ImageGallery({
     []
   );
 
-  // Selection handling
-  const handleSelection = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
-
-    const selected = canvas.getActiveObjects() as fabric.Image[];
-    const filenames = selected
-      .map(o => o.data?.filename)
-      .filter(Boolean) as string[];
-
-    if (
-      JSON.stringify(filenames) === JSON.stringify(lastSelectionRef.current)
-    ) {
-      return;
-    }
-
-    selectedRef.current = selected;
-    lastSelectionRef.current = filenames;
-    setValue?.(forWhom, filenames);
-  }, [setValue, forWhom]);
-
-  // Layout management
   const arrangeThumbnails = useCallback(
     (thumbnails: IGalleryImage[], canvas: fabric.Canvas) => {
       if (canvas.isDisposed) {
@@ -148,7 +115,7 @@ export function ImageGallery({
       });
 
       // Calculate layout
-      const containerWidth = canvas.width - 15;
+      const containerWidth = canvas.width! - 15;
       const padding = 15;
       const minThumbSize = 80;
       const numCols = Math.max(
@@ -181,7 +148,6 @@ export function ImageGallery({
         maxBottom = Math.max(maxBottom, position.top + scaledHeight);
       });
 
-      // Update canvas height
       const newHeight = thumbnails.length > 0 ? maxBottom + padding : 150;
       setCanvasHeight(newHeight);
       canvas.setHeight(newHeight);
@@ -190,7 +156,6 @@ export function ImageGallery({
     [calculateScale]
   );
 
-  // Image loading
   const loadImages = useCallback(
     async (canvas: fabric.Canvas, images: IGalleryImage[]) => {
       try {
@@ -205,36 +170,38 @@ export function ImageGallery({
             const existing = canvas
               .getObjects()
               .find(
-                o =>
-                  (o as unknown as fabric.Image).data?.filename === img.filename
-              ) as fabric.Image | undefined;
+                o => (o as GalleryImage).data?.filename === img.filename
+              ) as GalleryImage | undefined;
 
             if (existing) {
               return { ...img, fabricObject: existing };
             }
 
-            const fabricImg = await createFabricImage(
-              img.base64 || img.imageUrl!
+            const fabricImg = await new Promise<GalleryImage>(
+              (resolve, reject) => {
+                fabric.FabricImage.fromURL(img.base64 || img.imageUrl!)
+                  .then(imgElement => {
+                    const galleryImage = new GalleryImage(
+                      imgElement.getElement(),
+                      {
+                        data: { filename: img.filename },
+                        originX: 'left',
+                        originY: 'top'
+                      } as fabric.TOptions<fabric.ImageProps> & {
+                        data?: Record<string, any>;
+                      }
+                    );
+                    resolve(galleryImage);
+                  })
+                  .catch(reject);
+              }
             );
-            return {
-              ...img,
-              fabricObject: fabricImg.set({
-                data: { filename: img.filename },
-                originX: 'left',
-                originY: 'top',
-                hasControls: false,
-                hasBorders: false,
-                lockMovementX: true,
-                lockMovementY: true,
-                selectable: true,
-                hoverCursor: 'pointer'
-              })
-            };
+
+            return { ...img, fabricObject: fabricImg };
           })
         );
 
         if (!canvas.isDisposed) {
-          // Add class to canvas container when images are present
           const container = canvas.wrapperEl;
           if (container) {
             container.classList.toggle('has-images', images.length > 0);
@@ -250,10 +217,104 @@ export function ImageGallery({
         }
       }
     },
-    [createFabricImage, arrangeThumbnails]
+    [arrangeThumbnails]
   );
 
-  // Canvas initialization
+  const handleSelection = useCallback(
+    (targets: GalleryImage | GalleryImage[], shiftKey: boolean) => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return;
+      }
+
+      const targetsArray = Array.isArray(targets) ? targets : [targets];
+      const currentSelection = canvas.getActiveObjects() as GalleryImage[];
+
+      if (!shiftKey) {
+        // Single selection - deselect all others
+        currentSelection.forEach(img => img.toggleSelection(false));
+      }
+
+      // Update selection state for target(s)
+      targetsArray.forEach(target => target.toggleSelection(!target.selected));
+
+      canvas.requestRenderAll();
+
+      // Update React state
+      const selectedImages = canvas
+        .getObjects()
+        .filter(obj => (obj as GalleryImage).selected) as GalleryImage[];
+
+      const filenames = selectedImages
+        .map(o => o.data?.filename)
+        .filter(Boolean) as string[];
+      setValue?.(forWhom, filenames);
+      setIsAllSelected(selectedImages.length === canvas.getObjects().length);
+    },
+    [setValue, forWhom]
+  );
+
+  const handleSelectAll = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    const allObjects = canvas.getObjects() as GalleryImage[];
+
+    if (!isAllSelected) {
+      handleSelection(allObjects, true); // Select all
+    } else {
+      canvas.discardActiveObject();
+      allObjects.forEach(img => img.toggleSelection(false));
+      handleSelection([], false); // Deselect all
+    }
+  }, [isAllSelected, handleSelection]);
+
+  // Canvas event handling
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    canvas.on('mouse:down', e => {
+      if (e.target && e.target instanceof GalleryImage) {
+        handleSelection(e.target, e.e.shiftKey);
+      }
+    });
+
+    return () => {
+      canvas.off('mouse:down');
+    };
+  }, [handleSelection]);
+
+  const handleMoveSelection = useCallback(
+    (direction: 'left' | 'right') => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return;
+      }
+
+      const objects = canvas.getObjects() as GalleryImage[];
+      const activeObjects = canvas.getActiveObjects() as GalleryImage[];
+      if (activeObjects.length === 0) {
+        return;
+      }
+
+      const currentIndex = objects.indexOf(activeObjects[0]);
+      const newIndex =
+        direction === 'left'
+          ? Math.max(0, currentIndex - 1)
+          : Math.min(objects.length - 1, currentIndex + 1);
+
+      if (currentIndex !== newIndex) {
+        handleSelection(objects[newIndex], false);
+      }
+    },
+    [handleSelection]
+  );
+
   useEffect(() => {
     const canvasElement = document.getElementById(canvasKey);
     if (!canvasElement) {
@@ -270,43 +331,25 @@ export function ImageGallery({
       height: canvasHeight,
       selection: true,
       renderOnAddRemove: false,
-      allowMultipleSelection: false,
-      selectionKey: 'shiftKey',
       selectionColor: 'transparent',
       selectionBorderColor: 'transparent',
-      selectionLineWidth: 0
+      defaultCursor: 'default',
+      hoverCursor: 'default'
     });
 
-    // Add this after canvas initialization
     if (newCanvas.wrapperEl) {
       newCanvas.wrapperEl.style.removeProperty('width');
     }
 
-    // Handle selection events
-    newCanvas.on('mouse:down', event => {
-      const target = event.target;
-      if (!target) {
-        newCanvas.discardActiveObject();
-        newCanvas.renderAll();
-        return;
-      }
-
-      requestAnimationFrame(() => {
-        if (event.e.shiftKey) {
-          handleMultiSelection(newCanvas, target);
-        } else {
-          handleSingleSelection(newCanvas, target, pendingSelectionRef);
-        }
-      });
-
-      setTimeout(handleSelection, 0);
-    });
-
-    newCanvas.on('selection:cleared', () => {
-      if (!pendingSelectionRef.current) {
-        handleDiscardSelection(newCanvas, handleSelection);
-      }
-    });
+    newCanvas.on('selection:updated', e =>
+      handleSelection(e.selected as GalleryImage[], e.e?.shiftKey || false)
+    );
+    newCanvas.on('selection:created', e =>
+      handleSelection(e.selected as GalleryImage[], e.e?.shiftKey || false)
+    );
+    newCanvas.on('selection:cleared', e =>
+      handleSelection(e.deselected as GalleryImage[], e.e?.shiftKey || false)
+    );
 
     canvasRef.current = newCanvas;
     if (stableImages) {
@@ -319,7 +362,6 @@ export function ImageGallery({
     };
   }, [canvasKey, canvasHeight]);
 
-  // Handle image updates
   useEffect(() => {
     if (!canvasRef.current || !stableImages) {
       return;
@@ -327,64 +369,29 @@ export function ImageGallery({
     loadImages(canvasRef.current, stableImages);
   }, [stableImages, loadImages]);
 
-  // Modify handleSelectAll to update the selection state
-  const handleSelectAllClick = useCallback(() => {
-    if (!canvasRef.current) {
-      return;
-    }
-
-    if (!isAllSelected) {
-      handleSelectAll(canvasRef.current, handleSelection);
-      setIsAllSelected(true);
-    } else {
-      handleDiscardSelection(canvasRef.current, handleSelection);
-      setIsAllSelected(false);
-    }
-  }, [canvasRef, handleSelection, isAllSelected]);
-
   return (
     <div className="image-gallery-widget widget">
       <div className="gallery-controls">
         <button
-          onClick={() =>
-            canvasRef.current &&
-            handleMoveSelection(
-              canvasRef.current,
-              'left',
-              handleSelection,
-              pendingSelectionRef
-            )
-          }
+          onClick={() => handleMoveSelection('left')}
           disabled={
             !canvasRef.current ||
-            canvasRef.current.getActiveObjects().length === 0 ||
-            canvasRef.current.getActiveObjects().length ===
-              canvasRef.current.getObjects().length
+            canvasRef.current.getActiveObjects().length === 0
           }
         >
           <LeftArrowIcon />
         </button>
         <button
-          onClick={() =>
-            canvasRef.current &&
-            handleMoveSelection(
-              canvasRef.current,
-              'right',
-              handleSelection,
-              pendingSelectionRef
-            )
-          }
+          onClick={() => handleMoveSelection('right')}
           disabled={
             !canvasRef.current ||
-            canvasRef.current.getActiveObjects().length === 0 ||
-            canvasRef.current.getActiveObjects().length ===
-              canvasRef.current.getObjects().length
+            canvasRef.current.getActiveObjects().length === 0
           }
         >
           <RightArrowIcon />
         </button>
         <button
-          onClick={handleSelectAllClick}
+          onClick={handleSelectAll}
           disabled={
             !canvasRef.current || canvasRef.current.getObjects().length === 0
           }
@@ -402,127 +409,4 @@ export function ImageGallery({
       {error && <div className="gallery-error">{error}</div>}
     </div>
   );
-}
-
-// Selection helper functions
-function handleMultiSelection(canvas: fabric.Canvas, target: fabric.Object) {
-  const activeObjects = canvas.getActiveObjects();
-  if (!activeObjects.includes(target)) {
-    target.set({
-      hasControls: false,
-      hasBorders: true,
-      borderColor: '#1976d2',
-      borderScaleFactor: 2
-    });
-
-    const newSelection = [...activeObjects, target];
-    canvas.discardActiveObject();
-    const activeSelection = new fabric.ActiveSelection(newSelection, {
-      canvas: canvas,
-      hasControls: false,
-      hasBorders: false,
-      selectable: false,
-      evented: false,
-      padding: 0
-    });
-
-    canvas.setActiveObject(activeSelection);
-    activeSelection.forEachObject(obj => {
-      obj.set({
-        borderColor: '#1976d2',
-        borderScaleFactor: 2,
-        hasBorders: true
-      });
-    });
-    canvas.renderAll();
-  }
-}
-
-function handleSingleSelection(
-  canvas: fabric.Canvas,
-  target: fabric.Object,
-  pendingRef: React.MutableRefObject<boolean>
-) {
-  canvas.getActiveObjects().forEach(obj => {
-    obj.set({
-      hasBorders: false,
-      borderColor: 'transparent'
-    });
-  });
-
-  target.set({
-    hasControls: false,
-    hasBorders: true,
-    borderColor: '#1976d2',
-    borderScaleFactor: 2
-  });
-
-  pendingRef.current = true;
-  canvas.discardActiveObject();
-  canvas.setActiveObject(target);
-  canvas.renderAll();
-}
-
-function handleSelectAll(canvas: fabric.Canvas, handleSelection: () => void) {
-  const activeSelection = new fabric.ActiveSelection(canvas.getObjects(), {
-    canvas: canvas,
-    hasControls: false,
-    hasBorders: false,
-    selectable: false,
-    evented: false,
-    padding: 0
-  });
-
-  canvas.setActiveObject(activeSelection);
-  activeSelection.forEachObject(obj => {
-    obj.set({
-      borderColor: '#1976d2',
-      borderScaleFactor: 2,
-      hasBorders: true
-    });
-  });
-  canvas.renderAll();
-  handleSelection();
-}
-
-function handleDiscardSelection(
-  canvas: fabric.Canvas,
-  handleSelection: () => void
-) {
-  canvas.discardActiveObject();
-  canvas.getObjects().forEach(obj => {
-    obj.set({
-      hasBorders: false,
-      borderColor: 'transparent'
-    });
-  });
-  canvas.renderAll();
-  handleSelection();
-}
-
-function handleMoveSelection(
-  canvas: fabric.Canvas,
-  direction: 'left' | 'right',
-  handleSelection: () => void,
-  pendingRef: React.MutableRefObject<boolean>
-) {
-  const objects = canvas.getObjects();
-  const activeObjects = canvas.getActiveObjects();
-  if (activeObjects.length === 0) {
-    return;
-  }
-
-  const currentIndex = objects.indexOf(activeObjects[0]);
-  const newIndex =
-    direction === 'left'
-      ? Math.max(0, currentIndex - 1)
-      : Math.min(objects.length - 1, currentIndex + 1);
-
-  if (currentIndex === newIndex) {
-    return;
-  }
-
-  const targetObject = objects[newIndex];
-  handleSingleSelection(canvas, targetObject, pendingRef);
-  handleSelection();
 }
