@@ -43,9 +43,12 @@ class GalleryImage extends fabric.FabricImage {
       hoverCursor: 'pointer',
       borderScaleFactor: 2,
       hasBorders: false,
-      borderColor: '#1976d2',
-      transparentCorners: false,
-      perPixelTargetFind: true
+      objectCaching: false,
+      strokeWidth: 2,
+      strokeUniform: true,
+      padding: 2,
+      originX: 'left',
+      originY: 'top'
     });
   }
 
@@ -56,21 +59,15 @@ class GalleryImage extends fabric.FabricImage {
 
     this.selected = selected;
     this.set({
-      hasBorders: selected,
-      active: selected
-    });
-    this.dirty = true;
+      stroke: selected ? '#1976d2' : 'transparent',
+      hasBorders: false,
 
-    if (selected) {
-      (this.canvas as fabric.Canvas)?.setActiveObject(this);
+      dirty: true // Force redraw
+    });
+
+    if (selected && this.canvas) {
+      this.canvas.bringObjectToFront(this);
     }
-
-    console.log(`[GalleryImage ${this.data?.filename}]`, {
-      selected: this.selected,
-      hasBorders: this.hasBorders,
-      borderColor: this.borderColor,
-      isActiveObject: this.canvas?.getActiveObject() === this
-    });
   }
 }
 
@@ -139,6 +136,7 @@ export function ImageGallery({
       );
 
       let maxBottom = 0;
+      const strokePadding = 2;
       thumbnails.forEach(({ fabricObject }, index) => {
         if (!fabricObject) {
           return;
@@ -146,14 +144,22 @@ export function ImageGallery({
 
         const col = index % numCols;
         const row = Math.floor(index / numCols);
-        const scale = calculateScale(fabricObject, thumbSize);
+        const scale = calculateScale(
+          fabricObject,
+          thumbSize - strokePadding * 2
+        );
         const scaledHeight = fabricObject.height! * scale;
         const position = {
-          left: 5 + col * (thumbSize + padding),
-          top: 5 + row * (scaledHeight + padding)
+          left: 5 + col * (thumbSize + padding) + strokePadding,
+          top: 5 + row * (scaledHeight + padding) + strokePadding
         };
 
-        fabricObject.set({ ...position, scaleX: scale, scaleY: scale });
+        fabricObject.set({
+          ...position,
+          scaleX: scale,
+          scaleY: scale,
+          padding: strokePadding
+        });
         if (!canvas.contains(fabricObject)) {
           canvas.add(fabricObject);
         }
@@ -239,58 +245,40 @@ export function ImageGallery({
         return;
       }
 
-      const allObjects = canvas.getObjects() as GalleryImage[];
+      const allGalleryImages = canvas
+        .getObjects()
+        .filter(obj => obj instanceof GalleryImage) as GalleryImage[];
       const targetsArray = Array.isArray(targets) ? targets : [targets];
-      const isSelectAll = targetsArray.length === allObjects.length;
+      const isSelectAll = targetsArray.length === allGalleryImages.length;
 
       // Handle selection state
       if (isSelectAll) {
         const newState = !isAllSelected;
-        allObjects.forEach(img => img.toggleSelection(newState));
-        setIsAllSelected(newState);
-      } else if (targetsArray.length > 1) {
-        const newState = !targetsArray[0].selected;
-        targetsArray.forEach(img => img.toggleSelection(newState));
+        allGalleryImages.forEach(img => {
+          img.toggleSelection(newState);
+        });
       } else {
         if (!shiftKey) {
-          allObjects.forEach(img => img.toggleSelection(false));
-          targetsArray[0].toggleSelection(true);
-        } else {
-          targetsArray[0].toggleSelection(!targetsArray[0].selected);
+          allGalleryImages.forEach(img => {
+            if (!targetsArray.includes(img)) {
+              img.toggleSelection(false);
+            }
+          });
         }
+        targetsArray.forEach(target => {
+          target.toggleSelection(!target.selected);
+        });
       }
 
-      canvas.requestRenderAll();
-
-      // Update React state
-      const selectedImages = allObjects.filter(obj => obj.selected);
+      const selectedImages = allGalleryImages.filter(obj => obj.selected);
       const filenames = selectedImages
         .map(o => o.data?.filename)
         .filter(Boolean) as string[];
       setValue?.(forWhom, filenames);
-
-      // Debug logs
-      console.log('\n[Selection Event]', {
-        type: isSelectAll
-          ? 'all'
-          : targetsArray.length > 1
-            ? 'batch'
-            : shiftKey
-              ? 'multi'
-              : 'single',
-        shiftKey
-      });
-
-      console.log('\n[All Images State]');
-      allObjects.forEach(img => {
-        console.log(`${img.data?.filename}:`, {
-          selected: img.selected,
-          hasBorders: img.hasBorders,
-          borderColor: img.borderColor
-        });
-      });
+      setIsAllSelected(selectedImages.length === allGalleryImages.length);
+      canvas.requestRenderAll();
     },
-    [setValue, isAllSelected]
+    [setValue, forWhom]
   );
 
   const handleSelectAll = useCallback(() => {
@@ -299,8 +287,13 @@ export function ImageGallery({
       return;
     }
 
-    handleSelection(canvas.getObjects() as GalleryImage[], false);
-  }, [handleSelection]);
+    handleSelection(
+      canvas
+        .getObjects()
+        .filter(obj => obj instanceof GalleryImage) as GalleryImage[],
+      false
+    );
+  }, [isAllSelected, setValue, forWhom]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
