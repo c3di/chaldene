@@ -227,31 +227,43 @@ export function ImageGallery({
         return;
       }
 
+      console.log('[handleSelection]', {
+        targetsLength: Array.isArray(targets) ? targets.length : 1,
+        shiftKey,
+        currentSelections: canvas.getActiveObjects().length
+      });
+
       const targetsArray = Array.isArray(targets) ? targets : [targets];
-      const currentSelection = canvas.getActiveObjects() as GalleryImage[];
+      const allObjects = canvas.getObjects() as GalleryImage[];
 
-      if (!shiftKey) {
-        // Single selection - deselect all others
-        currentSelection.forEach(img => img.toggleSelection(false));
+      if (targetsArray.length > 1) {
+        // Batch operation (select all)
+        const newState = !targetsArray[0].selected;
+        allObjects.forEach(img => img.toggleSelection(newState));
+      } else {
+        // Single/Multi select
+        if (!shiftKey) {
+          // Single select - clear others
+          allObjects.forEach(img => img.toggleSelection(false));
+          targetsArray[0].toggleSelection(true);
+        } else {
+          // Multi select - toggle target only
+          targetsArray[0].toggleSelection(!targetsArray[0].selected);
+        }
       }
-
-      // Update selection state for target(s)
-      targetsArray.forEach(target => target.toggleSelection(!target.selected));
 
       canvas.requestRenderAll();
 
-      // Update React state
-      const selectedImages = canvas
-        .getObjects()
-        .filter(obj => (obj as GalleryImage).selected) as GalleryImage[];
-
+      // Update React state with currently selected images
+      const selectedImages = allObjects.filter(obj => obj.selected);
       const filenames = selectedImages
         .map(o => o.data?.filename)
         .filter(Boolean) as string[];
+      console.log('Setting filenames:', filenames);
       setValue?.(forWhom, filenames);
-      setIsAllSelected(selectedImages.length === canvas.getObjects().length);
+      setIsAllSelected(selectedImages.length === allObjects.length);
     },
-    [setValue, forWhom]
+    [setValue]
   );
 
   const handleSelectAll = useCallback(() => {
@@ -260,18 +272,25 @@ export function ImageGallery({
       return;
     }
 
+    console.log('[handleSelectAll] Starting...');
     const allObjects = canvas.getObjects() as GalleryImage[];
+    const newState = !isAllSelected;
 
-    if (!isAllSelected) {
-      handleSelection(allObjects, true); // Select all
-    } else {
-      canvas.discardActiveObject();
-      allObjects.forEach(img => img.toggleSelection(false));
-      handleSelection([], false); // Deselect all
-    }
-  }, [isAllSelected, handleSelection]);
+    console.log('Updating all objects to state:', newState);
+    // Update all objects' visual state at once
+    allObjects.forEach(img => img.toggleSelection(newState));
+    canvas.requestRenderAll();
 
-  // Canvas event handling
+    // Update React state directly
+    const filenames = newState
+      ? (allObjects.map(o => o.data?.filename).filter(Boolean) as string[])
+      : [];
+    console.log('Setting filenames:', filenames);
+    setValue?.(forWhom, filenames);
+    setIsAllSelected(newState);
+  }, [setValue]);
+
+  // Update canvas event handling
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -279,6 +298,10 @@ export function ImageGallery({
     }
 
     canvas.on('mouse:down', e => {
+      console.log('[mouse:down]', {
+        hasTarget: !!e.target,
+        shiftKey: e.e.shiftKey
+      });
       if (e.target && e.target instanceof GalleryImage) {
         handleSelection(e.target, e.e.shiftKey);
       }
@@ -340,16 +363,6 @@ export function ImageGallery({
     if (newCanvas.wrapperEl) {
       newCanvas.wrapperEl.style.removeProperty('width');
     }
-
-    newCanvas.on('selection:updated', e =>
-      handleSelection(e.selected as GalleryImage[], e.e?.shiftKey || false)
-    );
-    newCanvas.on('selection:created', e =>
-      handleSelection(e.selected as GalleryImage[], e.e?.shiftKey || false)
-    );
-    newCanvas.on('selection:cleared', e =>
-      handleSelection(e.deselected as GalleryImage[], e.e?.shiftKey || false)
-    );
 
     canvasRef.current = newCanvas;
     if (stableImages) {
