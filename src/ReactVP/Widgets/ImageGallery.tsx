@@ -26,8 +26,28 @@ interface IImageGalleryProps extends WidgetProps {
 }
 class GalleryImage extends fabric.FabricImage {
   public selected: boolean = false;
-  private readonly selectionBorderColor: string = '#1976d2';
-  private readonly selectionBorderWidth: number = 2;
+
+  constructor(
+    element: fabric.ImageSource,
+    options?: Partial<fabric.ImageProps>
+  ) {
+    super(element, {
+      ...options,
+      hasControls: false,
+      selectable: false,
+      lockMovementX: true,
+      lockMovementY: true,
+      lockScalingX: true,
+      lockScalingY: true,
+      lockRotation: true,
+      hoverCursor: 'pointer',
+      borderScaleFactor: 2,
+      hasBorders: false,
+      borderColor: '#1976d2',
+      transparentCorners: false,
+      perPixelTargetFind: true
+    });
+  }
 
   toggleSelection(selected: boolean): void {
     if (this.selected === selected) {
@@ -36,29 +56,21 @@ class GalleryImage extends fabric.FabricImage {
 
     this.selected = selected;
     this.set({
-      stroke: selected ? this.selectionBorderColor : 'transparent',
-      strokeWidth: selected ? this.selectionBorderWidth : 0,
-      hasControls: false,
-      hasBorders: selected ? true : false,
-      borderColor: selected ? this.selectionBorderColor : 'transparent',
-      borderScaleFactor: 1,
-      draggable: false,
-      selectable: false,
-      lockMovementX: true,
-      lockMovementY: true,
-      lockScalingX: true,
-      lockScalingY: true,
-      lockRotation: true,
-      lockScalingFlip: true,
-      lockSkewing: true,
-      lockSkewingFlip: true,
-      hoverCursor: 'pointer'
+      hasBorders: selected,
+      active: selected
     });
     this.dirty = true;
 
     if (selected) {
       (this.canvas as fabric.Canvas)?.setActiveObject(this);
     }
+
+    console.log(`[GalleryImage ${this.data?.filename}]`, {
+      selected: this.selected,
+      hasBorders: this.hasBorders,
+      borderColor: this.borderColor,
+      isActiveObject: this.canvas?.getActiveObject() === this
+    });
   }
 }
 
@@ -227,43 +239,58 @@ export function ImageGallery({
         return;
       }
 
-      console.log('[handleSelection]', {
-        targetsLength: Array.isArray(targets) ? targets.length : 1,
-        shiftKey,
-        currentSelections: canvas.getActiveObjects().length
-      });
-
-      const targetsArray = Array.isArray(targets) ? targets : [targets];
       const allObjects = canvas.getObjects() as GalleryImage[];
+      const targetsArray = Array.isArray(targets) ? targets : [targets];
+      const isSelectAll = targetsArray.length === allObjects.length;
 
-      if (targetsArray.length > 1) {
-        // Batch operation (select all)
-        const newState = !targetsArray[0].selected;
+      // Handle selection state
+      if (isSelectAll) {
+        const newState = !isAllSelected;
         allObjects.forEach(img => img.toggleSelection(newState));
+        setIsAllSelected(newState);
+      } else if (targetsArray.length > 1) {
+        const newState = !targetsArray[0].selected;
+        targetsArray.forEach(img => img.toggleSelection(newState));
       } else {
-        // Single/Multi select
         if (!shiftKey) {
-          // Single select - clear others
           allObjects.forEach(img => img.toggleSelection(false));
           targetsArray[0].toggleSelection(true);
         } else {
-          // Multi select - toggle target only
           targetsArray[0].toggleSelection(!targetsArray[0].selected);
         }
       }
 
       canvas.requestRenderAll();
 
-      // Update React state with currently selected images
+      // Update React state
       const selectedImages = allObjects.filter(obj => obj.selected);
       const filenames = selectedImages
         .map(o => o.data?.filename)
         .filter(Boolean) as string[];
-      console.log('Setting filenames:', filenames);
       setValue?.(forWhom, filenames);
-      setIsAllSelected(selectedImages.length === allObjects.length);
+
+      // Debug logs
+      console.log('\n[Selection Event]', {
+        type: isSelectAll
+          ? 'all'
+          : targetsArray.length > 1
+            ? 'batch'
+            : shiftKey
+              ? 'multi'
+              : 'single',
+        shiftKey
+      });
+
+      console.log('\n[All Images State]');
+      allObjects.forEach(img => {
+        console.log(`${img.data?.filename}:`, {
+          selected: img.selected,
+          hasBorders: img.hasBorders,
+          borderColor: img.borderColor
+        });
+      });
     },
-    [setValue]
+    [setValue, isAllSelected]
   );
 
   const handleSelectAll = useCallback(() => {
@@ -272,25 +299,9 @@ export function ImageGallery({
       return;
     }
 
-    console.log('[handleSelectAll] Starting...');
-    const allObjects = canvas.getObjects() as GalleryImage[];
-    const newState = !isAllSelected;
+    handleSelection(canvas.getObjects() as GalleryImage[], false);
+  }, [handleSelection]);
 
-    console.log('Updating all objects to state:', newState);
-    // Update all objects' visual state at once
-    allObjects.forEach(img => img.toggleSelection(newState));
-    canvas.requestRenderAll();
-
-    // Update React state directly
-    const filenames = newState
-      ? (allObjects.map(o => o.data?.filename).filter(Boolean) as string[])
-      : [];
-    console.log('Setting filenames:', filenames);
-    setValue?.(forWhom, filenames);
-    setIsAllSelected(newState);
-  }, [setValue]);
-
-  // Update canvas event handling
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
