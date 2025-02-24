@@ -302,10 +302,6 @@ export function ImageGallery({
     }
 
     canvas.on('mouse:down', e => {
-      console.log('[mouse:down]', {
-        hasTarget: !!e.target,
-        shiftKey: e.e.shiftKey
-      });
       if (e.target && e.target instanceof GalleryImage) {
         handleSelection(e.target, e.e.shiftKey);
       }
