@@ -114,13 +114,14 @@ export default function CropDialog({
         imageElement.height
       );
 
-      setCrop({
-        unit: 'px',
+      // Update UI immediately with the new values
+      setCrop(prevCrop => ({
+        ...prevCrop,
         x: constrainedCrop[CROP_X],
         y: constrainedCrop[CROP_Y],
         width: constrainedCrop[CROP_WIDTH],
         height: constrainedCrop[CROP_HEIGHT]
-      });
+      }));
     },
     [crop, imageElement]
   );
