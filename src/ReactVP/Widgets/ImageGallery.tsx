@@ -4,11 +4,9 @@ import * as fabric from 'fabric';
 import { WidgetProps } from './Widget';
 import { LeftArrowIcon, RightArrowIcon, SelectionIcon } from '../Style/icons';
 
-// Type definitions
 declare module 'fabric' {
   interface Canvas {
     isDisposed: boolean;
-    renderSelection(ctx: CanvasRenderingContext2D): void;
   }
   interface Object {
     data?: Record<string, any>;
@@ -19,56 +17,102 @@ interface IGalleryImage {
   filename: string;
   base64: string;
   imageUrl?: string;
-  fabricObject?: fabric.Image;
+  fabricObject?: GalleryImage;
 }
 
 interface IImageGalleryProps extends WidgetProps {
   images?: IGalleryImage[];
   value?: string[];
 }
+class GalleryImage extends fabric.FabricImage {
+  public selected: boolean = false;
 
-// Configure ActiveSelection defaults
-fabric.ActiveSelection.prototype.stroke = 'transparent';
-fabric.ActiveSelection.prototype.strokeWidth = 0;
-fabric.ActiveSelection.prototype.borderColor = 'transparent';
-fabric.ActiveSelection.prototype.cornerColor = 'transparent';
-fabric.ActiveSelection.prototype.borderOpacityWhenMoving = 0;
-fabric.ActiveSelection.prototype.borderScaleFactor = 0;
-fabric.ActiveSelection.prototype.cornerSize = 0;
-fabric.ActiveSelection.prototype.transparentCorners = true;
-fabric.ActiveSelection.prototype.padding = 0;
-fabric.ActiveSelection.prototype.setControlsVisibility({
-  mtr: false,
-  mt: false,
-  mb: false,
-  ml: false,
-  mr: false,
-  bl: false,
-  br: false,
-  tl: false,
-  tr: false
-});
+  constructor(
+    element: fabric.ImageSource,
+    options?: Partial<fabric.ImageProps>
+  ) {
+    super(element, {
+      ...options,
+      hasControls: false,
+      selectable: false,
+      lockMovementX: true,
+      lockMovementY: true,
+      lockScalingX: true,
+      lockScalingY: true,
+      lockRotation: true,
+      hoverCursor: 'pointer',
+      borderScaleFactor: 2,
+      hasBorders: false,
+      objectCaching: false,
+      strokeWidth: 2,
+      strokeUniform: true,
+      padding: 2,
+      originX: 'left',
+      originY: 'top'
+    });
+  }
+
+  toggleSelection(selected: boolean): void {
+    if (this.selected === selected) {
+      return;
+    }
+
+    this.selected = selected;
+    this.set({
+      stroke: selected ? '#1976d2' : 'transparent',
+      hasBorders: false,
+
+      dirty: true // Force redraw
+    });
+
+    if (selected && this.canvas) {
+      this.canvas.bringObjectToFront(this);
+    }
+  }
+}
 
 export function ImageGallery({
   forWhom,
   setValue,
   images
 }: IImageGalleryProps): JSX.Element {
-  // State and refs
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
-  const selectedRef = useRef<fabric.Image[]>([]);
-  const pendingSelectionRef = useRef(false);
-  const lastSelectionRef = useRef<string[]>([]);
-  const [isAllSelected, setIsAllSelected] = useState(false);
   const [canvasHeight, setCanvasHeight] = useState(150);
 
-  // Memoized values
+  // Helper function to get sorted gallery objects
+  const getSortedGalleryObjects = useCallback(() => {
+    if (!canvasRef.current) {
+      return [];
+    }
+
+    const allObjects = canvasRef.current.getObjects() as GalleryImage[];
+    return [...allObjects].sort(
+      (a, b) => (a.data?.originalIndex || 0) - (b.data?.originalIndex || 0)
+    );
+  }, []);
+
+  // Get selected objects helper
+  const getSelectedObjects = useCallback(() => {
+    const sortedObjects = getSortedGalleryObjects();
+    return sortedObjects.filter(obj => obj.selected);
+  }, [getSortedGalleryObjects]);
+
+  // Derive isAllSelected from selection state
+  const isAllSelected = useMemo(() => {
+    const sortedObjects = getSortedGalleryObjects();
+    const selectedObjects = getSelectedObjects();
+    return (
+      sortedObjects.length > 0 &&
+      selectedObjects.length === sortedObjects.length
+    );
+  }, [getSortedGalleryObjects, getSelectedObjects]);
+
   const canvasKey = useMemo(() => {
     const id = typeof forWhom === 'object' ? forWhom.id : String(forWhom);
     return `gallery-${id}`;
-  }, [typeof forWhom === 'object' ? forWhom.id : forWhom]);
+  }, [forWhom]);
 
   const stableImages = useMemo(
     () => images,
@@ -82,26 +126,8 @@ export function ImageGallery({
     ]
   );
 
-  // Image handling utilities
-  const createFabricImage = useCallback(
-    async (src: string): Promise<fabric.Image> => {
-      return new Promise((resolve, reject) => {
-        fabric.FabricImage.fromURL(src).then(img => {
-          img.set({
-            originX: 'left',
-            originY: 'top',
-            hasBorders: false,
-            hasControls: false
-          });
-          resolve(img);
-        }, reject);
-      });
-    },
-    []
-  );
-
   const calculateScale = useCallback(
-    (img: fabric.Image, finalThumbSize: number) => {
+    (img: GalleryImage, finalThumbSize: number) => {
       return Math.min(
         finalThumbSize / img.width!,
         finalThumbSize / img.height!
@@ -110,30 +136,6 @@ export function ImageGallery({
     []
   );
 
-  // Selection handling
-  const handleSelection = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
-
-    const selected = canvas.getActiveObjects() as fabric.Image[];
-    const filenames = selected
-      .map(o => o.data?.filename)
-      .filter(Boolean) as string[];
-
-    if (
-      JSON.stringify(filenames) === JSON.stringify(lastSelectionRef.current)
-    ) {
-      return;
-    }
-
-    selectedRef.current = selected;
-    lastSelectionRef.current = filenames;
-    setValue?.(forWhom, filenames);
-  }, [setValue, forWhom]);
-
-  // Layout management
   const arrangeThumbnails = useCallback(
     (thumbnails: IGalleryImage[], canvas: fabric.Canvas) => {
       if (canvas.isDisposed) {
@@ -148,7 +150,7 @@ export function ImageGallery({
       });
 
       // Calculate layout
-      const containerWidth = canvas.width - 15;
+      const containerWidth = canvas.width! - 15;
       const padding = 15;
       const minThumbSize = 80;
       const numCols = Math.max(
@@ -160,6 +162,7 @@ export function ImageGallery({
       );
 
       let maxBottom = 0;
+      const strokePadding = 2;
       thumbnails.forEach(({ fabricObject }, index) => {
         if (!fabricObject) {
           return;
@@ -167,21 +170,28 @@ export function ImageGallery({
 
         const col = index % numCols;
         const row = Math.floor(index / numCols);
-        const scale = calculateScale(fabricObject, thumbSize);
+        const scale = calculateScale(
+          fabricObject,
+          thumbSize - strokePadding * 2
+        );
         const scaledHeight = fabricObject.height! * scale;
         const position = {
-          left: 5 + col * (thumbSize + padding),
-          top: 5 + row * (scaledHeight + padding)
+          left: 5 + col * (thumbSize + padding) + strokePadding,
+          top: 5 + row * (scaledHeight + padding) + strokePadding
         };
 
-        fabricObject.set({ ...position, scaleX: scale, scaleY: scale });
+        fabricObject.set({
+          ...position,
+          scaleX: scale,
+          scaleY: scale,
+          padding: strokePadding
+        });
         if (!canvas.contains(fabricObject)) {
           canvas.add(fabricObject);
         }
         maxBottom = Math.max(maxBottom, position.top + scaledHeight);
       });
 
-      // Update canvas height
       const newHeight = thumbnails.length > 0 ? maxBottom + padding : 150;
       setCanvasHeight(newHeight);
       canvas.setHeight(newHeight);
@@ -190,7 +200,6 @@ export function ImageGallery({
     [calculateScale]
   );
 
-  // Image loading
   const loadImages = useCallback(
     async (canvas: fabric.Canvas, images: IGalleryImage[]) => {
       try {
@@ -201,40 +210,48 @@ export function ImageGallery({
         setError(null);
 
         const processed = await Promise.all(
-          images.map(async img => {
+          images.map(async (img, index) => {
             const existing = canvas
               .getObjects()
               .find(
-                o =>
-                  (o as unknown as fabric.Image).data?.filename === img.filename
-              ) as fabric.Image | undefined;
+                o => (o as GalleryImage).data?.filename === img.filename
+              ) as GalleryImage | undefined;
 
             if (existing) {
+              // Update index on existing objects
+              existing.data = {
+                ...existing.data,
+                filename: img.filename,
+                originalIndex: index
+              };
               return { ...img, fabricObject: existing };
             }
 
-            const fabricImg = await createFabricImage(
-              img.base64 || img.imageUrl!
+            const fabricImg = await new Promise<GalleryImage>(
+              (resolve, reject) => {
+                fabric.FabricImage.fromURL(img.base64 || img.imageUrl!)
+                  .then(imgElement => {
+                    const galleryImage = new GalleryImage(
+                      imgElement.getElement(),
+                      {
+                        data: { filename: img.filename, originalIndex: index },
+                        originX: 'left',
+                        originY: 'top'
+                      } as fabric.TOptions<fabric.ImageProps> & {
+                        data?: Record<string, any>;
+                      }
+                    );
+                    resolve(galleryImage);
+                  })
+                  .catch(reject);
+              }
             );
-            return {
-              ...img,
-              fabricObject: fabricImg.set({
-                data: { filename: img.filename },
-                originX: 'left',
-                originY: 'top',
-                hasControls: false,
-                hasBorders: false,
-                lockMovementX: true,
-                lockMovementY: true,
-                selectable: true,
-                hoverCursor: 'pointer'
-              })
-            };
+
+            return { ...img, fabricObject: fabricImg };
           })
         );
 
         if (!canvas.isDisposed) {
-          // Add class to canvas container when images are present
           const container = canvas.wrapperEl;
           if (container) {
             container.classList.toggle('has-images', images.length > 0);
@@ -250,10 +267,142 @@ export function ImageGallery({
         }
       }
     },
-    [createFabricImage, arrangeThumbnails]
+    [arrangeThumbnails]
   );
 
-  // Canvas initialization
+  const handleSelection = useCallback(
+    (targets: GalleryImage | GalleryImage[], shiftKey: boolean) => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return;
+      }
+
+      const allGalleryImages = canvas
+        .getObjects()
+        .filter(obj => obj instanceof GalleryImage) as GalleryImage[];
+      const targetsArray = Array.isArray(targets) ? targets : [targets];
+
+      // Get current all-selected state for toggle behavior
+      const currentIsAllSelected =
+        allGalleryImages.length > 0 &&
+        allGalleryImages.every(img => img.selected);
+      const isSelectAll = targetsArray.length === allGalleryImages.length;
+
+      // Handle selection state
+      if (isSelectAll) {
+        const newState = !currentIsAllSelected;
+        allGalleryImages.forEach(img => {
+          img.toggleSelection(newState);
+        });
+      } else {
+        if (!shiftKey) {
+          allGalleryImages.forEach(img => {
+            if (!targetsArray.includes(img)) {
+              img.toggleSelection(false);
+            }
+          });
+        }
+        targetsArray.forEach(target => {
+          target.toggleSelection(!target.selected);
+        });
+      }
+
+      const selectedImages = allGalleryImages.filter(obj => obj.selected);
+      const filenames = selectedImages
+        .map(o => o.data?.filename)
+        .filter(Boolean) as string[];
+      setValue?.(forWhom, filenames);
+
+      canvas.requestRenderAll();
+    },
+    [setValue, forWhom]
+  );
+
+  // Memoized button disabled state function
+  const isDirectionButtonDisabled = useCallback(
+    (direction: 'left' | 'right') => {
+      if (!canvasRef.current) {
+        return true;
+      }
+
+      const sortedObjects = getSortedGalleryObjects();
+      if (sortedObjects.length === 0) {
+        return true;
+      }
+
+      const selectedObjects = sortedObjects.filter(obj => obj.selected);
+      if (selectedObjects.length === 0) {
+        return true;
+      }
+
+      const currentIndex = sortedObjects.indexOf(selectedObjects[0]);
+
+      // Disable left button if first item is selected
+      // Disable right button if last item is selected
+      return direction === 'left'
+        ? currentIndex === 0
+        : currentIndex === sortedObjects.length - 1;
+    },
+    [getSortedGalleryObjects]
+  );
+
+  const handleSelectAll = useCallback(() => {
+    const sortedObjects = getSortedGalleryObjects();
+    if (sortedObjects.length === 0) {
+      return;
+    }
+
+    handleSelection(sortedObjects, false);
+  }, [getSortedGalleryObjects, handleSelection]);
+
+  const handleMoveSelection = useCallback(
+    (direction: 'left' | 'right') => {
+      if (isDirectionButtonDisabled(direction)) {
+        return;
+      }
+
+      const sortedObjects = getSortedGalleryObjects();
+      if (sortedObjects.length === 0) {
+        return;
+      }
+
+      // Find selected objects
+      const selectedObjects = sortedObjects.filter(obj => obj.selected);
+      if (selectedObjects.length === 0) {
+        return;
+      }
+
+      // Find current index in the sorted array
+      const currentIndex = sortedObjects.indexOf(selectedObjects[0]);
+      const newIndex =
+        direction === 'left'
+          ? Math.max(0, currentIndex - 1)
+          : Math.min(sortedObjects.length - 1, currentIndex + 1);
+
+      if (currentIndex !== newIndex) {
+        handleSelection(sortedObjects[newIndex], false);
+      }
+    },
+    [handleSelection, getSortedGalleryObjects, isDirectionButtonDisabled]
+  );
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    canvas.on('mouse:down', e => {
+      if (e.target && e.target instanceof GalleryImage) {
+        handleSelection(e.target, e.e.shiftKey);
+      }
+    });
+
+    return () => {
+      canvas.off('mouse:down');
+    };
+  }, [handleSelection]);
+
   useEffect(() => {
     const canvasElement = document.getElementById(canvasKey);
     if (!canvasElement) {
@@ -270,43 +419,15 @@ export function ImageGallery({
       height: canvasHeight,
       selection: true,
       renderOnAddRemove: false,
-      allowMultipleSelection: false,
-      selectionKey: 'shiftKey',
       selectionColor: 'transparent',
       selectionBorderColor: 'transparent',
-      selectionLineWidth: 0
+      defaultCursor: 'default',
+      hoverCursor: 'default'
     });
 
-    // Add this after canvas initialization
     if (newCanvas.wrapperEl) {
       newCanvas.wrapperEl.style.removeProperty('width');
     }
-
-    // Handle selection events
-    newCanvas.on('mouse:down', event => {
-      const target = event.target;
-      if (!target) {
-        newCanvas.discardActiveObject();
-        newCanvas.renderAll();
-        return;
-      }
-
-      requestAnimationFrame(() => {
-        if (event.e.shiftKey) {
-          handleMultiSelection(newCanvas, target);
-        } else {
-          handleSingleSelection(newCanvas, target, pendingSelectionRef);
-        }
-      });
-
-      setTimeout(handleSelection, 0);
-    });
-
-    newCanvas.on('selection:cleared', () => {
-      if (!pendingSelectionRef.current) {
-        handleDiscardSelection(newCanvas, handleSelection);
-      }
-    });
 
     canvasRef.current = newCanvas;
     if (stableImages) {
@@ -319,7 +440,6 @@ export function ImageGallery({
     };
   }, [canvasKey, canvasHeight]);
 
-  // Handle image updates
   useEffect(() => {
     if (!canvasRef.current || !stableImages) {
       return;
@@ -327,66 +447,38 @@ export function ImageGallery({
     loadImages(canvasRef.current, stableImages);
   }, [stableImages, loadImages]);
 
-  // Modify handleSelectAll to update the selection state
-  const handleSelectAllClick = useCallback(() => {
-    if (!canvasRef.current) {
-      return;
-    }
-
-    if (!isAllSelected) {
-      handleSelectAll(canvasRef.current, handleSelection);
-      setIsAllSelected(true);
-    } else {
-      handleDiscardSelection(canvasRef.current, handleSelection);
-      setIsAllSelected(false);
-    }
-  }, [canvasRef, handleSelection, isAllSelected]);
+  // Clean up all fabric objects when component unmounts
+  useEffect(() => {
+    return () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        // Clear all objects and dispose properly
+        canvas.getObjects().forEach(obj => canvas.remove(obj));
+        canvas.dispose();
+        canvasRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="image-gallery-widget widget">
       <div className="gallery-controls">
         <button
-          onClick={() =>
-            canvasRef.current &&
-            handleMoveSelection(
-              canvasRef.current,
-              'left',
-              handleSelection,
-              pendingSelectionRef
-            )
-          }
-          disabled={
-            !canvasRef.current ||
-            canvasRef.current.getActiveObjects().length === 0 ||
-            canvasRef.current.getActiveObjects().length ===
-              canvasRef.current.getObjects().length
-          }
+          onClick={() => handleMoveSelection('left')}
+          disabled={isDirectionButtonDisabled('left')}
         >
           <LeftArrowIcon />
         </button>
         <button
-          onClick={() =>
-            canvasRef.current &&
-            handleMoveSelection(
-              canvasRef.current,
-              'right',
-              handleSelection,
-              pendingSelectionRef
-            )
-          }
-          disabled={
-            !canvasRef.current ||
-            canvasRef.current.getActiveObjects().length === 0 ||
-            canvasRef.current.getActiveObjects().length ===
-              canvasRef.current.getObjects().length
-          }
+          onClick={() => handleMoveSelection('right')}
+          disabled={isDirectionButtonDisabled('right')}
         >
           <RightArrowIcon />
         </button>
         <button
-          onClick={handleSelectAllClick}
+          onClick={handleSelectAll}
           disabled={
-            !canvasRef.current || canvasRef.current.getObjects().length === 0
+            !canvasRef.current || getSortedGalleryObjects().length === 0
           }
         >
           <SelectionIcon showCheck={isAllSelected} />
@@ -402,127 +494,4 @@ export function ImageGallery({
       {error && <div className="gallery-error">{error}</div>}
     </div>
   );
-}
-
-// Selection helper functions
-function handleMultiSelection(canvas: fabric.Canvas, target: fabric.Object) {
-  const activeObjects = canvas.getActiveObjects();
-  if (!activeObjects.includes(target)) {
-    target.set({
-      hasControls: false,
-      hasBorders: true,
-      borderColor: '#1976d2',
-      borderScaleFactor: 2
-    });
-
-    const newSelection = [...activeObjects, target];
-    canvas.discardActiveObject();
-    const activeSelection = new fabric.ActiveSelection(newSelection, {
-      canvas: canvas,
-      hasControls: false,
-      hasBorders: false,
-      selectable: false,
-      evented: false,
-      padding: 0
-    });
-
-    canvas.setActiveObject(activeSelection);
-    activeSelection.forEachObject(obj => {
-      obj.set({
-        borderColor: '#1976d2',
-        borderScaleFactor: 2,
-        hasBorders: true
-      });
-    });
-    canvas.renderAll();
-  }
-}
-
-function handleSingleSelection(
-  canvas: fabric.Canvas,
-  target: fabric.Object,
-  pendingRef: React.MutableRefObject<boolean>
-) {
-  canvas.getActiveObjects().forEach(obj => {
-    obj.set({
-      hasBorders: false,
-      borderColor: 'transparent'
-    });
-  });
-
-  target.set({
-    hasControls: false,
-    hasBorders: true,
-    borderColor: '#1976d2',
-    borderScaleFactor: 2
-  });
-
-  pendingRef.current = true;
-  canvas.discardActiveObject();
-  canvas.setActiveObject(target);
-  canvas.renderAll();
-}
-
-function handleSelectAll(canvas: fabric.Canvas, handleSelection: () => void) {
-  const activeSelection = new fabric.ActiveSelection(canvas.getObjects(), {
-    canvas: canvas,
-    hasControls: false,
-    hasBorders: false,
-    selectable: false,
-    evented: false,
-    padding: 0
-  });
-
-  canvas.setActiveObject(activeSelection);
-  activeSelection.forEachObject(obj => {
-    obj.set({
-      borderColor: '#1976d2',
-      borderScaleFactor: 2,
-      hasBorders: true
-    });
-  });
-  canvas.renderAll();
-  handleSelection();
-}
-
-function handleDiscardSelection(
-  canvas: fabric.Canvas,
-  handleSelection: () => void
-) {
-  canvas.discardActiveObject();
-  canvas.getObjects().forEach(obj => {
-    obj.set({
-      hasBorders: false,
-      borderColor: 'transparent'
-    });
-  });
-  canvas.renderAll();
-  handleSelection();
-}
-
-function handleMoveSelection(
-  canvas: fabric.Canvas,
-  direction: 'left' | 'right',
-  handleSelection: () => void,
-  pendingRef: React.MutableRefObject<boolean>
-) {
-  const objects = canvas.getObjects();
-  const activeObjects = canvas.getActiveObjects();
-  if (activeObjects.length === 0) {
-    return;
-  }
-
-  const currentIndex = objects.indexOf(activeObjects[0]);
-  const newIndex =
-    direction === 'left'
-      ? Math.max(0, currentIndex - 1)
-      : Math.min(objects.length - 1, currentIndex + 1);
-
-  if (currentIndex === newIndex) {
-    return;
-  }
-
-  const targetObject = objects[newIndex];
-  handleSingleSelection(canvas, targetObject, pendingRef);
-  handleSelection();
 }
