@@ -50,7 +50,41 @@ export default function ImageCropper({
     field: keyof typeof localCrop,
     newValue: number
   ) => {
-    const newCrop = { ...localCrop, [field]: newValue };
+    // Start with current crop values
+    const newCrop = { ...localCrop };
+
+    // Ensure values stay within image boundaries
+    if (imageDimensions) {
+      if (field === 'x') {
+        // Validate x value
+        newCrop.x = Math.max(0, Math.min(newValue, imageDimensions.width));
+        // Adjust width if necessary to keep crop within image
+        newCrop.width = Math.min(
+          newCrop.width,
+          imageDimensions.width - newCrop.x
+        );
+      } else if (field === 'y') {
+        // Validate y value
+        newCrop.y = Math.max(0, Math.min(newValue, imageDimensions.height));
+        // Adjust height if necessary to keep crop within image
+        newCrop.height = Math.min(
+          newCrop.height,
+          imageDimensions.height - newCrop.y
+        );
+      } else if (field === 'width') {
+        // Validate width value based on x position
+        const maxWidth = imageDimensions.width - newCrop.x;
+        newCrop.width = Math.max(1, Math.min(newValue, maxWidth));
+      } else if (field === 'height') {
+        // Validate height value based on y position
+        const maxHeight = imageDimensions.height - newCrop.y;
+        newCrop.height = Math.max(1, Math.min(newValue, maxHeight));
+      }
+    } else {
+      // If no dimensions available, just set the value directly
+      newCrop[field] = newValue;
+    }
+
     setLocalCrop(newCrop);
 
     // Update the value in the graph
