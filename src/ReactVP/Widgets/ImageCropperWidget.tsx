@@ -1,7 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { type WidgetProps } from './Widget';
 import CropDialog from './CropDialog';
 import { NumberInput } from './Input';
+
+// Constants for crop array indices to improve readability
+export const CROP_X = 0;
+export const CROP_Y = 1;
+export const CROP_WIDTH = 2;
+export const CROP_HEIGHT = 3;
+
+// Utility function to constrain crop values within image boundaries
+export function constrainCropToImage(
+  crop: number[],
+  imageWidth: number,
+  imageHeight: number
+): number[] {
+  const x = Math.max(0, Math.min(crop[CROP_X], imageWidth));
+  const y = Math.max(0, Math.min(crop[CROP_Y], imageHeight));
+  const width = Math.max(1, Math.min(crop[CROP_WIDTH], imageWidth - x));
+  const height = Math.max(1, Math.min(crop[CROP_HEIGHT], imageHeight - y));
+
+  return [x, y, width, height];
+}
+
+// Create a default crop array with the given dimensions
+export function createDefaultCrop(width: number, height: number): number[] {
+  return [0, 0, width, height];
+}
 
 interface IImageCropperWidgetProps extends WidgetProps {
   value?: number[];
@@ -9,6 +34,21 @@ interface IImageCropperWidgetProps extends WidgetProps {
   dimensions?: {
     width: number;
     height: number;
+  };
+}
+
+// Add debounce utility
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  return function (...args: Parameters<T>) {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(() => func(...args), wait);
   };
 }
 
@@ -29,90 +69,109 @@ export default function ImageCropper({
   useEffect(() => {
     if (dimensions) {
       setImageDimensions(dimensions);
-      if (!value || value[2] === 0 || value[3] === 0) {
-        const cropData = [0, 0, dimensions.width, dimensions.height];
-        setValue?.(forWhom, cropData);
+      if (!value || value[CROP_WIDTH] === 0 || value[CROP_HEIGHT] === 0) {
+        const defaultCrop = constrainCropToImage(
+          [0, 0, dimensions.width, dimensions.height],
+          dimensions.width,
+          dimensions.height
+        );
+        setValue?.(forWhom, defaultCrop);
         if (editorContext?.graph) {
           editorContext.updateGraph(editorContext.graph);
         }
       }
     }
-  }, [dimensions]);
+  }, [dimensions, value]);
 
-  const [localCrop, setLocalCrop] = useState({
-    x: value?.[0] ?? 0,
-    y: value?.[1] ?? 0,
-    width: value?.[2] ?? imageDimensions?.width ?? 0,
-    height: value?.[3] ?? imageDimensions?.height ?? 0
+  // Create initial localCrop state from props
+  const [localCrop, setLocalCrop] = useState<number[]>(() => {
+    const initial = value || [0, 0, 0, 0];
+    if (imageDimensions) {
+      return constrainCropToImage(
+        initial,
+        imageDimensions.width,
+        imageDimensions.height
+      );
+    }
+    return initial;
   });
 
-  const handleManualInput = (
-    field: keyof typeof localCrop,
-    newValue: number
-  ) => {
-    // Start with current crop values
-    const newCrop = { ...localCrop };
-
-    // Ensure values stay within image boundaries
-    if (imageDimensions) {
-      if (field === 'x') {
-        // Validate x value
-        newCrop.x = Math.max(0, Math.min(newValue, imageDimensions.width));
-        // Adjust width if necessary to keep crop within image
-        newCrop.width = Math.min(
-          newCrop.width,
-          imageDimensions.width - newCrop.x
-        );
-      } else if (field === 'y') {
-        // Validate y value
-        newCrop.y = Math.max(0, Math.min(newValue, imageDimensions.height));
-        // Adjust height if necessary to keep crop within image
-        newCrop.height = Math.min(
-          newCrop.height,
-          imageDimensions.height - newCrop.y
-        );
-      } else if (field === 'width') {
-        // Validate width value based on x position
-        const maxWidth = imageDimensions.width - newCrop.x;
-        newCrop.width = Math.max(1, Math.min(newValue, maxWidth));
-      } else if (field === 'height') {
-        // Validate height value based on y position
-        const maxHeight = imageDimensions.height - newCrop.y;
-        newCrop.height = Math.max(1, Math.min(newValue, maxHeight));
+  // Update graph with debounced changes to avoid unnecessary updates
+  const updateGraphWithCrop = useCallback(
+    (crop: number[]) => {
+      setValue?.(forWhom, crop);
+      if (editorContext?.graph) {
+        editorContext.updateGraph(editorContext.graph);
       }
-    } else {
-      // If no dimensions available, just set the value directly
-      newCrop[field] = newValue;
-    }
+    },
+    [forWhom, setValue]
+  );
 
-    setLocalCrop(newCrop);
+  // Debounced version of the update function
+  const debouncedUpdateGraph = useCallback(
+    debounce((crop: number[]) => {
+      updateGraphWithCrop(crop);
+    }, 300),
+    [updateGraphWithCrop]
+  );
 
-    // Update the value in the graph
-    const cropData = [newCrop.x, newCrop.y, newCrop.width, newCrop.height];
-    setValue?.(forWhom, cropData);
-    if (editorContext?.graph) {
-      editorContext.updateGraph(editorContext.graph);
-    }
-  };
+  const handleManualInput = useCallback(
+    (index: number, newValue: number) => {
+      if (!imageDimensions) {
+        const newCrop = [...localCrop];
+        newCrop[index] = newValue;
+        setLocalCrop(newCrop);
+        debouncedUpdateGraph(newCrop);
+        return;
+      }
+
+      // Create updated crop with the new value
+      const updatedCrop = [...localCrop];
+      updatedCrop[index] = newValue;
+
+      // Constrain all values to ensure they're valid
+      const constrainedCrop = constrainCropToImage(
+        updatedCrop,
+        imageDimensions.width,
+        imageDimensions.height
+      );
+
+      setLocalCrop(constrainedCrop);
+      debouncedUpdateGraph(constrainedCrop);
+    },
+    [localCrop, imageDimensions, debouncedUpdateGraph]
+  );
 
   // Update localCrop when value or dimensions change
   useEffect(() => {
     if (value && Array.isArray(value)) {
-      setLocalCrop({
-        x: value[0] ?? 0,
-        y: value[1] ?? 0,
-        width: value[2] ?? imageDimensions?.width ?? 0,
-        height: value[3] ?? imageDimensions?.height ?? 0
-      });
-    } else if (imageDimensions) {
-      setLocalCrop({
-        x: 0,
-        y: 0,
-        width: imageDimensions.width,
-        height: imageDimensions.height
-      });
+      // Only update if the values actually changed
+      if (
+        value[CROP_X] !== localCrop[CROP_X] ||
+        value[CROP_Y] !== localCrop[CROP_Y] ||
+        value[CROP_WIDTH] !== localCrop[CROP_WIDTH] ||
+        value[CROP_HEIGHT] !== localCrop[CROP_HEIGHT]
+      ) {
+        if (imageDimensions) {
+          setLocalCrop(
+            constrainCropToImage(
+              value,
+              imageDimensions.width,
+              imageDimensions.height
+            )
+          );
+        } else {
+          setLocalCrop(value);
+        }
+      }
+    } else if (
+      imageDimensions &&
+      (!localCrop[CROP_WIDTH] || !localCrop[CROP_HEIGHT])
+    ) {
+      // Set default crop if current values are invalid
+      setLocalCrop([0, 0, imageDimensions.width, imageDimensions.height]);
     }
-  }, [value, imageDimensions]);
+  }, [value, imageDimensions, localCrop]);
 
   return (
     <div className="crop-input-container widget">
@@ -138,8 +197,8 @@ export default function ImageCropper({
             <label>X</label>
             <NumberInput
               forWhom={forWhom}
-              value={localCrop.x}
-              setValue={(_, val) => handleManualInput('x', val)}
+              value={localCrop[CROP_X]}
+              setValue={(_, val) => handleManualInput(CROP_X, val)}
               min={0}
             />
           </div>
@@ -147,8 +206,8 @@ export default function ImageCropper({
             <label>Y</label>
             <NumberInput
               forWhom={forWhom}
-              value={localCrop.y}
-              setValue={(_, val) => handleManualInput('y', val)}
+              value={localCrop[CROP_Y]}
+              setValue={(_, val) => handleManualInput(CROP_Y, val)}
               min={0}
             />
           </div>
@@ -158,8 +217,8 @@ export default function ImageCropper({
             <label>Width</label>
             <NumberInput
               forWhom={forWhom}
-              value={localCrop.width}
-              setValue={(_, val) => handleManualInput('width', val)}
+              value={localCrop[CROP_WIDTH]}
+              setValue={(_, val) => handleManualInput(CROP_WIDTH, val)}
               min={1}
             />
           </div>
@@ -167,8 +226,8 @@ export default function ImageCropper({
             <label>Height</label>
             <NumberInput
               forWhom={forWhom}
-              value={localCrop.height}
-              setValue={(_, val) => handleManualInput('height', val)}
+              value={localCrop[CROP_HEIGHT]}
+              setValue={(_, val) => handleManualInput(CROP_HEIGHT, val)}
               min={1}
             />
           </div>
@@ -183,12 +242,7 @@ export default function ImageCropper({
           setValue={(_, newDimensions) => {
             if (newDimensions && Array.isArray(newDimensions)) {
               setValue?.(forWhom, newDimensions);
-              setLocalCrop({
-                x: newDimensions[0],
-                y: newDimensions[1],
-                width: newDimensions[2],
-                height: newDimensions[3]
-              });
+              setLocalCrop(newDimensions);
               if (editorContext?.graph) {
                 editorContext.updateGraph(editorContext.graph);
               }

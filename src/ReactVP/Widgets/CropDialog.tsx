@@ -1,19 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactCrop, { type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { type WidgetProps } from './Widget';
 import { createPortal } from 'react-dom';
 import { NumberInput } from './Input';
+import {
+  constrainCropToImage,
+  CROP_X,
+  CROP_Y,
+  CROP_WIDTH,
+  CROP_HEIGHT
+} from './ImageCropperWidget';
 
 interface ICropDialogProps extends WidgetProps {
   imageUrl: string;
   onClose: () => void;
-  initialCrop?: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+  initialCrop?: number[];
 }
 
 const CropDialogPortal = ({ children }: { children: React.ReactNode }) => {
@@ -31,28 +33,34 @@ export default function CropDialog({
   onClose,
   initialCrop
 }: ICropDialogProps) {
-  const [crop, setCrop] = useState<Crop>({
-    unit: 'px',
-    x: initialCrop?.x ?? value?.[0] ?? 0,
-    y: initialCrop?.y ?? value?.[1] ?? 0,
-    width: initialCrop?.width ?? value?.[2] ?? 0,
-    height: initialCrop?.height ?? value?.[3] ?? 0
-  });
-
   const [imageElement, setImageElement] = useState<HTMLImageElement | null>(
     null
   );
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  const initialCropState = useMemo(() => {
+    const cropArray = initialCrop || value || [0, 0, 0, 0];
+    return {
+      unit: 'px' as const,
+      x: cropArray[CROP_X],
+      y: cropArray[CROP_Y],
+      width: cropArray[CROP_WIDTH],
+      height: cropArray[CROP_HEIGHT]
+    };
+  }, [initialCrop, value]);
+
+  const [crop, setCrop] = useState<Crop>(initialCropState);
 
   useEffect(() => {
     const img = new Image();
     img.src = imageUrl;
     img.onload = () => {
       setImageElement(img);
+      setImageLoaded(true);
 
-      // Handle initial crop value setting or defaulting
       if (
         !initialCrop ||
-        (initialCrop.width === 0 && initialCrop.height === 0)
+        (initialCrop[CROP_WIDTH] === 0 && initialCrop[CROP_HEIGHT] === 0)
       ) {
         // Default centered crop if no initialCrop provided
         const width = Math.min(img.width * 0.5, img.width);
@@ -68,37 +76,57 @@ export default function CropDialog({
         });
       } else {
         // Ensure initialCrop values are constrained within image boundaries
-        const constrainedCrop = {
-          unit: 'px' as const,
-          x: Math.max(0, Math.min(initialCrop.x, img.width)),
-          y: Math.max(0, Math.min(initialCrop.y, img.height)),
-          width: Math.max(
-            1,
-            Math.min(
-              initialCrop.width,
-              img.width - Math.min(initialCrop.x, img.width)
-            )
-          ),
-          height: Math.max(
-            1,
-            Math.min(
-              initialCrop.height,
-              img.height - Math.min(initialCrop.y, img.height)
-            )
-          )
-        };
-        setCrop(constrainedCrop);
+        const constrainedCrop = constrainCropToImage(
+          initialCrop,
+          img.width,
+          img.height
+        );
+
+        setCrop({
+          unit: 'px',
+          x: constrainedCrop[CROP_X],
+          y: constrainedCrop[CROP_Y],
+          width: constrainedCrop[CROP_WIDTH],
+          height: constrainedCrop[CROP_HEIGHT]
+        });
       }
     };
   }, [imageUrl, initialCrop]);
 
-  const handleManualInput = (field: string, value: string) => {
-    const numValue = parseInt(value) || 0;
-    setCrop(prev => ({ ...prev, [field]: numValue }));
-  };
+  const handleManualInput = useCallback(
+    (index: number, newValue: number) => {
+      if (!imageElement) {
+        return;
+      }
 
-  const handleApply = () => {
-    // Pass crop coordinates as tuple4 [x, y, width, height]
+      // Create an updated crop array
+      const cropArray = [
+        index === CROP_X ? newValue : Math.round(crop.x),
+        index === CROP_Y ? newValue : Math.round(crop.y),
+        index === CROP_WIDTH ? newValue : Math.round(crop.width),
+        index === CROP_HEIGHT ? newValue : Math.round(crop.height)
+      ];
+
+      // Constrain the crop to the image boundaries
+      const constrainedCrop = constrainCropToImage(
+        cropArray,
+        imageElement.width,
+        imageElement.height
+      );
+
+      setCrop({
+        unit: 'px',
+        x: constrainedCrop[CROP_X],
+        y: constrainedCrop[CROP_Y],
+        width: constrainedCrop[CROP_WIDTH],
+        height: constrainedCrop[CROP_HEIGHT]
+      });
+    },
+    [crop, imageElement]
+  );
+
+  const handleApply = useCallback(() => {
+    // Convert crop to array format with rounded values
     const cropData = [
       Math.round(crop.x),
       Math.round(crop.y),
@@ -109,54 +137,57 @@ export default function CropDialog({
     // Update the output value which will trigger backend processing
     setValue?.(forWhom, cropData);
     onClose();
-  };
+  }, [crop, forWhom, onClose, setValue]);
 
-  const onCropChange = (newCrop: Crop) => {
-    // Ensure crop stays within image bounds
-    const imgWidth = imageElement?.width ?? 0;
-    const imgHeight = imageElement?.height ?? 0;
+  const onCropChange = useCallback(
+    (newCrop: Crop) => {
+      if (!imageElement) {
+        return;
+      }
 
-    const constrainedCrop = {
-      ...newCrop,
-      x: Math.max(0, newCrop.x),
-      y: Math.max(0, newCrop.y),
-      width: Math.min(newCrop.width, imgWidth - newCrop.x),
-      height: Math.min(newCrop.height, imgHeight - newCrop.y)
-    };
-    setCrop(constrainedCrop);
-  };
+      // Convert ReactCrop's crop to our array format
+      const cropArray = [newCrop.x, newCrop.y, newCrop.width, newCrop.height];
 
-  const onCropComplete = (crop: Crop) => {
-    // Ensure crop stays within image bounds
-    const imgWidth = imageElement?.width ?? 0;
-    const imgHeight = imageElement?.height ?? 0;
+      // Ensure crop stays within image bounds using our shared utility
+      const constrainedCrop = constrainCropToImage(
+        cropArray,
+        imageElement.width,
+        imageElement.height
+      );
 
-    const constrainedCrop = {
-      ...crop,
-      x: Math.max(0, crop.x),
-      y: Math.max(0, crop.y),
-      width: Math.min(crop.width, imgWidth - crop.x),
-      height: Math.min(crop.height, imgHeight - crop.y)
-    };
-    setCrop(constrainedCrop);
-  };
+      setCrop({
+        ...newCrop,
+        x: constrainedCrop[CROP_X],
+        y: constrainedCrop[CROP_Y],
+        width: constrainedCrop[CROP_WIDTH],
+        height: constrainedCrop[CROP_HEIGHT]
+      });
+    },
+    [imageElement]
+  );
 
   return (
     <CropDialogPortal>
       <div className="crop-dialog">
         <div className="crop-dialog-content">
-          <ReactCrop
-            crop={crop}
-            onChange={onCropChange}
-            onComplete={onCropComplete}
-            aspect={undefined}
-          >
-            <img
-              src={imageUrl}
-              alt="Crop preview"
-              style={{ maxWidth: '100%', maxHeight: '100%' }}
-            />
-          </ReactCrop>
+          {!imageLoaded && (
+            <div className="image-loading">Loading image...</div>
+          )}
+
+          {imageLoaded && (
+            <ReactCrop
+              crop={crop}
+              onChange={onCropChange}
+              onComplete={onCropChange}
+              aspect={undefined}
+            >
+              <img
+                src={imageUrl}
+                alt="Crop preview"
+                style={{ maxWidth: '100%', maxHeight: '100%' }}
+              />
+            </ReactCrop>
+          )}
 
           <div className="crop-inputs">
             <div className="input-row">
@@ -165,8 +196,9 @@ export default function CropDialog({
                 <NumberInput
                   forWhom={forWhom}
                   value={Math.round(crop.x)}
-                  setValue={(_, val) => handleManualInput('x', val.toString())}
+                  setValue={(_, val) => handleManualInput(CROP_X, val)}
                   min={0}
+                  disabled={!imageLoaded}
                 />
               </div>
               <div className="input-group">
@@ -174,8 +206,9 @@ export default function CropDialog({
                 <NumberInput
                   forWhom={forWhom}
                   value={Math.round(crop.y)}
-                  setValue={(_, val) => handleManualInput('y', val.toString())}
+                  setValue={(_, val) => handleManualInput(CROP_Y, val)}
                   min={0}
+                  disabled={!imageLoaded}
                 />
               </div>
             </div>
@@ -185,10 +218,9 @@ export default function CropDialog({
                 <NumberInput
                   forWhom={forWhom}
                   value={Math.round(crop.width)}
-                  setValue={(_, val) =>
-                    handleManualInput('width', val.toString())
-                  }
+                  setValue={(_, val) => handleManualInput(CROP_WIDTH, val)}
                   min={1}
+                  disabled={!imageLoaded}
                 />
               </div>
               <div className="input-group">
@@ -196,10 +228,9 @@ export default function CropDialog({
                 <NumberInput
                   forWhom={forWhom}
                   value={Math.round(crop.height)}
-                  setValue={(_, val) =>
-                    handleManualInput('height', val.toString())
-                  }
+                  setValue={(_, val) => handleManualInput(CROP_HEIGHT, val)}
                   min={1}
+                  disabled={!imageLoaded}
                 />
               </div>
             </div>
@@ -209,7 +240,11 @@ export default function CropDialog({
             <button className="cancel-button" onClick={onClose}>
               Cancel
             </button>
-            <button className="apply-button" onClick={handleApply}>
+            <button
+              className="apply-button"
+              onClick={handleApply}
+              disabled={!imageLoaded}
+            >
               Apply
             </button>
           </div>
