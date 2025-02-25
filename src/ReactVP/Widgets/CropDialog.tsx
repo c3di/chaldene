@@ -49,11 +49,12 @@ export default function CropDialog({
     img.onload = () => {
       setImageElement(img);
 
-      // Only set default centered crop if no initialCrop is provided
+      // Handle initial crop value setting or defaulting
       if (
         !initialCrop ||
         (initialCrop.width === 0 && initialCrop.height === 0)
       ) {
+        // Default centered crop if no initialCrop provided
         const width = Math.min(img.width * 0.5, img.width);
         const height = Math.min(img.height * 0.5, img.height);
         const x = Math.max(0, (img.width - width) / 2);
@@ -65,6 +66,28 @@ export default function CropDialog({
           width,
           height
         });
+      } else {
+        // Ensure initialCrop values are constrained within image boundaries
+        const constrainedCrop = {
+          unit: 'px' as const,
+          x: Math.max(0, Math.min(initialCrop.x, img.width)),
+          y: Math.max(0, Math.min(initialCrop.y, img.height)),
+          width: Math.max(
+            1,
+            Math.min(
+              initialCrop.width,
+              img.width - Math.min(initialCrop.x, img.width)
+            )
+          ),
+          height: Math.max(
+            1,
+            Math.min(
+              initialCrop.height,
+              img.height - Math.min(initialCrop.y, img.height)
+            )
+          )
+        };
+        setCrop(constrainedCrop);
       }
     };
   }, [imageUrl, initialCrop]);
@@ -90,24 +113,30 @@ export default function CropDialog({
 
   const onCropChange = (newCrop: Crop) => {
     // Ensure crop stays within image bounds
+    const imgWidth = imageElement?.width ?? 0;
+    const imgHeight = imageElement?.height ?? 0;
+
     const constrainedCrop = {
       ...newCrop,
       x: Math.max(0, newCrop.x),
       y: Math.max(0, newCrop.y),
-      width: Math.min(newCrop.width, imageElement?.width ?? 0),
-      height: Math.min(newCrop.height, imageElement?.height ?? 0)
+      width: Math.min(newCrop.width, imgWidth - newCrop.x),
+      height: Math.min(newCrop.height, imgHeight - newCrop.y)
     };
     setCrop(constrainedCrop);
   };
 
   const onCropComplete = (crop: Crop) => {
     // Ensure crop stays within image bounds
+    const imgWidth = imageElement?.width ?? 0;
+    const imgHeight = imageElement?.height ?? 0;
+
     const constrainedCrop = {
       ...crop,
       x: Math.max(0, crop.x),
       y: Math.max(0, crop.y),
-      width: Math.min(crop.width, imageElement?.width ?? 0),
-      height: Math.min(crop.height, imageElement?.height ?? 0)
+      width: Math.min(crop.width, imgWidth - crop.x),
+      height: Math.min(crop.height, imgHeight - crop.y)
     };
     setCrop(constrainedCrop);
   };
