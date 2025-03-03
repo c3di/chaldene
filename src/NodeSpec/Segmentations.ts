@@ -47,10 +47,14 @@ export const watershedNodeSpec: computeNodeSpec = {
 from scipy import ndimage as ndi
 from skimage.color import label2rgb
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
+if in_im.raw_image.ndim == 2:
+    region_of_interest = in_im.raw_image >=0.9
+elif in_im.raw_image.ndim ==3 and in_im.raw_image.shape[2] ==3:
+    region_of_insterest = np.all(in_im.raw_image >=0.9, axis=-1)
 gradient = filters.sobel(in_im.raw_image)
 markers = ndi.label(gradient < ${inputs.granularity})[0]
-${outputs.segments} = segmentation.watershed(gradient, markers)
-${outputs.vis} = IM(label2rgb(${outputs.segments}, bg_label=1), {**in_im.metadata, 'color_channel': 'rgb', 'channel_order': 'channel last'})`;
+${outputs.segments} = segmentation.watershed(gradient, markers=markers, mask=region_of_interest)
+${outputs.vis} = IM(label2rgb(${outputs.segments}, bg_label=0), {**in_im.metadata, 'color_channel': 'rgb', 'channel_order': 'channel last'})`;
     }
   }
 };
