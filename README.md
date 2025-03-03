@@ -12,11 +12,18 @@ Visual Programming in JupyterLab for Image Processing
 
 ## Install
 
-To install the extension, execute:
+**NOTE**: For the purposes of double-blind review, we have kept the repository private and temporarily removed the package from PyPI. 
+We recommend downloading the package from the "dist" folder and installing it using the following command:
+
+```python
+pip install /path_to/....whl
+```
+~~To install the extension, execute:~~
 
 ```bash
 pip install chaldene
 ```
+Or install from graphical JupyterLab extendion manager
 
 ## Uninstall
 
