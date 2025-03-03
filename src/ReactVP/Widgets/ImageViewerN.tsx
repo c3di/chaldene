@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { WidgetProps } from './Widget';
 import DiffMapTrigger from './DiffMapTrigger';
 import { genDiffMap } from './genDiffMap';
-import CloseBackgroundTrigger from './CloseBackgroundTrigger';
+// import CloseBackgroundTrigger from './CloseBackgroundTrigger';
 import ColorBar from './ColorBar';
 
 const getMousePosition = (e: Event) => {
@@ -254,7 +254,7 @@ export default function ImageViewer({
     height: number;
   } | null>(null);
 
-  const [showBackground, setShowBackground] = useState(true);
+  // const [showBackground, setShowBackground] = useState(true);
 
   useEffect(() => {
     const parent = canvasElParent.current;
@@ -590,7 +590,7 @@ export default function ImageViewer({
     });
 
     // Only set background image if showBackground is true
-    canvas.current!.backgroundImage = showBackground ? image : undefined;
+    canvas.current!.backgroundImage = image;
     if (showDiffMap && value?.differences) {
       const diffImage = genDiffMap(
         value.differences,
@@ -616,7 +616,7 @@ export default function ImageViewer({
     editorContext?.getImageViewTransform(syncGroup),
     image,
     isFullScreen,
-    showBackground,
+    true,
     showDiffMap
   ]);
 
@@ -842,10 +842,10 @@ export default function ImageViewer({
               toggled={showDiffMap}
               toggle={() => setShowDiffMap(!showDiffMap)}
             />
-            <CloseBackgroundTrigger
+            {/* <CloseBackgroundTrigger
               toggled={showBackground}
               toggle={() => setShowBackground(!showBackground)}
-            />
+            /> */}
           </div>
           {showDiffMap && (
             <div className="color-bar-container">
