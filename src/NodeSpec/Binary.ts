@@ -104,6 +104,7 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
   description:
     'Dilation sets a pixel at to the maximum over all pixels in the neighborhood centered at. Dilation enlarges bright regions and shrinks dark regions.',
   category: 'binary',
+  extraRun: 1,
   inputs: [
     {
       name: 'image',
@@ -121,7 +122,6 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
       showDiff: true
     }
   ],
-  extraRun: 1,
   codeGenerators: {
     Python: (
       inputs: Record<string, string>,
@@ -141,6 +141,7 @@ export const binaryErosionNodeSpec: computeNodeSpec = {
   description:
     'Erosion sets a pixel at to the minimum over all pixels in the neighborhood centered at. Erosion shrinks bright regions and enlarges dark regions.',
   category: 'binary',
+  extraRun: 1,
   inputs: [
     {
       name: 'image',
@@ -177,6 +178,7 @@ export const binaryOpeningNodeSpec: computeNodeSpec = {
   description:
     'Opening can remove small bright spots (i.e. "salt") and connect small dark cracks. This tends to "open" up (dark) gaps between (bright) features.',
   category: 'binary',
+  extraRun: 1,
   inputs: [
     {
       name: 'image',
@@ -213,6 +215,7 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
   description:
     'Closing can remove small dark spots (i.e. "pepper") and connect small bright cracks. This tends to "close" up (dark) gaps between (bright) features.',
   category: 'binary',
+  extraRun: 1,
   inputs: [
     {
       name: 'image',
