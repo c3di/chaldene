@@ -9,6 +9,10 @@ export const drawColorBar = (
   const colorScale = getColorScale(colormap);
   const width = colormap === 'binary' ? 60 : 120;
 
+  // Clear canvas with white background for consistent blending
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, 20);
+
   if (colormap === 'binary') {
     // Draw two equal sections for binary colormap
     const sectionWidth = width / 2;
@@ -51,7 +55,10 @@ export default function ColorBar({
   const width = colormap === 'binary' ? 60 : 120;
 
   return (
-    <div className="colorbar-container" style={{ width }}>
+    <div
+      className="colorbar-container"
+      style={{ width, backgroundColor: '#ffffff' }}
+    >
       <canvas ref={canvasRef} width={width} height={20} />
       <div className="colorbar-labels">
         <span>-1</span>

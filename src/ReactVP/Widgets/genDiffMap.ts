@@ -16,10 +16,12 @@ export type Colormap = (typeof COLORMAP_OPTIONS)[number];
 
 const getBinaryColorScale = (value: number): any => {
   if (value === -1) {
-    return rgb(255, 100, 100).copy({ opacity: 0.8 }); // Red
+    // Balanced red with full opacity
+    return rgb(220, 60, 60).copy({ opacity: 1.0 }); // More balanced red, fully opaque
   }
   if (value === 1) {
-    return rgb(0, 255, 0).copy({ opacity: 0.8 }); // Bright green
+    // Balanced green with full opacity
+    return rgb(60, 180, 60).copy({ opacity: 1.0 }); // More balanced green, fully opaque
   }
   return rgb(255, 255, 255).copy({ opacity: 0 });
 };
