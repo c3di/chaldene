@@ -96,10 +96,66 @@ ${outputs.outputImage} = IM(restoration.denoise_bilateral(in_im.raw_image), in_i
     }
   }
 };
+export const GaussianBlurNodeSpec: computeNodeSpec = {
+  name: 'Gaussian Blur',
+  displayLabel: 'gaussian denoise',
+  description: 'Apply Gaussian blur to remove noise.',
+  category: 'denoise & enhance',
+  inputs: [
+    {
+      name: 'image',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'Input image.'
+    },
+    {
+      name: 'sigma',
+      displayLabel: 'sigma',
+      description: 'Standard deviation for Gaussian kernel.',
+      defaultValue: 1.0,
+      widget: {
+        type: 'Number',
+        min: 0,
+        step: 0.1
+      }
+    },
+    {
+      name: 'mode',
+      displayLabel: 'mode',
+      description:
+        'The mode parameter determines how the array borders are handled, where cval is the value when mode is equal to "constant". Default is "nearest".',
+      defaultValue: 'nearest',
+      widget: {
+        type: 'Dropdown',
+        options: ['reflect', 'constant', 'nearest', 'mirror', 'wrap']
+      }
+    }
+  ],
+  outputs: [
+    {
+      name: 'image',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'The image after applying Gaussian blur.'
+    }
+  ],
+
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `from skimage.filters import gaussian
+from im2im import Image as IM
+in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
+${outputs.image} = IM(gaussian(in_im.raw_image, sigma=${inputs.sigma}, mode = '${inputs.mode}', preserve_range=True), in_im.metadata)`;
+    }
+  }
+};
 
 export const CLAHENodeSpec: computeNodeSpec = {
   name: 'CLAHE',
-  displayLabel: 'CLAHE',
+  displayLabel: 'local contrast enhancement',
   description:
     'Contrast Limited Adaptive Histogram Equalization (CLAHE) for local contrast enhancement.',
   category: 'denoise & enhance',

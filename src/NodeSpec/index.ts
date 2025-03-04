@@ -1,4 +1,5 @@
 import { registerNodeSpec } from '../ReactVP';
+import { superResolutionNodeSpec } from './super_resolution';
 import {
   thresholdNodeSpec,
   invertNodeSpec,
@@ -15,7 +16,8 @@ import {
   CLAHENodeSpec,
   denoiseBilateralNodeSpec,
   cropNodeSpec,
-  batchProcessNodeSpec
+  batchProcessNodeSpec,
+  GaussianBlurNodeSpec
 } from './IP';
 import {
   readImageNodeSpec,
@@ -47,9 +49,14 @@ export function defaultNodeSpecs(): void {
     removeSmallObjectsNodeSpec,
     splitTouchingObjectsNodeSpec
   ]);
-  registerNodeSpec([denoiseBilateralNodeSpec, CLAHENodeSpec]);
+  registerNodeSpec([
+    denoiseBilateralNodeSpec,
+    GaussianBlurNodeSpec,
+    CLAHENodeSpec
+  ]);
   registerNodeSpec(CannyNodeSpec);
   registerNodeSpec([watershedNodeSpec, regionpropsNodeSpec]);
   registerNodeSpec([BinaryDifferenceNodeSpec, GrayscaleDifferenceNodeSpec]);
   registerNodeSpec([cropNodeSpec, batchProcessNodeSpec]);
+  registerNodeSpec(superResolutionNodeSpec);
 }
