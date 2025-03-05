@@ -91,7 +91,6 @@ export default function ComputeNode({
             : '1px solid var(--vpl-border-color1)'
         }`,
         width: nodeDimensions.width,
-        minHeight: MIN_NODE_HEIGHT,
         transition: 'border-color 0.1s ease-in-out'
       }}
     >
