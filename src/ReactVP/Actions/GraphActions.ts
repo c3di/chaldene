@@ -657,9 +657,13 @@ export default class GraphActions extends StateActions {
               ...n,
               data: {
                 ...n.data,
-                [category]: n.data[category]?.map((item: any) =>
-                  item.id === id ? { ...item, defaultValue: value } : item
-                )
+                ...(category === 'properties'
+                  ? { [id]: value }
+                  : {
+                      [category]: n.data[category]?.map((item: any) =>
+                        item.id === id ? { ...item, defaultValue: value } : item
+                      )
+                    })
               }
             }
           : n

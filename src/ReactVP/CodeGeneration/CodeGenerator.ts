@@ -73,13 +73,10 @@ export default class CodeGenerator {
     // First pass: Process file path inputs and folder path inputs
     inputs?.forEach(input => {
       if (input.widget?.type === 'FileInputFromServer') {
-        const edge = incomingEdges.find(e => e.targetHandle === input.id);
-        const inputValue = edge
-          ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
-          : this.widgetValueToCodeLiteral(
-              this.widgetsRegistry.getOutputType(input.widget?.type),
-              input.defaultValue
-            );
+        const inputValue = this.widgetValueToCodeLiteral(
+          this.widgetsRegistry.getOutputType(input.widget?.type),
+          input.defaultValue
+        );
 
         inputValues[input.name] = inputValue;
 
@@ -104,18 +101,7 @@ export default class CodeGenerator {
 
     // Second pass: Process gallery inputs and other inputs
     inputs?.forEach(input => {
-      if (input.widget?.type === 'ImageGallery') {
-        const edge = incomingEdges.find(e => e.targetHandle === input.id);
-        if (edge) {
-          // If there's an edge, use the normal connection
-          const galleryValue = uniqueHandleName(
-            editorID,
-            edge.source,
-            edge.sourceHandle!
-          );
-          inputValues[input.name] = galleryValue;
-        }
-      } else if (input.widget?.type !== 'FileInputFromServer') {
+      if (input.widget?.type !== 'FileInputFromServer') {
         const edge = incomingEdges.find(e => e.targetHandle === input.id);
 
         const outputType = this.widgetsRegistry.getOutputType(

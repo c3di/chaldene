@@ -7,7 +7,7 @@ export default function useWidget(
   widget: any,
   defaultValue: any,
   editorContext: any,
-  identifier: any,
+  identifier?: Identifier,
   label?: string,
   nodeDimensions?: { width: number; height?: number }
 ): JSX.Element | null {

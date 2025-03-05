@@ -2,7 +2,7 @@ import { type NodeProps as RcNodeProps } from '@xyflow/react';
 import { type IHandle, type Node as nodeType } from '../Type';
 import { OutputHandle, InputHandle } from './Handle';
 import { useState, useEffect } from 'react';
-import { NumberInput } from '../Widgets/Input';
+import useWidget from './UseWidget';
 
 export type NodeProps = RcNodeProps<nodeType>;
 
@@ -48,6 +48,17 @@ export default function ComputeNode({
       nodeDimensions={nodeDimensions}
     />
   ));
+
+  const extraRunWidget = useWidget(
+    'properties',
+    {
+      type: 'Number',
+      min: 0
+    },
+    extraRun ?? 0,
+    editorContext,
+    { nodeID: id, id: 'extraRun', type: 'target' }
+  );
 
   useEffect(() => {
     // Update node dimensions when component mounts
@@ -134,22 +145,7 @@ export default function ComputeNode({
             >
               extra run
             </span>
-            <NumberInput
-              forWhom={undefined}
-              value={data.extraRun}
-              setValue={(_, value) => {
-                data.extraRun = value;
-              }}
-              min={0}
-              defaultValue={extraRun}
-              style={{
-                width: '30px',
-                height: '16px',
-                padding: '0px 1px',
-                fontSize: '10px',
-                fontWeight: 300
-              }}
-            />
+            <div className="extra-run-container">{extraRunWidget}</div>
           </div>
         )}
       </div>

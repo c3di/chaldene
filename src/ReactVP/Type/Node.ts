@@ -2,7 +2,7 @@ import { type Node as RcNode } from '@xyflow/react';
 import { type IHandle } from './Handle';
 import type EditorContext from '../EditorContext';
 
-export type ValueCategory = 'inputs' | 'outputs';
+export type ValueCategory = 'inputs' | 'outputs' | 'properties';
 
 export interface INodeData extends Record<string, unknown> {
   displayLabel?: string;

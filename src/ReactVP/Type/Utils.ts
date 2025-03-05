@@ -99,8 +99,21 @@ function isSameCode(
   if (nodeA.id !== nodeB.id) {
     return false;
   }
-  const { inputs: inputsA = [], outputs: outputsA = [] } = nodeA.data;
-  const { inputs: inputsB = [], outputs: outputsB = [] } = nodeB.data;
+  const {
+    inputs: inputsA = [],
+    outputs: outputsA = [],
+    extraRun: extraRunA
+  } = nodeA.data;
+  const {
+    inputs: inputsB = [],
+    outputs: outputsB = [],
+    extraRun: extraRunB
+  } = nodeB.data;
+
+  // Check if extraRun has changed
+  if (extraRunA !== extraRunB) {
+    return false;
+  }
 
   for (let i = 0; i < inputsA.length; i++) {
     const edgeA = incommigEdgesA.find(e => e.targetHandle === inputsA[i].id);

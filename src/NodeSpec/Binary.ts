@@ -79,11 +79,6 @@ export const thresholdNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      console.log('Debug threshold inputs.range:', {
-        value: inputs.range,
-        type: typeof inputs.range
-      });
-
       return `import numpy as np
 from im2im import Image as IM
 
@@ -144,7 +139,7 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
   description:
     'Dilation sets a pixel at to the maximum over all pixels in the neighborhood centered at. Dilation enlarges bright regions and shrinks dark regions.',
   category: 'binary',
-  extraRun: 1,
+  extraRun: 0,
   inputs: [
     {
       name: 'image',

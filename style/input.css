@@ -47,6 +47,15 @@ input[type="number"]::-webkit-inner-spin-button {
   position: relative;
 }
 
+
+.extra-run-container input.common-input-style {
+  width: 30px !important;
+  height: 16px !important;
+  padding: 0px 1px 0px 4px !important;
+  font-size: 10px !important;
+  font-weight: 300 !important;
+}
+
 /* Hide the thumb on WebKit browsers (e.g., Chrome, Safari) */
 input[type="range"]::-webkit-slider-thumb {
   appearance: none;
