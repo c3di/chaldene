@@ -27,5 +27,6 @@ dependencies:
       - comm
       - opencv-python
       - matplotlib
+      - gwyfile
   # additional packages for demos
   # - ipywidgets

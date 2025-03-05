@@ -234,20 +234,22 @@ ${outputs.outputImage} = IM(canny(in_im.raw_image), in_im.metadata)`;
 export const batchProcessNodeSpec: computeNodeSpec = {
   name: 'batch_process',
   displayLabel: 'batch process',
-  category: 'image editing',
+  category: 'batch processing',
+  description: 'Process multiple images from a folder.',
   inputs: [
     {
-      name: 'folderPath',
+      name: 'folder_path',
       type: 'string',
       displayLabel: 'folder',
-      description: 'Select a folder containing JPEG or PNG images.',
+      description:
+        "Select a folder containing images ('.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG').",
       widget: {
         type: 'FileInputFromServer',
         extensions: [] // Empty array indicates folder selection
       }
     },
     {
-      name: 'imageGallery',
+      name: 'image_gallery',
       type: 'string[]',
       displayLabel: 'gallery',
       description: 'Select images to process',
@@ -273,7 +275,7 @@ export const batchProcessNodeSpec: computeNodeSpec = {
 
   codeGenerators: {
     Python: (inputs: Record<string, any>, outputs: Record<string, any>) => {
-      const galleryVar = inputs.imageGallery;
+      const galleryVar = inputs.image_gallery;
 
       return `from im2im import Image as IM
 from skimage import io
@@ -281,7 +283,7 @@ from skimage import img_as_float
 import os
 from pathlib import Path
 
-folder_path = ${inputs.folderPath}
+folder_path = ${inputs.folder_path}
 
 # Initialize gallery variable
 ${galleryVar} = None

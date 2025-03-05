@@ -9,7 +9,8 @@ import {
   binaryClosingNodeSpec,
   removeSmallHolesNodeSpec,
   removeSmallObjectsNodeSpec,
-  splitTouchingObjectsNodeSpec
+  splitTouchingObjectsNodeSpec,
+  autoBinarizeNodeSpec
 } from './Binary';
 import {
   CannyNodeSpec,
@@ -23,7 +24,8 @@ import {
   readImageNodeSpec,
   saveImageNodeSpec,
   saveToCsvNodeSpec,
-  processResultNodeSpec
+  processResultNodeSpec,
+  gwyfileLoader
 } from './IO';
 import { regionpropsNodeSpec, watershedNodeSpec } from './Segmentations';
 import {
@@ -36,10 +38,12 @@ export function defaultNodeSpecs(): void {
     readImageNodeSpec,
     saveImageNodeSpec,
     saveToCsvNodeSpec,
-    processResultNodeSpec
+    processResultNodeSpec,
+    gwyfileLoader
   ]);
   registerNodeSpec([
     thresholdNodeSpec,
+    autoBinarizeNodeSpec,
     invertNodeSpec,
     binaryDilationNodeSpec,
     binaryErosionNodeSpec,

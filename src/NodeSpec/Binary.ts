@@ -1,5 +1,45 @@
 import { computeNodeSpec } from '../ReactVP';
 
+export const autoBinarizeNodeSpec: computeNodeSpec = {
+  name: 'auto binarize',
+  displayLabel: 'auto binarize',
+  description:
+    'Automatically binarize the input image using Otsu thresholding.',
+  category: 'binary',
+  inputs: [
+    {
+      name: 'image',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'The input image to be binarized.'
+    }
+  ],
+  outputs: [
+    {
+      name: 'image',
+      type: 'binary image',
+      displayLabel: 'image',
+      description: 'The binarized output image.'
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `from skimage.filters import threshold_isodata
+from im2im import Image as IM
+from skimage.color import gray2rgb
+import numpy as np
+ 
+in_im = im2im(${inputs.image}, 'numpy.rgb_uint8')
+threshold = threshold_isodata(np.asarray(in_im.raw_image))
+${outputs.image} = IM(( in_im.raw_image> threshold).astype(int).astype(np.uint8)*255, 'numpy.rgb_uint8')
+`;
+    }
+  }
+};
+
 export const thresholdNodeSpec: computeNodeSpec = {
   name: 'threshold',
   displayLabel: 'threshold',

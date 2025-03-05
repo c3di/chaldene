@@ -185,3 +185,46 @@ export const processResultNodeSpec: computeNodeSpec = {
     }
   }
 };
+
+export const gwyfileLoader: computeNodeSpec = {
+  name: 'height map',
+  displayLabel: 'load height map',
+  description: 'Load a height map image from gwy files.',
+  category: 'input & output',
+  inputs: [
+    {
+      name: 'path',
+      type: 'string',
+      displayLabel: 'file',
+      description: 'path of the height map image.',
+      widget: {
+        type: 'FileInputFromServer',
+        extensions: ['.png', '.gwy']
+      }
+    }
+  ],
+  outputs: [
+    {
+      name: 'height_map',
+      type: 'image',
+      displayLabel: 'height map',
+      description: 'The height map image.'
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `import gwyfile
+import numpy as np
+from im2im import Image as IM
+ 
+obj = gwyfile.load(${inputs.path})
+channels = gwyfile.util.get_datafields(obj)
+height = channels['Height'].data
+new_arr = np.interp(height, (height.min(), height.max()), (0, 255))
+${outputs.height_map} = IM(new_arr.astype('uint8'), {"data_representation": "numpy.ndarray", "minibatch_input": False, "device": "cpu", "color_channel": "gray", "channel_order": "none", "image_data_type": "uint8"})`;
+    }
+  }
+};
