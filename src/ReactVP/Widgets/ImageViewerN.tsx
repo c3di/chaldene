@@ -205,11 +205,6 @@ export default function ImageViewer({
   syncGroup,
   forWhom
 }: IImageViewerProps): JSX.Element {
-  // console.log('[Debug] ImageViewer mounted/updated:', {
-  //   nodeId: forWhom?.nodeID,
-  //   syncGroup,
-  //   widget: value
-  // });
   const canvasElParent = useRef<HTMLDivElement>(null);
   const canvasElement = useRef<HTMLCanvasElement>(null);
   const canvas = useRef<fabric.Canvas | null>(null);
@@ -276,13 +271,6 @@ export default function ImageViewer({
       height: window.innerHeight - 24
     };
 
-    // console.log('Dimensions updated:', {
-    //   original: originalCanvasDimensions.current,
-    //   fullscreen: fullscreenDimensions.current,
-    //   isFullScreen,
-    //   parentSize: { width: parent.clientWidth, height: parent.clientHeight }
-    // });
-
     // Delay resize to ensure dimensions are set
     requestAnimationFrame(() => {
       resizeCanvas();
@@ -311,12 +299,6 @@ export default function ImageViewer({
     const scaleRatio = getScaleRatio();
     const parentWidth = parent.clientWidth;
     const parentHeight = parent.clientHeight;
-
-    // console.log('Resizing canvas:', {
-    //   parentDims: { width: parentWidth, height: parentHeight },
-    //   scaleRatio,
-    //   isFullScreen
-    // });
 
     // Update canvas dimensions
     canvas.current.setDimensions({
@@ -358,13 +340,6 @@ export default function ImageViewer({
       fullscreenDimensions.current.height / originalHeight
     );
 
-    // console.log('Scale ratio calculation:', {
-    //   original: { width: originalWidth, height: originalHeight },
-    //   fullscreen: fullscreenDimensions.current,
-    //   ratio,
-    //   isFullScreen
-    // });
-
     return isFullScreen ? ratio : 1 / ratio;
   };
 
@@ -372,12 +347,6 @@ export default function ImageViewer({
     if (!editorContext || !canvas.current) {
       return;
     }
-
-    console.log('[Debug] updateGlobalTransform called with:', {
-      currentSyncGroup: currentSyncGroup.current,
-      widget: forWhom,
-      caller: new Error().stack?.split('\n')[2]
-    });
 
     const viewportTransform = canvas.current.viewportTransform;
     const currentZoom = canvas.current.getZoom();
@@ -478,16 +447,6 @@ export default function ImageViewer({
   );
 
   useEffect(() => {
-    // console.log('Image loading effect:', {
-    //   hasCanvas: !!canvas.current,
-    //   imageUrl: value?.imageUrl,
-    //   hasDifferences: !!value?.differences,
-    //   fullValue: value,
-    //   isFullScreenControl: !!isFullScreenControl,
-    //   isFullScreenValue: isFullScreenControl?.isFullScreen,
-    //   timestamp: new Date().toISOString()
-    // });
-
     if (!canvas.current) {
       return;
     }
@@ -495,14 +454,12 @@ export default function ImageViewer({
     const newImageUrl = value?.imageUrl;
     const currentImageUrl = image?.getSrc();
     if (newImageUrl === currentImageUrl && image) {
-      //console.log('Skipping image load - URL unchanged');
       return;
     }
 
     canvas.current.clear();
 
     if (!newImageUrl && image) {
-      //console.log('Preserving current image while updating other properties');
       canvas.current!.backgroundImage = image;
       return;
     }
@@ -566,13 +523,6 @@ export default function ImageViewer({
         ? asyncZoom * scaleRatio
         : undefined
       : asyncZoom;
-
-    // console.log('Applying transform:', {
-    //   input: { x: asyncX, y: asyncY, zoom: asyncZoom },
-    //   viewport: { x: viewportX, y: viewportY, zoom: viewportZoom },
-    //   scaleRatio,
-    //   isFullScreen
-    // });
 
     const scaleFactor =
       viewportZoom ??
@@ -675,12 +625,6 @@ export default function ImageViewer({
       zoom: isFullScreen ? currentZoom / scaleRatio : currentZoom * scaleRatio
     };
 
-    // console.log('Toggling screen mode:', {
-    //   from: isFullScreen ? 'fullscreen' : 'normal',
-    //   transform,
-    //   scaleRatio
-    // });
-
     // Pass the transform through the callback
     setIsFullScreen(!isFullScreen, transform);
   }, [isFullScreen, setIsFullScreen]);
@@ -701,12 +645,6 @@ export default function ImageViewer({
       if (!canvas.current) {
         return;
       }
-
-      // console.log('Restoring transform:', {
-      //   transform,
-      //   isFullScreen,
-      //   mode: isFullScreenControl ? 'controlled' : 'local'
-      // });
 
       canvas.current.setZoom(transform.zoom);
       const viewportTransform = canvas.current.viewportTransform;

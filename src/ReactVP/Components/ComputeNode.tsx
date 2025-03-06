@@ -68,25 +68,6 @@ export default function ComputeNode({
     });
   }, []);
 
-  // const handleNodeResize = useCallback(
-  //   (_: unknown, params: { width: number; height: number }) => {
-  //     const newDimensions = {
-  //       width: params.width,
-  //       height: Math.max(params.height, MIN_NODE_HEIGHT)
-  //     };
-  //     setNodeDimensions(newDimensions);
-  //   },
-  //   []
-  // );
-
-  // useEffect(() => {
-  //   console.log('Node dimensions updated:', {
-  //     nodeId: id,
-  //     dimensions: nodeDimensions,
-  //     timestamp: new Date().toISOString()
-  //   });
-  // }, [nodeDimensions, id]);
-
   return (
     <div
       title={description}
