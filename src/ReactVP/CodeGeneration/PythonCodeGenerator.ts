@@ -35,6 +35,9 @@ export default class PythonCodeGenerator extends CodeGenerator {
       return `(${value[0]}, ${value[1]})`;
     }
 
+    if (type === 'string[]') {
+      return `[${value.map(quote).join(', ')}]`;
+    }
     return value;
   }
 }

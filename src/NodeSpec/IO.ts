@@ -66,7 +66,7 @@ export const saveToCsvNodeSpec: computeNodeSpec = {
   inputs: [
     {
       name: 'data',
-      type: 'summary',
+      type: ['summary', 'dataframe'],
       displayLabel: 'data',
       description: 'The data(including summary and ...) to save as a CSV.'
     },
@@ -149,39 +149,6 @@ export const saveImageNodeSpec: computeNodeSpec = {
 from os.path import join
 in_im = im2im(${inputs.image}, 'numpy.uint8')
 io.imsave(join(${inputs.destination}, ${inputs.name}), in_im.raw_image)`;
-    }
-  }
-};
-
-export const processResultNodeSpec: computeNodeSpec = {
-  name: 'process_result',
-  displayLabel: 'process result',
-  description: 'Result of the image processing.',
-  category: 'input & output',
-  inputs: [
-    {
-      name: 'image',
-      type: ['image', 'binary image'],
-      displayLabel: 'image',
-      description: 'The imageprocess to .'
-    },
-    {
-      name: 'result',
-      type: 'string',
-      displayLabel: 'to rename',
-      description: 'The result of the image processing.',
-      widget: {
-        type: 'String'
-      }
-    }
-  ],
-  outputs: [],
-  codeGenerators: {
-    Python: (
-      inputs: Record<string, string>,
-      outputs: Record<string, string>
-    ) => {
-      return `print(${inputs.result})`;
     }
   }
 };

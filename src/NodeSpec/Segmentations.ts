@@ -118,3 +118,38 @@ ${outputs.summary} = data.rename(columns={
     }
   }
 };
+
+export const segmentesSizeNodeSpec: computeNodeSpec = {
+  name: 'regionprops',
+  displayLabel: 'segmentes size',
+  description:
+    'Extract size of each segments after applying segmentation algorithms.',
+  category: 'segmentation',
+  inputs: [
+    {
+      name: 'segments',
+      type: 'segments',
+      displayLabel: 'segments',
+      description:
+        'The segments of the image after applying segmentation algorithms.'
+    }
+  ],
+  outputs: [
+    {
+      name: 'sizes',
+      type: 'list',
+      displayLabel: 'sizes',
+      description: 'The size of each segments.'
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `from skimage import measure
+${outputs.sizes} = measure.regionprops_table(${inputs.segments}, properties=['area'])['area']
+`;
+    }
+  }
+};

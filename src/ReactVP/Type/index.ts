@@ -40,6 +40,9 @@ export function isSameType(
   type1?: string | string[],
   type2?: string | string[]
 ): boolean {
+  if (type1 === '*' || type2 === '*') {
+    return true;
+  }
   const types1 = type1 ? (Array.isArray(type1) ? type1 : [type1]) : [];
   const types2 = type2 ? (Array.isArray(type2) ? type2 : [type2]) : [];
   return types1.some(t1 => types2.some(t2 => t1 === t2));

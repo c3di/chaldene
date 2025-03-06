@@ -18,16 +18,20 @@ import {
   denoiseBilateralNodeSpec,
   cropNodeSpec,
   batchProcessNodeSpec,
+  processResultNodeSpec,
   GaussianBlurNodeSpec
 } from './IP';
 import {
   readImageNodeSpec,
   saveImageNodeSpec,
   saveToCsvNodeSpec,
-  processResultNodeSpec,
   gwyfileLoader
 } from './IO';
-import { regionpropsNodeSpec, watershedNodeSpec } from './Segmentations';
+import {
+  regionpropsNodeSpec,
+  watershedNodeSpec,
+  segmentesSizeNodeSpec
+} from './Segmentations';
 import {
   BinaryDifferenceNodeSpec,
   GrayscaleDifferenceNodeSpec
@@ -59,7 +63,11 @@ export function defaultNodeSpecs(): void {
     CLAHENodeSpec
   ]);
   registerNodeSpec(CannyNodeSpec);
-  registerNodeSpec([watershedNodeSpec, regionpropsNodeSpec]);
+  registerNodeSpec([
+    watershedNodeSpec,
+    regionpropsNodeSpec,
+    segmentesSizeNodeSpec
+  ]);
   registerNodeSpec([BinaryDifferenceNodeSpec, GrayscaleDifferenceNodeSpec]);
   registerNodeSpec([cropNodeSpec, batchProcessNodeSpec]);
   registerNodeSpec(superResolutionNodeSpec);

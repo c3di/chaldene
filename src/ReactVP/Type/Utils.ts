@@ -179,7 +179,9 @@ export function findCodeChangeNodes(
  */
 export function findConnectedSubgraph(
   graph: Graph,
-  nodes?: Node[]
+  nodes?: Node[],
+  only_descendants = true,
+  exclude_nodes: Node[] = []
 ): Graph | null {
   if (!nodes || nodes.length === 0) {
     return null;
@@ -188,6 +190,8 @@ export function findConnectedSubgraph(
   if (nodes.length === graph.nodes.length) {
     return graph;
   }
+
+  const excludedNodeIds = new Set(exclude_nodes.map(node => node.id));
 
   const { nodes: graphNodes, edges: graphEdges } = graph;
   const nodeSet = new Set(nodes.map(node => node.id));
@@ -203,13 +207,20 @@ export function findConnectedSubgraph(
     graphEdges.forEach(edge => {
       if (edge.source === nodeID) {
         includedEdges.add(edge);
-        dfs(edge.target);
+        if (!excludedNodeIds.has(edge.target)) {
+          dfs(edge.target);
+        }
       }
     });
 
     graphEdges.forEach(edge => {
       if (edge.target === nodeID) {
         includedEdges.add(edge);
+        if (!only_descendants) {
+          if (!excludedNodeIds.has(edge.source)) {
+            dfs(edge.source);
+          }
+        }
       }
     });
   }
