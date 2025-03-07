@@ -149,17 +149,19 @@ export function ImageGallery({
         }
       });
 
-      // Calculate layout
-      const containerWidth = canvas.width! - 15;
-      const padding = 15;
-      const minThumbSize = 80;
-      const numCols = Math.max(
-        1,
-        Math.floor((containerWidth + padding) / (minThumbSize + padding))
-      );
-      const thumbSize = Math.floor(
-        (containerWidth - (numCols - 1) * padding) / numCols
-      );
+      // Calculate layout with fixed 3 columns of square grids
+      const padding = 10;
+      const numCols = 3; // Fixed to 3 columns as requested
+
+      // Use the exact calculation specified
+      const availableWidth = canvas.width! - padding * (numCols + 1);
+      const gridSize = Math.floor(availableWidth / numCols);
+
+      console.log('Canvas layout details:');
+      console.log(`Canvas width: ${canvas.width}`);
+      console.log(`Available width: ${availableWidth}`);
+      console.log(`Grid size: ${gridSize}`);
+      console.log(`Padding: ${padding}`);
 
       let maxBottom = 0;
       const strokePadding = 2;
@@ -170,15 +172,46 @@ export function ImageGallery({
 
         const col = index % numCols;
         const row = Math.floor(index / numCols);
+
+        // Calculate scale to fit the image in the grid while maintaining aspect ratio
         const scale = calculateScale(
           fabricObject,
-          thumbSize - strokePadding * 2
+          gridSize - strokePadding * 2
         );
+
+        const scaledWidth = fabricObject.width! * scale;
         const scaledHeight = fabricObject.height! * scale;
+
+        // Center the image in the grid
+        const leftOffset = (gridSize - scaledWidth) / 2;
+        const topOffset = (gridSize - scaledHeight) / 2;
+
+        // Calculate expected grid position (top-left corner of the grid)
+        const gridLeft = padding + col * (gridSize + padding);
+        const gridTop = padding + row * (gridSize + padding);
+
         const position = {
-          left: 5 + col * (thumbSize + padding) + strokePadding,
-          top: 5 + row * (scaledHeight + padding) + strokePadding
+          left: gridLeft + leftOffset,
+          top: gridTop + topOffset
         };
+
+        console.log(
+          `Thumbnail ${index} (${fabricObject.data?.filename || 'unnamed'}):`
+        );
+        console.log(`  Grid position: column ${col}, row ${row}`);
+        console.log(`  Grid top-left: (${gridLeft}, ${gridTop})`);
+        console.log(
+          `  Image size: ${fabricObject.width} x ${fabricObject.height}, scale: ${scale.toFixed(3)}`
+        );
+        console.log(
+          `  Scaled size: ${scaledWidth.toFixed(1)} x ${scaledHeight.toFixed(1)}`
+        );
+        console.log(
+          `  Centering offset: (${leftOffset.toFixed(1)}, ${topOffset.toFixed(1)})`
+        );
+        console.log(
+          `  Final position: (${position.left.toFixed(1)}, ${position.top.toFixed(1)})`
+        );
 
         fabricObject.set({
           ...position,
@@ -186,16 +219,31 @@ export function ImageGallery({
           scaleY: scale,
           padding: strokePadding
         });
+
         if (!canvas.contains(fabricObject)) {
           canvas.add(fabricObject);
         }
-        maxBottom = Math.max(maxBottom, position.top + scaledHeight);
+
+        // Calculate max bottom based on grid size rather than scaled height
+        maxBottom = Math.max(
+          maxBottom,
+          padding + (row + 1) * (gridSize + padding)
+        );
       });
 
-      const newHeight = thumbnails.length > 0 ? maxBottom + padding : 150;
+      const newHeight = thumbnails.length > 0 ? maxBottom : 150;
       setCanvasHeight(newHeight);
       canvas.setHeight(newHeight);
       canvas.renderAll();
+
+      // Log final layout summary
+      console.log('Final layout:');
+      console.log(`Canvas height set to: ${newHeight}`);
+      console.log(`Total rows: ${Math.ceil(thumbnails.length / numCols)}`);
+      console.log(
+        `Expected right edge: ${padding + numCols * gridSize + (numCols - 1) * padding}`
+      );
+      console.log(`Expected bottom edge: ${maxBottom}`);
     },
     [calculateScale]
   );
