@@ -13,6 +13,7 @@ export default interface IComputeNodeSpec extends INodeSpec {
   >;
   codeGenerators?: NodeCodeGenerators;
   extraRun?: number;
+  sourceChanged?: boolean;
 }
 
 export function spec2ComputeNode({
@@ -23,7 +24,14 @@ export function spec2ComputeNode({
   position,
   editorContext
 }: ISpec2NodeDataParams & { spec: IComputeNodeSpec }): Node {
-  const { displayLabel, description, inputs, outputs, extraRun } = spec;
+  const {
+    displayLabel,
+    description,
+    inputs,
+    outputs,
+    extraRun,
+    sourceChanged
+  } = spec;
   const node = {
     id: nodeId,
     position,
@@ -33,6 +41,7 @@ export function spec2ComputeNode({
       displayLabel,
       description,
       extraRun,
+      sourceChanged,
       inputs: (inputs ?? []).map((input, index) => ({
         id: `in${index}`,
         ...input

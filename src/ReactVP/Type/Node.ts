@@ -15,6 +15,7 @@ export interface INodeData extends Record<string, unknown> {
   // when defined, the node will be executed once with the initial inputs, and then repeatedly with the previous outputs as inputs for extraRun times.
   extraRun?: number;
   // todo: add image preview or others interactive visualizations
+  sourceChanged?: boolean;
 }
 
 export type Node = RcNode<INodeData, string>;

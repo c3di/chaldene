@@ -246,10 +246,11 @@ export function findCodeChangedGraph(
 }
 
 /**
- * Find all groups of nodes that are between crop nodes in the graph.
- * Each group contains nodes that are reachable from one crop node until the next crop node(s).
+ * Find all groups of nodes that are between source-changing nodes in the graph.
+ * Each group contains nodes that are reachable from one source-changing node until the next source-changing node(s).
+ * A source-changing node is one where the sourceChanged property is true.
  */
-export function findNodeGroupsBetweenCrops(graph: Graph): Node[][] {
+export function findNodeGroupsBetweenSourceChangers(graph: Graph): Node[][] {
   const { nodes: graphNodes, edges: graphEdges } = graph;
   const visited = new Set<string>();
   const nodeGroups: Node[][] = [];
@@ -263,19 +264,21 @@ export function findNodeGroupsBetweenCrops(graph: Graph): Node[][] {
     adjacencyList[edge.source].push(edge);
   });
 
-  function isCropNode(node: Node): boolean {
-    return node.data.specName === 'crop';
+  function isSourceChangingNode(node: Node): boolean {
+    return node.data.sourceChanged === true;
   }
 
-  // Check if there are any crop nodes in the graph
-  const hasCropNodes = graphNodes.some(node => isCropNode(node));
-  if (!hasCropNodes) {
+  // Check if there are any source-changing nodes in the graph
+  const hasSourceChangingNodes = graphNodes.some(node =>
+    isSourceChangingNode(node)
+  );
+  if (!hasSourceChangingNodes) {
     return [];
   }
 
   function collectGroup(startNodeId: string): void {
     const currentGroup = new Set<string>();
-    const nextCropNodes = new Set<string>();
+    const nextSourceChangingNodes = new Set<string>();
 
     function dfs(nodeId: string): void {
       if (visited.has(nodeId)) {
@@ -289,8 +292,8 @@ export function findNodeGroupsBetweenCrops(graph: Graph): Node[][] {
 
       visited.add(nodeId);
 
-      // Add to current group if it's the start node or not a crop node
-      if (nodeId === startNodeId || !isCropNode(node)) {
+      // Add to current group if it's the start node or not a source-changing node
+      if (nodeId === startNodeId || !isSourceChangingNode(node)) {
         currentGroup.add(nodeId);
       }
 
@@ -302,9 +305,9 @@ export function findNodeGroupsBetweenCrops(graph: Graph): Node[][] {
           continue;
         }
 
-        if (isCropNode(targetNode)) {
-          // Found a crop node, mark it for next processing
-          nextCropNodes.add(targetNode.id);
+        if (isSourceChangingNode(targetNode)) {
+          // Found a source-changing node, mark it for next processing
+          nextSourceChangingNodes.add(targetNode.id);
         } else if (!visited.has(targetNode.id)) {
           dfs(targetNode.id);
         }
@@ -320,17 +323,17 @@ export function findNodeGroupsBetweenCrops(graph: Graph): Node[][] {
       nodeGroups.push(groupNodes);
     }
 
-    // Process next crop nodes
-    nextCropNodes.forEach(nodeId => {
+    // Process next source-changing nodes
+    nextSourceChangingNodes.forEach(nodeId => {
       if (!visited.has(nodeId)) {
         collectGroup(nodeId);
       }
     });
   }
 
-  // Start from each crop node
+  // Start from each source-changing node
   for (const node of graphNodes) {
-    if (isCropNode(node) && !visited.has(node.id)) {
+    if (isSourceChangingNode(node) && !visited.has(node.id)) {
       collectGroup(node.id);
     }
   }

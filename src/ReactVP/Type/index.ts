@@ -3,7 +3,7 @@ export {
   findCodeChangedGraph,
   topologicalSortDAG,
   findCycle,
-  findNodeGroupsBetweenCrops
+  findNodeGroupsBetweenSourceChangers
 } from './Utils';
 export { type Edge } from './Edge';
 export { isUsedAsInput, uniqueHandleName } from './Handle';

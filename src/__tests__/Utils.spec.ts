@@ -1,16 +1,17 @@
-import { findNodeGroupsBetweenCrops } from '../ReactVP/Type/Utils';
+import { findNodeGroupsBetweenSourceChangers } from '../ReactVP/Type/Utils';
 import { type Graph } from '../ReactVP/Type/Graph';
 import { type Node } from '../ReactVP/Type/Node';
 import { type Edge } from '../ReactVP/Type/Edge';
 
-describe('findNodeGroupsBetweenCrops', () => {
+describe('findNodeGroupsBetweenSourceChangers', () => {
   // Helper function to create a test node
-  const createNode = (id: string, type: string = 'default'): Node => ({
+  const createNode = (id: string, sourceChanged: boolean = false): Node => ({
     id,
     position: { x: 0, y: 0 },
     data: {
-      name: type,
-      specName: type
+      name: 'test',
+      specName: 'test',
+      sourceChanged
     }
   });
 
@@ -27,27 +28,27 @@ describe('findNodeGroupsBetweenCrops', () => {
       edges: []
     };
 
-    const result = findNodeGroupsBetweenCrops(graph);
+    const result = findNodeGroupsBetweenSourceChangers(graph);
     expect(result).toEqual([]);
   });
 
-  it('should return empty array for graph with no crop nodes', () => {
+  it('should return empty array for graph with no source-changing nodes', () => {
     const graph: Graph = {
       nodes: [createNode('1'), createNode('2'), createNode('3')],
       edges: [createEdge('1', '2'), createEdge('2', '3')]
     };
 
-    const result = findNodeGroupsBetweenCrops(graph);
+    const result = findNodeGroupsBetweenSourceChangers(graph);
     expect(result).toEqual([]);
   });
 
-  it('should group nodes between two crop nodes', () => {
+  it('should group nodes between two source-changing nodes', () => {
     const graph: Graph = {
       nodes: [
-        createNode('1', 'crop'),
+        createNode('1', true),
         createNode('2'),
         createNode('3'),
-        createNode('4', 'crop'),
+        createNode('4', true),
         createNode('5')
       ],
       edges: [
@@ -58,22 +59,22 @@ describe('findNodeGroupsBetweenCrops', () => {
       ]
     };
 
-    const result = findNodeGroupsBetweenCrops(graph);
+    const result = findNodeGroupsBetweenSourceChangers(graph);
     expect(result).toHaveLength(2);
     expect(result[0].map(n => n.id)).toEqual(['1', '2', '3']);
     expect(result[1].map(n => n.id)).toEqual(['4', '5']);
   });
 
-  it('should handle multiple branches between crop nodes', () => {
+  it('should handle multiple branches between source-changing nodes', () => {
     const graph: Graph = {
       nodes: [
-        createNode('1', 'crop'),
+        createNode('1', true),
         createNode('2'),
         createNode('3'),
-        createNode('4', 'crop'),
+        createNode('4', true),
         createNode('5'),
         createNode('6'),
-        createNode('7', 'crop')
+        createNode('7', true)
       ],
       edges: [
         createEdge('1', '2'),
@@ -87,7 +88,7 @@ describe('findNodeGroupsBetweenCrops', () => {
       ]
     };
 
-    const result = findNodeGroupsBetweenCrops(graph);
+    const result = findNodeGroupsBetweenSourceChangers(graph);
     expect(result).toHaveLength(3);
     expect(result[0].map(n => n.id)).toEqual(['1', '2', '3']);
     expect(result[1].map(n => n.id)).toEqual(['4', '5', '6']);
@@ -97,29 +98,29 @@ describe('findNodeGroupsBetweenCrops', () => {
   it('should handle disconnected components', () => {
     const graph: Graph = {
       nodes: [
-        createNode('1', 'crop'),
+        createNode('1', true),
         createNode('2'),
-        createNode('3', 'crop'),
+        createNode('3', true),
         createNode('4'),
-        createNode('5', 'crop')
+        createNode('5', true)
       ],
       edges: [createEdge('1', '2'), createEdge('2', '3'), createEdge('4', '5')]
     };
 
-    const result = findNodeGroupsBetweenCrops(graph);
+    const result = findNodeGroupsBetweenSourceChangers(graph);
     expect(result).toHaveLength(3);
     expect(result[0].map(n => n.id)).toEqual(['1', '2']);
     expect(result[1].map(n => n.id)).toEqual(['3']);
     expect(result[2].map(n => n.id)).toEqual(['5']);
   });
 
-  it('should handle single crop node', () => {
+  it('should handle single source-changing node', () => {
     const graph: Graph = {
-      nodes: [createNode('1'), createNode('2', 'crop'), createNode('3')],
+      nodes: [createNode('1'), createNode('2', true), createNode('3')],
       edges: [createEdge('1', '2'), createEdge('2', '3')]
     };
 
-    const result = findNodeGroupsBetweenCrops(graph);
+    const result = findNodeGroupsBetweenSourceChangers(graph);
     expect(result).toHaveLength(1);
     expect(result[0].map(n => n.id)).toEqual(['2', '3']);
   });

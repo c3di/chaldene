@@ -27,7 +27,7 @@ import {
   graphToJSON
 } from '../Utils';
 import { Spec2Node } from '../Spec';
-import { findCycle, findNodeGroupsBetweenCrops } from '../Type';
+import { findCycle, findNodeGroupsBetweenSourceChangers } from '../Type';
 
 type GraphChange = {
   type: 'add' | 'remove' | 'select' | 'deselect';
@@ -809,7 +809,7 @@ export default class GraphActions extends StateActions {
   };
 
   private _updateSyncGroups = (graph: Graph): Graph => {
-    const nodeGroups = findNodeGroupsBetweenCrops(graph);
+    const nodeGroups = findNodeGroupsBetweenSourceChangers(graph);
 
     if (nodeGroups.length > 0) {
       return {
@@ -840,6 +840,7 @@ export default class GraphActions extends StateActions {
         })
       };
     }
+
     return graph;
   };
 }

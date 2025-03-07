@@ -6,6 +6,7 @@ export const cropNodeSpec: computeNodeSpec = {
   name: 'crop',
   displayLabel: 'crop',
   category: 'image editing',
+  sourceChanged: true,
   inputs: [
     {
       name: 'image',
