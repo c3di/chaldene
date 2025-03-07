@@ -263,17 +263,11 @@ export default class CodeGenerator {
       : '';
 
     let code = `import os
-from pathlib import Path
 from im2im import Image as IM
 from skimage import io, img_as_float
 import pandas as pd
 
 folder_path = ${folder_path}
-image_files = []
-for ext in ['.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG']:
-    files = [f for f in os.listdir(folder_path) if f.endswith(ext)]
-    image_files.extend(files)
-
 select_paths = ${selected_paths}
 batch_outputs = []
 for i in range(len(select_paths)):
