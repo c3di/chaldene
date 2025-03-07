@@ -253,7 +253,7 @@ export const batchProcessNodeSpec: computeNodeSpec = {
       type: 'string[]',
       displayLabel: 'gallery',
       description: 'Output selected images to process',
-      defaultValue: 'None',
+      defaultValue: [],
       widget: {
         type: 'ImageGallery' // No need for sourcePath here
       }

@@ -293,7 +293,7 @@ ${out_loop_code}`;
         )
       );
     }
-    console.log(code);
+
     return code;
   }
 

@@ -651,23 +651,28 @@ export default class GraphActions extends StateActions {
     const { nodeID, id } = identifier;
     this.stateAction((currentGraph: Graph) => ({
       ...currentGraph,
-      nodes: currentGraph.nodes.map(n =>
-        n.id === nodeID
-          ? {
-              ...n,
-              data: {
-                ...n.data,
-                ...(category === 'properties'
-                  ? { [id]: value }
-                  : {
-                      [category]: n.data[category]?.map((item: any) =>
-                        item.id === id ? { ...item, defaultValue: value } : item
-                      )
-                    })
-              }
-            }
-          : n
-      )
+      nodes: currentGraph.nodes.map(n => {
+        if (n.id !== nodeID) {
+          return n;
+        }
+        // hack way to revert the in1's value for batch processing, todo: refactor
+        if (n.data.specName === 'batch_process' && id === 'in0') {
+          n.data.inputs![1].defaultValue = [];
+        }
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            ...(category === 'properties'
+              ? { [id]: value }
+              : {
+                  [category]: n.data[category]?.map((item: any) =>
+                    item.id === id ? { ...item, defaultValue: value } : item
+                  )
+                })
+          }
+        };
+      })
     }));
   };
 
