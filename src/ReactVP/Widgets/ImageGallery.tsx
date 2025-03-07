@@ -157,12 +157,6 @@ export function ImageGallery({
       const availableWidth = canvas.width! - padding * (numCols + 1);
       const gridSize = Math.floor(availableWidth / numCols);
 
-      console.log('Canvas layout details:');
-      console.log(`Canvas width: ${canvas.width}`);
-      console.log(`Available width: ${availableWidth}`);
-      console.log(`Grid size: ${gridSize}`);
-      console.log(`Padding: ${padding}`);
-
       let maxBottom = 0;
       const strokePadding = 2;
       thumbnails.forEach(({ fabricObject }, index) => {
@@ -195,24 +189,6 @@ export function ImageGallery({
           top: gridTop + topOffset
         };
 
-        console.log(
-          `Thumbnail ${index} (${fabricObject.data?.filename || 'unnamed'}):`
-        );
-        console.log(`  Grid position: column ${col}, row ${row}`);
-        console.log(`  Grid top-left: (${gridLeft}, ${gridTop})`);
-        console.log(
-          `  Image size: ${fabricObject.width} x ${fabricObject.height}, scale: ${scale.toFixed(3)}`
-        );
-        console.log(
-          `  Scaled size: ${scaledWidth.toFixed(1)} x ${scaledHeight.toFixed(1)}`
-        );
-        console.log(
-          `  Centering offset: (${leftOffset.toFixed(1)}, ${topOffset.toFixed(1)})`
-        );
-        console.log(
-          `  Final position: (${position.left.toFixed(1)}, ${position.top.toFixed(1)})`
-        );
-
         fabricObject.set({
           ...position,
           scaleX: scale,
@@ -235,15 +211,6 @@ export function ImageGallery({
       setCanvasHeight(newHeight);
       canvas.setHeight(newHeight);
       canvas.renderAll();
-
-      // Log final layout summary
-      console.log('Final layout:');
-      console.log(`Canvas height set to: ${newHeight}`);
-      console.log(`Total rows: ${Math.ceil(thumbnails.length / numCols)}`);
-      console.log(
-        `Expected right edge: ${padding + numCols * gridSize + (numCols - 1) * padding}`
-      );
-      console.log(`Expected bottom edge: ${maxBottom}`);
     },
     [calculateScale]
   );
