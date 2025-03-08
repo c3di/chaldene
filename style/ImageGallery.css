@@ -8,7 +8,7 @@
     scrollbar-color: var(--vpl-scrollbar-color);
 }
 
-.canvas-container {
+.image-gallery-widget .canvas-container {
     position: relative;
     height: 150px !important;
     overflow: hidden;
@@ -23,11 +23,11 @@
 }
 
 /* When images are loaded, let the height be dynamic */
-.canvas-container.has-images {
+.image-gallery-widget .canvas-container.has-images {
     height: auto !important;
 }
 
-.canvas-container canvas {
+.image-gallery-widget .canvas-container canvas {
     height: 100% !important;
 }
 
