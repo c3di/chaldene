@@ -120,7 +120,7 @@ ${outputs.summary} = data.rename(columns={
 };
 
 export const segmentesSizeNodeSpec: computeNodeSpec = {
-  name: 'regionprops',
+  name: 'regionsize',
   displayLabel: 'segmentes size',
   description:
     'Extract size of each segments after applying segmentation algorithms.',
