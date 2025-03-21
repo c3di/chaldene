@@ -80,6 +80,7 @@ export function ImageGallery({
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
   const [canvasHeight, setCanvasHeight] = useState(150);
+  const containerHeightRef = useRef<number>(250);
 
   // Helper function to get sorted gallery objects
   const getSortedGalleryObjects = useCallback(() => {
@@ -154,7 +155,7 @@ export function ImageGallery({
       const numCols = 3; // Fixed to 3 columns as requested
 
       // Use the exact calculation specified
-      const availableWidth = canvas.width! - padding * (numCols + 1);
+      const availableWidth = canvas.width! - padding * numCols;
       const gridSize = Math.floor(availableWidth / numCols);
 
       let maxBottom = 0;
@@ -181,7 +182,8 @@ export function ImageGallery({
         const topOffset = (gridSize - scaledHeight) / 2;
 
         // Calculate expected grid position (top-left corner of the grid)
-        const gridLeft = padding + col * (gridSize + padding);
+        // Use leftPadding for the first column, and regular padding for others
+        const gridLeft = col * (gridSize + padding);
         const gridTop = padding + row * (gridSize + padding);
 
         const position = {
@@ -210,6 +212,16 @@ export function ImageGallery({
       const newHeight = thumbnails.length > 0 ? maxBottom : 150;
       setCanvasHeight(newHeight);
       canvas.setHeight(newHeight);
+
+      // Update container class based on if scrolling is needed
+      const container = canvas.wrapperEl?.parentElement;
+      if (container) {
+        container.classList.toggle(
+          'needs-scroll',
+          newHeight > containerHeightRef.current
+        );
+      }
+
       canvas.renderAll();
     },
     [calculateScale]
@@ -449,6 +461,16 @@ export function ImageGallery({
       loadImages(newCanvas, stableImages);
     }
 
+    // Get container's max height for scroll calculations
+    const parentElement = canvasElement.parentElement;
+    if (parentElement) {
+      const computedStyle = window.getComputedStyle(parentElement);
+      containerHeightRef.current = parseInt(
+        computedStyle.maxHeight || '250',
+        10
+      );
+    }
+
     return () => {
       newCanvas.dispose();
       canvasRef.current = null;
@@ -499,12 +521,14 @@ export function ImageGallery({
           <SelectionIcon showCheck={isAllSelected} />
         </button>
       </div>
-      <canvas
-        id={canvasKey}
-        width="100%"
-        height={canvasHeight}
-        style={{ contain: 'strict' }}
-      />
+      <div className="canvas-container">
+        <canvas
+          id={canvasKey}
+          width="100%"
+          height={canvasHeight}
+          style={{ contain: 'strict' }}
+        />
+      </div>
       {loading && <div className="gallery-loading">Loading images...</div>}
       {error && <div className="gallery-error">{error}</div>}
     </div>

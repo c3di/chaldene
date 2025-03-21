@@ -3,17 +3,15 @@
     width: 100%;
     max-height: 250px;
     min-height: 100px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--vpl-scrollbar-color);
 }
 
 .image-gallery-widget .canvas-container {
     position: relative;
     height: 150px !important;
-    overflow: hidden;
-    --active-selection-stroke: none !important;
-    --selection-stroke: none !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--vpl-scrollbar-color);
     background: var(--vpl-blue-gray-4);
     border-radius: var(--vpl-border-radius);
     box-shadow:
