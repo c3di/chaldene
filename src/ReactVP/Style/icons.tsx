@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /*
  * parts of svg icons from https://github.com/jupyterlab/jupyterlab/tree/main/packages/ui-components/style/icons
  */
@@ -219,5 +220,35 @@ export const RejectIcon = (): JSX.Element => (
       fill="#F44336"
       d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"
     />
+  </svg>
+);
+
+export const LeftArrowIcon = (): JSX.Element => (
+  <svg viewBox="0 0 512 512" width="16" height="16" fill="currentColor">
+    <path d="m390.627 54.627-201.372 201.373 201.372 201.373a32 32 0 1 1 -45.254 45.254l-224-224a32 32 0 0 1 0-45.254l224-224a32 32 0 0 1 45.254 45.254z" />
+  </svg>
+);
+
+export const RightArrowIcon = (): JSX.Element => (
+  <svg viewBox="0 0 512 512" width="16" height="16" fill="currentColor">
+    <path d="m121.373 457.373 201.372-201.373-201.372-201.373a32 32 0 0 1 45.254-45.254l224 224a32 32 0 0 1 0 45.254l-224 224a32 32 0 0 1 -45.254-45.254z" />
+  </svg>
+);
+
+interface SelectionIconProps {
+  showCheck?: boolean;
+}
+
+export const SelectionIcon = ({
+  showCheck = true
+}: SelectionIconProps): JSX.Element => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+    <g clipRule="evenodd" fillRule="evenodd">
+      <path d="m1.75 4c0-1.24264 1.00736-2.25 2.25-2.25h13c1.2427 0 2.25 1.00737 2.25 2.25v13c0 1.2427-1.0073 2.25-2.25 2.25h-13c-1.24263 0-2.25-1.0073-2.25-2.25zm2.25-.75c-.41421 0-.75.33579-.75.75v13c0 .4142.33578.75.75.75h13c.4142 0 .75-.3358.75-.75v-13c0-.41422-.3358-.75-.75-.75z" />
+      <path d="m21.9997 5.75098c.4142 0 .75.33578.75.75v14.49902c0 .9665-.7835 1.75-1.75 1.75h-14.49824c-.41421 0-.75-.3358-.75-.75s.33579-.75.75-.75h14.49824c.138 0 .25-.1119.25-.25v-14.49902c0-.41422.3358-.75.75-.75z" />
+      {showCheck && (
+        <path d="m15.0227 7.32173c.297.28866.3039.76348.0152 1.06055l-5.0002 5.14582c-.28316.2915-.74697.3044-1.04591.0291l-2.99985-2.7626c-.30469-.2806-.32423-.755-.04364-1.05974.2806-.3047.75507-.32424 1.05976-.04364l2.46274 2.26788 4.4913-4.62214c.2887-.29707.7635-.30389 1.0606-.01523z" />
+      )}
+    </g>
   </svg>
 );

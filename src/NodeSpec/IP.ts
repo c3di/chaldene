@@ -5,26 +5,33 @@ import { type computeNodeSpec } from '../ReactVP';
 export const cropNodeSpec: computeNodeSpec = {
   name: 'crop',
   displayLabel: 'crop',
-  category: 'Image Processing',
+  category: 'image editing',
+  sourceChanged: true,
   inputs: [
     {
       name: 'image',
-      type: 'image',
+      type: ['image', 'binary image'],
       displayLabel: 'image',
-      description: 'The input image to be cropped.'
+      description: 'Input image.'
     },
     {
-      name: 'crop_area',
+      name: 'cropArea',
+      type: 'tuple4',
+      displayLabel: 'crop',
+      description: 'Crop coordinates [x, y, width, height]',
+      defaultValue: [0, 0, 0, 0],
       widget: {
-        type: 'BoundingBox'
+        type: 'ImageCropper'
       }
     }
   ],
+
   outputs: [
     {
-      name: 'image',
-      type: 'image',
-      displayLabel: 'image'
+      name: 'outputImage',
+      type: ['image', 'binary image'],
+      displayLabel: 'image',
+      description: 'The cropped output image.'
     }
   ],
 
@@ -33,13 +40,23 @@ export const cropNodeSpec: computeNodeSpec = {
       const import1 = 'from im2im import Image as IM';
       const import2 = 'import numpy as np';
       const image = inputs.image;
-      const cropArea = inputs.crop_area;
+      const cropArea = inputs.cropArea;
+
+      if (
+        !cropArea ||
+        !Array.isArray(cropArea) ||
+        cropArea.every(v => v === 0)
+      ) {
+        return `${import1}
+${import2}
+${outputs.outputImage} = ${image}`;
+      }
+
+      const [x, y, width, height] = cropArea;
 
       return `${import1}
 ${import2}
-${outputs.outputImage} = IM(${image}.raw_image[${cropArea.x}:${
-        cropArea.x + cropArea.width
-      }, ${cropArea.y}:${cropArea.y + cropArea.height}], ${image}.metadata)`;
+${outputs.outputImage} = IM(${image}.raw_image[${y}:${y + height}, ${x}:${x + width}], ${image}.metadata)`;
     }
   }
 };
@@ -63,7 +80,8 @@ export const denoiseBilateralNodeSpec: computeNodeSpec = {
       name: 'outputImage',
       type: 'image',
       displayLabel: 'image',
-      description: 'The denoised output image.'
+      description: 'The denoised output image.',
+      showDiff: true
     }
   ],
 
@@ -79,10 +97,66 @@ ${outputs.outputImage} = IM(restoration.denoise_bilateral(in_im.raw_image), in_i
     }
   }
 };
+export const GaussianBlurNodeSpec: computeNodeSpec = {
+  name: 'Gaussian Blur',
+  displayLabel: 'gaussian denoise',
+  description: 'Apply Gaussian blur to remove noise.',
+  category: 'denoise & enhance',
+  inputs: [
+    {
+      name: 'image',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'Input image.'
+    },
+    {
+      name: 'sigma',
+      displayLabel: 'sigma',
+      description: 'Standard deviation for Gaussian kernel.',
+      defaultValue: 1.0,
+      widget: {
+        type: 'Number',
+        min: 0,
+        step: 0.1
+      }
+    },
+    {
+      name: 'mode',
+      displayLabel: 'mode',
+      description:
+        'The mode parameter determines how the array borders are handled, where cval is the value when mode is equal to "constant". Default is "nearest".',
+      defaultValue: 'nearest',
+      widget: {
+        type: 'Dropdown',
+        options: ['reflect', 'constant', 'nearest', 'mirror', 'wrap']
+      }
+    }
+  ],
+  outputs: [
+    {
+      name: 'image',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'The image after applying Gaussian blur.'
+    }
+  ],
+
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `from skimage.filters import gaussian
+from im2im import Image as IM
+in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
+${outputs.image} = IM(gaussian(in_im.raw_image, sigma=${inputs.sigma}, mode = '${inputs.mode}', preserve_range=True), in_im.metadata)`;
+    }
+  }
+};
 
 export const CLAHENodeSpec: computeNodeSpec = {
   name: 'CLAHE',
-  displayLabel: 'CLAHE',
+  displayLabel: 'local contrast enhancement',
   description:
     'Contrast Limited Adaptive Histogram Equalization (CLAHE) for local contrast enhancement.',
   category: 'denoise & enhance',
@@ -99,7 +173,8 @@ export const CLAHENodeSpec: computeNodeSpec = {
       name: 'outputImage',
       type: 'image',
       displayLabel: 'image',
-      description: 'The local contrast image.'
+      description: 'The local contrast image.',
+      showDiff: true
     }
   ],
 
@@ -135,8 +210,9 @@ export const CannyNodeSpec: computeNodeSpec = {
   outputs: [
     {
       name: 'outputImage',
-      type: 'image',
-      displayLabel: 'image'
+      type: 'binary image',
+      displayLabel: 'binary image'
+      // showDiff: true
     }
   ],
 
@@ -152,6 +228,78 @@ export const CannyNodeSpec: computeNodeSpec = {
 ${import2}
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.outputImage} = IM(canny(in_im.raw_image), in_im.metadata)`;
+    }
+  }
+};
+
+export const batchProcessNodeSpec: computeNodeSpec = {
+  name: 'batch_process',
+  displayLabel: 'batch process',
+  category: 'batch processing',
+  description: 'Process multiple images from a folder.',
+  inputs: [
+    {
+      name: 'folder_path',
+      type: 'string',
+      displayLabel: 'folder',
+      description:
+        "Select a folder containing images ('.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG').",
+      widget: {
+        type: 'FileInputFromServer',
+        extensions: [] // Empty array indicates folder selection
+      }
+    },
+    {
+      name: 'image_gallery',
+      type: 'string[]',
+      displayLabel: 'gallery',
+      description: 'Output selected images to process',
+      defaultValue: [],
+      widget: {
+        type: 'ImageGallery' // No need for sourcePath here
+      }
+    }
+  ],
+  outputs: [
+    {
+      name: 'each selected image',
+      type: 'image',
+      displayLabel: 'processed image',
+      description: 'The processed image.'
+    },
+    {
+      name: 'batch_results',
+      type: 'dataframe',
+      displayLabel: 'batch results',
+      description: 'The processed images.'
+    }
+  ],
+
+  codeGenerators: {
+    Python: (inputs: Record<string, any>, outputs: Record<string, any>) => ''
+  }
+};
+
+export const processResultNodeSpec: computeNodeSpec = {
+  name: 'collect_batch_results',
+  displayLabel: 'collect result per batch',
+  description: 'Output the result at each batch.',
+  category: 'batch processing',
+  inputs: [
+    {
+      name: 'result',
+      type: '*',
+      displayLabel: 'result',
+      description: 'result per batch.'
+    }
+  ],
+  outputs: [],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `batch_outputs.append(${inputs.result})`;
     }
   }
 };

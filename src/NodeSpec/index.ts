@@ -1,4 +1,5 @@
 import { registerNodeSpec } from '../ReactVP';
+import { superResolutionNodeSpec } from './super_resolution';
 import {
   thresholdNodeSpec,
   invertNodeSpec,
@@ -8,17 +9,45 @@ import {
   binaryClosingNodeSpec,
   removeSmallHolesNodeSpec,
   removeSmallObjectsNodeSpec,
-  splitTouchingObjectsNodeSpec
+  splitTouchingObjectsNodeSpec,
+  autoBinarizeNodeSpec
 } from './Binary';
-import { CannyNodeSpec, CLAHENodeSpec, denoiseBilateralNodeSpec } from './IP';
-import { readImageNodeSpec, saveImageNodeSpec, saveToCsvNodeSpec } from './IO';
-import { regionpropsNodeSpec, watershedNodeSpec } from './Segmentations';
-import { differenceHeatmapNodeSpec } from './Comparison';
+import {
+  CannyNodeSpec,
+  CLAHENodeSpec,
+  denoiseBilateralNodeSpec,
+  cropNodeSpec,
+  batchProcessNodeSpec,
+  processResultNodeSpec,
+  GaussianBlurNodeSpec
+} from './IP';
+import {
+  readImageNodeSpec,
+  saveImageNodeSpec,
+  saveToCsvNodeSpec,
+  gwyfileLoader
+} from './IO';
+import {
+  regionpropsNodeSpec,
+  watershedNodeSpec,
+  segmentesSizeNodeSpec
+} from './Segmentations';
+import {
+  BinaryDifferenceNodeSpec,
+  GrayscaleDifferenceNodeSpec
+} from './Comparison';
 
 export function defaultNodeSpecs(): void {
-  registerNodeSpec([readImageNodeSpec, saveImageNodeSpec, saveToCsvNodeSpec]);
+  registerNodeSpec([
+    readImageNodeSpec,
+    saveImageNodeSpec,
+    saveToCsvNodeSpec,
+    processResultNodeSpec,
+    gwyfileLoader
+  ]);
   registerNodeSpec([
     thresholdNodeSpec,
+    autoBinarizeNodeSpec,
     invertNodeSpec,
     binaryDilationNodeSpec,
     binaryErosionNodeSpec,
@@ -28,8 +57,18 @@ export function defaultNodeSpecs(): void {
     removeSmallObjectsNodeSpec,
     splitTouchingObjectsNodeSpec
   ]);
-  registerNodeSpec([denoiseBilateralNodeSpec, CLAHENodeSpec]);
+  registerNodeSpec([
+    denoiseBilateralNodeSpec,
+    GaussianBlurNodeSpec,
+    CLAHENodeSpec
+  ]);
   registerNodeSpec(CannyNodeSpec);
-  registerNodeSpec([watershedNodeSpec, regionpropsNodeSpec]);
-  registerNodeSpec(differenceHeatmapNodeSpec);
+  registerNodeSpec([
+    watershedNodeSpec,
+    regionpropsNodeSpec,
+    segmentesSizeNodeSpec
+  ]);
+  registerNodeSpec([BinaryDifferenceNodeSpec, GrayscaleDifferenceNodeSpec]);
+  registerNodeSpec([cropNodeSpec, batchProcessNodeSpec]);
+  registerNodeSpec(superResolutionNodeSpec);
 }

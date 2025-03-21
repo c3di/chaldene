@@ -1,5 +1,45 @@
 import { computeNodeSpec } from '../ReactVP';
 
+export const autoBinarizeNodeSpec: computeNodeSpec = {
+  name: 'auto binarize',
+  displayLabel: 'auto binarize',
+  description:
+    'Automatically binarize the input image using Otsu thresholding.',
+  category: 'binary',
+  inputs: [
+    {
+      name: 'image',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'The input image to be binarized.'
+    }
+  ],
+  outputs: [
+    {
+      name: 'image',
+      type: 'binary image',
+      displayLabel: 'image',
+      description: 'The binarized output image.'
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `from skimage.filters import threshold_isodata
+from im2im import Image as IM
+from skimage.color import gray2rgb
+import numpy as np
+ 
+in_im = im2im(${inputs.image}, 'numpy.rgb_uint8')
+threshold = threshold_isodata(np.asarray(in_im.raw_image))
+${outputs.image} = IM(( in_im.raw_image> threshold).astype(int).astype(np.uint8)*255, 'numpy.rgb_uint8')
+`;
+    }
+  }
+};
+
 export const thresholdNodeSpec: computeNodeSpec = {
   name: 'threshold',
   displayLabel: 'threshold',
@@ -10,28 +50,17 @@ export const thresholdNodeSpec: computeNodeSpec = {
     {
       name: 'image',
       type: 'image',
-      displayLabel: 'image',
+      displayLabel: 'grayscale image',
       description: 'The input image for thresholding.'
     },
     {
-      name: 'upper',
-      displayLabel: 'upper',
-      description: 'The lower bound for the threshold.',
-      defaultValue: 0.8,
+      name: 'range',
+      type: 'tuple2',
+      displayLabel: 'Range',
+      description: 'The threshold bounds for binarization (lower, upper).',
+      defaultValue: [0.2, 0.8],
       widget: {
-        type: 'Number',
-        min: 0,
-        max: 1,
-        step: 0.01
-      }
-    },
-    {
-      name: 'lower',
-      displayLabel: 'lower',
-      description: 'The upper bound for the threshold.',
-      defaultValue: 0.2,
-      widget: {
-        type: 'Number',
+        type: 'HistogramRange',
         min: 0,
         max: 1,
         step: 0.01
@@ -42,7 +71,6 @@ export const thresholdNodeSpec: computeNodeSpec = {
     {
       name: 'image',
       type: 'binary image',
-      displayLabel: 'binary image',
       description: 'The resulting binary image after thresholding.'
     }
   ],
@@ -53,12 +81,21 @@ export const thresholdNodeSpec: computeNodeSpec = {
     ) => {
       return `import numpy as np
 from im2im import Image as IM
-in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
-binarized_image = np.where((in_im.raw_image >= ${inputs.lower}) & (in_im.raw_image <= ${inputs.upper}), 1.0, 0.0)
+
+# Get input image
+in_im = ${inputs.image}
+lower, upper = ${inputs.range}  
+
+# Apply threshold directly to raw image
+binarized_image = np.where((in_im.raw_image >= lower) & 
+                          (in_im.raw_image <= upper), 1.0, 0.0)
+
+# Create output image with same metadata as input
 ${outputs.image} = IM(binarized_image, in_im.metadata)`;
     }
   }
 };
+
 export const invertNodeSpec: computeNodeSpec = {
   name: 'Invert',
   displayLabel: 'invert',
@@ -102,6 +139,7 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
   description:
     'Dilation sets a pixel at to the maximum over all pixels in the neighborhood centered at. Dilation enlarges bright regions and shrinks dark regions.',
   category: 'binary',
+  extraRun: 0,
   inputs: [
     {
       name: 'image',
@@ -115,7 +153,8 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'image',
-      description: 'The dilated output image.'
+      description: 'The dilated output image.',
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -137,6 +176,7 @@ export const binaryErosionNodeSpec: computeNodeSpec = {
   description:
     'Erosion sets a pixel at to the minimum over all pixels in the neighborhood centered at. Erosion shrinks bright regions and enlarges dark regions.',
   category: 'binary',
+  extraRun: 1,
   inputs: [
     {
       name: 'image',
@@ -150,7 +190,8 @@ export const binaryErosionNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'binary image',
-      description: 'The eroded output image.'
+      description: 'The eroded output image.',
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -170,8 +211,9 @@ export const binaryOpeningNodeSpec: computeNodeSpec = {
   name: 'binary opening',
   displayLabel: 'binary opening',
   description:
-    'Opening can remove small bright spots (i.e. “salt”) and connect small dark cracks. This tends to “open” up (dark) gaps between (bright) features.',
+    'Opening can remove small bright spots (i.e. "salt") and connect small dark cracks. This tends to "open" up (dark) gaps between (bright) features.',
   category: 'binary',
+  extraRun: 1,
   inputs: [
     {
       name: 'image',
@@ -185,7 +227,8 @@ export const binaryOpeningNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'image',
-      description: 'The opened output image.'
+      description: 'The opened output image.',
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -205,8 +248,9 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
   name: 'binary closing',
   displayLabel: 'binary closing',
   description:
-    'Closing can remove small dark spots (i.e. “pepper”) and connect small bright cracks. This tends to “close” up (dark) gaps between (bright) features.',
+    'Closing can remove small dark spots (i.e. "pepper") and connect small bright cracks. This tends to "close" up (dark) gaps between (bright) features.',
   category: 'binary',
+  extraRun: 1,
   inputs: [
     {
       name: 'image',
@@ -220,7 +264,8 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'image',
-      description: 'The opened output image.'
+      description: 'The closed output image.',
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -268,7 +313,8 @@ export const removeSmallHolesNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'image',
       description:
-        'The input image with small holes within connected components removed.'
+        'The input image with small holes within connected components removed.',
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -315,7 +361,8 @@ export const removeSmallObjectsNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'image',
-      description: 'The input image with small connected components removed.'
+      description: 'The input image with small connected components removed.',
+      showDiff: true
     }
   ],
   codeGenerators: {
@@ -363,7 +410,8 @@ export const splitTouchingObjectsNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'image',
-      description: 'The input image with small connected components removed.'
+      description: 'The input image with small connected components removed.',
+      showDiff: true
     }
   ],
   codeGenerators: {

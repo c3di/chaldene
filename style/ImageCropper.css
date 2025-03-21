@@ -1,0 +1,140 @@
+.crop-input-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.crop-input-button {
+    aspect-ratio: 1/1;
+    width: 24px;
+    height: 24px;
+    padding: 8px;
+    background: linear-gradient(145deg, #e8edf4, #f5f9fc);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--vpl-ui-font-color1);
+    flex-shrink: 0;
+    margin-top: 4px;
+    display: grid;
+    place-content: center;
+    /* Neumorphic effect using your theme colors */
+    box-shadow:
+        -1.5px -1.5px 3px rgba(255, 255, 255, 0.7),
+        1.5px 1.5px 3px rgba(203, 213, 224, 0.9);
+    transition: all 0.2s ease;
+}
+
+.crop-input-button:hover {
+    color: var(--vpl-ui-font-color0);
+    transform: scale(1.05);
+    box-shadow:
+        -2px -2px 4px rgba(255, 255, 255, 0.8),
+        2px 2px 4px rgba(203, 213, 224, 0.9);
+}
+
+.crop-input-button:active {
+    transform: scale(0.9);
+    box-shadow:
+        -0.5px -0.5px 2px rgba(255, 255, 255, 0.9),
+        0.5px 0.5px 2px rgba(203, 213, 224, 0.9);
+}
+
+.crop-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.crop-dialog {
+    background-color: var(--vpl-ui-background);
+    border-radius: 8px;
+    padding: 20px;
+    min-width: 400px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: auto;
+}
+
+.crop-dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background-color: white;
+    border-radius: 4px;
+    padding: 16px;
+}
+
+.crop-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.input-row {
+    display: flex;
+    gap: 12px;
+}
+
+.input-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-group label {
+    color: var(--vpl-ui-font-color1);
+    min-width: 45px;
+    font-size: 0.9em;
+}
+
+.crop-dialog-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.cancel-button,
+.apply-button {
+    padding: 6px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: var(--vpl-ui-font-size1);
+}
+
+.cancel-button {
+    background-color: var(--vpl-blue-gray-4);
+    color: var(--vpl-ui-font-color1);
+}
+
+.apply-button {
+    background-color: var(--vpl-blue-1);
+    color: white;
+}
+
+.cancel-button:hover {
+    background-color: var(--vpl-blue-gray-3);
+}
+
+.apply-button:hover {
+    background-color: var(--vpl-blue-0);
+}
+
+/* Add styles for the widget version to be more compact */
+.crop-input-container .crop-inputs {
+    gap: 8px;
+}
+
+.crop-input-container .input-group label {
+    min-width: 35px;
+}

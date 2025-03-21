@@ -27,7 +27,7 @@ import {
   graphToJSON
 } from '../Utils';
 import { Spec2Node } from '../Spec';
-import { findCycle } from '../Type';
+import { findCycle, findNodeGroupsBetweenSourceChangers } from '../Type';
 
 type GraphChange = {
   type: 'add' | 'remove' | 'select' | 'deselect';
@@ -234,8 +234,10 @@ export default class GraphActions extends StateActions {
     return graph;
   };
 
+  // only entry point for all applying graph to avoid multiple state update and re-render
   public applyGraphChanges = (changes: GraphChange[]): void => {
     let graph = this.graph ?? { nodes: [], edges: [] };
+
     for (const change of changes) {
       if (change.type === 'add') {
         graph = this._addElements(change.changedGraph, graph);
@@ -247,6 +249,8 @@ export default class GraphActions extends StateActions {
         graph = this._handleSelectAllElements(graph, false);
       }
     }
+
+    graph = this._updateSyncGroups(graph);
     this.stateAction(graph);
   };
 
@@ -647,19 +651,28 @@ export default class GraphActions extends StateActions {
     const { nodeID, id } = identifier;
     this.stateAction((currentGraph: Graph) => ({
       ...currentGraph,
-      nodes: currentGraph.nodes.map(n =>
-        n.id === nodeID
-          ? {
-              ...n,
-              data: {
-                ...n.data,
-                [category]: n.data[category]?.map((item: any) =>
-                  item.id === id ? { ...item, defaultValue: value } : item
-                )
-              }
-            }
-          : n
-      )
+      nodes: currentGraph.nodes.map(n => {
+        if (n.id !== nodeID) {
+          return n;
+        }
+        // hack way to revert the in1's value for batch processing, todo: refactor
+        if (n.data.specName === 'batch_process' && id === 'in0') {
+          n.data.inputs![1].defaultValue = [];
+        }
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            ...(category === 'properties'
+              ? { [id]: value }
+              : {
+                  [category]: n.data[category]?.map((item: any) =>
+                    item.id === id ? { ...item, defaultValue: value } : item
+                  )
+                })
+          }
+        };
+      })
     }));
   };
 
@@ -668,41 +681,46 @@ export default class GraphActions extends StateActions {
    */
   public updateInspection = (whichVar: string, value: any): void => {
     const [, nodeID, id] = whichVar.split('_');
-    this.stateAction((currentGraph: Graph) => ({
-      ...currentGraph,
-      nodes: currentGraph.nodes.map(n =>
-        n.id === nodeID
-          ? {
-              ...n,
-              data: {
-                ...n.data,
-                inputs: n.data.inputs?.map((item: any) =>
-                  item.id === id
-                    ? {
-                        ...item,
-                        widget: {
-                          ...item.widget,
-                          value
-                        }
+
+    this.stateAction((currentGraph: Graph) => {
+      const updatedGraph = {
+        ...currentGraph,
+        nodes: currentGraph.nodes.map(n => {
+          if (n.id !== nodeID) {
+            return n;
+          }
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              inputs: n.data.inputs?.map((item: any) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      widget: {
+                        ...item.widget,
+                        value
                       }
-                    : item
-                ),
-                outputs: n.data.outputs?.map((item: any) =>
-                  item.id === id
-                    ? {
-                        ...item,
-                        widget: {
-                          ...item.widget,
-                          value
-                        }
+                    }
+                  : item
+              ),
+              outputs: n.data.outputs?.map((item: any) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      widget: {
+                        ...item.widget,
+                        value
                       }
-                    : item
-                )
-              }
+                    }
+                  : item
+              )
             }
-          : n
-      )
-    }));
+          };
+        })
+      };
+      return updatedGraph;
+    });
   };
 
   public findNotReadyNodesForExecute = (): Record<string, string[]> => {
@@ -727,10 +745,12 @@ export default class GraphActions extends StateActions {
             edge => edge.target === node.id && edge.targetHandle === input.id
           )
         ) {
-          notReadyNodes[node.id] = [
-            ...(notReadyNodes[node.id] ?? []),
-            input.name
-          ];
+          if (input.defaultValue === undefined || input.defaultValue === null) {
+            notReadyNodes[node.id] = [
+              ...(notReadyNodes[node.id] ?? []),
+              input.name
+            ];
+          }
         }
       }
     }
@@ -786,5 +806,41 @@ export default class GraphActions extends StateActions {
         }))
       };
     });
+  };
+
+  private _updateSyncGroups = (graph: Graph): Graph => {
+    const nodeGroups = findNodeGroupsBetweenSourceChangers(graph);
+
+    if (nodeGroups.length > 0) {
+      return {
+        ...graph,
+        nodes: graph.nodes.map(node => {
+          const groupIndex = nodeGroups.findIndex(group =>
+            group.some(groupNode => groupNode.id === node.id)
+          );
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              outputs: node.data.outputs?.map(output => {
+                return {
+                  ...output,
+                  widget:
+                    output.widget?.type === 'ImageViewer'
+                      ? {
+                          ...output.widget,
+                          syncGroup: groupIndex !== -1 ? groupIndex : undefined
+                        }
+                      : output.widget
+                };
+              })
+            }
+          };
+        })
+      };
+    }
+
+    return graph;
   };
 }

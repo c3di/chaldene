@@ -6,8 +6,14 @@ import type { NodeCodeGenerators } from '../CodeGeneration';
 // todo: rename data strucute Node to compute Node, keep consistent
 export default interface IComputeNodeSpec extends INodeSpec {
   inputs?: Array<Omit<IHandle, 'id' | 'identifier'>>;
-  outputs?: Array<Omit<IHandle, 'id' | 'identifier'>>;
+  outputs?: Array<
+    Omit<IHandle, 'id' | 'identifier'> & {
+      showDiff?: boolean;
+    }
+  >;
   codeGenerators?: NodeCodeGenerators;
+  extraRun?: number;
+  sourceChanged?: boolean;
 }
 
 export function spec2ComputeNode({
@@ -18,7 +24,14 @@ export function spec2ComputeNode({
   position,
   editorContext
 }: ISpec2NodeDataParams & { spec: IComputeNodeSpec }): Node {
-  const { displayLabel, description, inputs, outputs } = spec;
+  const {
+    displayLabel,
+    description,
+    inputs,
+    outputs,
+    extraRun,
+    sourceChanged
+  } = spec;
   const node = {
     id: nodeId,
     position,
@@ -27,6 +40,8 @@ export function spec2ComputeNode({
       editorContext,
       displayLabel,
       description,
+      extraRun,
+      sourceChanged,
       inputs: (inputs ?? []).map((input, index) => ({
         id: `in${index}`,
         ...input
@@ -35,8 +50,15 @@ export function spec2ComputeNode({
         id: `out${index}`,
         ...output,
         widget:
-          isImageType(output.type) && !output.widget
-            ? { type: 'ImageViewer' }
+          isImageType(output.type) &&
+          !output.widget &&
+          output.type !== 'image[]' &&
+          output.name !== 'processedImage' //Avoid showing image viewer for batch processing node
+            ? {
+                type: 'ImageViewer',
+                showDiff: output.showDiff ?? false,
+                isBinary: output.type === 'binary image'
+              }
             : output.widget
       })),
       specName

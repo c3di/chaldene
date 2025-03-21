@@ -44,17 +44,14 @@ export const readImageNodeSpec: computeNodeSpec = {
     ) => {
       const import1 = 'from skimage import io';
       const import2 = 'from im2im import Image as IM';
-      const import3 = 'from im2im import get_possible_metadata';
 
       if (inputs.mode === 'RGB') {
         return `${import1}
 ${import2}
-${import3}
 ${outputs.image} = IM(io.imread(${inputs.path}, as_gray=False), 'numpy.rgb_uint8')`;
       }
       return `${import1}
 ${import2}
-${import3}
 from skimage import img_as_float
 ${outputs.image} = IM(img_as_float(io.imread(${inputs.path}, as_gray=True)), 'numpy.gray_float64(0to1)')`;
     }
@@ -69,7 +66,7 @@ export const saveToCsvNodeSpec: computeNodeSpec = {
   inputs: [
     {
       name: 'data',
-      type: 'summary',
+      type: ['summary', 'dataframe'],
       displayLabel: 'data',
       description: 'The data(including summary and ...) to save as a CSV.'
     },
@@ -152,6 +149,49 @@ export const saveImageNodeSpec: computeNodeSpec = {
 from os.path import join
 in_im = im2im(${inputs.image}, 'numpy.uint8')
 io.imsave(join(${inputs.destination}, ${inputs.name}), in_im.raw_image)`;
+    }
+  }
+};
+
+export const gwyfileLoader: computeNodeSpec = {
+  name: 'height map',
+  displayLabel: 'load height map',
+  description: 'Load a height map image from gwy files.',
+  category: 'input & output',
+  inputs: [
+    {
+      name: 'path',
+      type: 'string',
+      displayLabel: 'file',
+      description: 'path of the height map image.',
+      widget: {
+        type: 'FileInputFromServer',
+        extensions: ['.png', '.gwy']
+      }
+    }
+  ],
+  outputs: [
+    {
+      name: 'height_map',
+      type: 'image',
+      displayLabel: 'height map',
+      description: 'The height map image.'
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `import gwyfile
+import numpy as np
+from im2im import Image as IM
+ 
+obj = gwyfile.load(${inputs.path})
+channels = gwyfile.util.get_datafields(obj)
+height = channels['Height'].data
+new_arr = np.interp(height, (height.min(), height.max()), (0, 255))
+${outputs.height_map} = IM(new_arr.astype('uint8'), {"data_representation": "numpy.ndarray", "minibatch_input": False, "device": "cpu", "color_channel": "gray", "channel_order": "none", "image_data_type": "uint8"})`;
     }
   }
 };

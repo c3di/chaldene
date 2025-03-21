@@ -1,0 +1,35 @@
+.fullscreen-button {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 4px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #666;
+}
+
+.fullscreen-button:hover {
+    background-color: #e8e8e8;
+    color: #333;
+    transform: translateY(-1px);
+}
+
+.fullscreen-button:active {
+    background-color: #ddd;
+    transform: translateY(0px);
+}
+
+.fullscreen-button svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+}
+
+.fullscreen-button:hover svg {
+    transform: scale(1.1);
+}

@@ -32,13 +32,20 @@ export default class EditorContext {
   private nextEdgeId: number = 0;
   private runningInProcessCount: number = 0;
   public isAsyncImageViewTransform: boolean = true;
-  private imageViewTransform: { x?: number; y?: number; zoom?: number } = {
-    x: undefined,
-    y: undefined,
-    zoom: undefined
-  }; // fit to canvas
+  private imageViewTransforms: {
+    ungrouped: { x?: number; y?: number; zoom?: number };
+    grouped: { [key: number]: { x?: number; y?: number; zoom?: number } };
+  } = {
+    ungrouped: { x: undefined, y: undefined, zoom: undefined },
+    grouped: {}
+  };
   // for jupyterlab
   public parentContext?: any = undefined;
+  private isAsyncMousePosition: boolean = true;
+  private mousePosition: { x?: number; y?: number } = {
+    x: undefined,
+    y: undefined
+  };
 
   constructor(
     editorID: string,
@@ -148,8 +155,9 @@ export default class EditorContext {
    * @param identifier: string - editorID_nodeID_handleID
    */
   public updateInspection = (handleID: string, value: any): void => {
-    console.log('updateInspection', handleID, value);
     this.action('graph').updateInspection(handleID, value);
+    // Trigger code generation after inspection update
+    this.triggerLiveExecution();
   };
 
   public getGraphToBeExecuted = (increment: boolean = true): Graph | null => {
@@ -177,17 +185,21 @@ export default class EditorContext {
    *
    * @param increment: whether to return code on the changed part of the graph or the whole graph.
    */
-  public code = (increment: boolean = true): string | null => {
+  public code = (
+    increment: boolean = true,
+    inspect_included = true
+  ): string | null => {
     const graphToBeExecuted = this.getGraphToBeExecuted(increment);
     if (!graphToBeExecuted) {
       return null;
     }
 
     this.prevExecGraph = this.graph;
-    console.log('flowsToBeExecuted', graphToBeExecuted);
+
     const codes = this.codeGeneratorRegistry
       .get(this.executeLanguage)
-      .codeFromGraph(this.editorID, graphToBeExecuted);
+      .codeFromGraph(this.editorID, graphToBeExecuted, inspect_included);
+
     return codes;
   };
 
@@ -202,7 +214,10 @@ export default class EditorContext {
   public toggleAsyncImageViewTransform = (): void => {
     this.isAsyncImageViewTransform = !this.isAsyncImageViewTransform;
     if (!this.isAsyncImageViewTransform) {
-      this.imageViewTransform = { x: undefined, y: undefined, zoom: undefined };
+      this.imageViewTransforms = {
+        ungrouped: { x: undefined, y: undefined, zoom: undefined },
+        grouped: {}
+      };
     }
   };
 
@@ -215,13 +230,18 @@ export default class EditorContext {
     });
   };
 
-  public getImageViewTransform = (): {
+  public getImageViewTransform = (
+    syncGrouptoGet?: number
+  ): {
     x?: number;
     y?: number;
     zoom?: number;
   } => {
     return this.isAsyncImageViewTransform
-      ? this.imageViewTransform
+      ? syncGrouptoGet === undefined
+        ? this.imageViewTransforms.ungrouped
+        : (this.imageViewTransforms.grouped[syncGrouptoGet] ??
+          this.imageViewTransforms.ungrouped)
       : { x: undefined, y: undefined, zoom: undefined };
   };
 
@@ -229,15 +249,67 @@ export default class EditorContext {
     x,
     y,
     zoom,
-    force = false
+    force = false,
+    syncGrouptoUpdate
   }: {
     x?: number;
     y?: number;
     zoom?: number;
     force?: boolean;
+    syncGrouptoUpdate?: number;
   }): void => {
     if (this.isAsyncImageViewTransform || force) {
-      this.imageViewTransform = { x, y, zoom };
+      if (syncGrouptoUpdate === undefined) {
+        this.imageViewTransforms.ungrouped = { x, y, zoom };
+      } else {
+        this.imageViewTransforms.grouped[syncGrouptoUpdate] = { x, y, zoom };
+      }
+
+      this.action('graph').overrideGraph({
+        ...this.graph,
+        nodes: this.graph?.nodes.map(node => {
+          const hasMatchingSyncGroup = node.data.outputs?.some(
+            output =>
+              output.widget?.type === 'ImageViewer' &&
+              output.widget?.syncGroup === syncGrouptoUpdate
+          );
+
+          if (hasMatchingSyncGroup) {
+            return { ...node };
+          }
+          return node;
+        })
+      });
+    }
+  };
+
+  public toggleAsyncMousePosition = (): void => {
+    this.isAsyncMousePosition = !this.isAsyncMousePosition;
+    if (!this.isAsyncMousePosition) {
+      this.mousePosition = { x: undefined, y: undefined };
+    }
+  };
+
+  public getMousePosition = (): {
+    x?: number;
+    y?: number;
+  } => {
+    return this.isAsyncMousePosition
+      ? this.mousePosition
+      : { x: undefined, y: undefined };
+  };
+
+  public updateMousePosition = ({
+    x,
+    y,
+    force = false
+  }: {
+    x?: number;
+    y?: number;
+    force?: boolean;
+  }): void => {
+    if (this.isAsyncMousePosition || force) {
+      this.mousePosition = { x, y };
       //force to re-render
       this.action('graph').overrideGraph({
         ...this.graph,

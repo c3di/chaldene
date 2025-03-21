@@ -1,42 +1,32 @@
 import { computeNodeSpec } from '../ReactVP';
 
-export const differenceHeatmapNodeSpec: computeNodeSpec = {
-  name: 'difference heatmap',
-  displayLabel: 'difference heatmap',
-  description: 'Absolute value of the difference and normalize.',
+export const BinaryDifferenceNodeSpec: computeNodeSpec = {
+  name: 'Binary Image Difference',
+  displayLabel: 'binary image difference',
+  description: 'The difference between two binary images.',
   category: 'comparison',
   inputs: [
     {
       name: 'image1',
-      type: 'image',
-      displayLabel: 'image1',
-      description: 'The first image to compare.'
+      type: 'binary image',
+      displayLabel: 'underlay image',
+      description: 'The underlay image.'
     },
     {
       name: 'image2',
-      type: 'image',
-      displayLabel: 'image2',
-      description: 'The second image to compare.'
-    },
-    {
-      name: 'colormap',
-      displayLabel: 'color map',
-      description:
-        'The color map used to visualize absolute value of difference.',
-      defaultValue: 'viridis',
-      widget: {
-        type: 'Dropdown',
-        options: ['viridis', 'gray', 'inferno', 'plasma', 'magma']
-      }
+      type: 'binary image',
+      displayLabel: 'reference image',
+      description: 'The reference image to compare.'
     }
   ],
   outputs: [
     {
-      name: 'heatmap',
-      type: 'heatmap',
-      displayLabel: 'heatmap',
+      name: 'image',
+      type: 'image diff',
       widget: {
-        type: 'ImageViewer'
+        type: 'ImageViewer',
+        showDiff: true,
+        isBinary: true
       }
     }
   ],
@@ -45,17 +35,61 @@ export const differenceHeatmapNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      return `
-from matplotlib import colormaps
-import numpy as np
-image1 = im2im(${inputs.image1}, 'numpy.gray_float64(0to1)').raw_image
-image2 = im2im(${inputs.image2}, 'numpy.gray_float64(0to1)').raw_image
-# absolute value of the difference and normalize to the range [0, 1] for visualization
-normalized_diff = np.abs(image1 - image2)
-normalized_diff /= np.max(normalized_diff)
-colormap = colormaps['${inputs.colormap}']
-colored_diff = colormap(normalized_diff)[:, :, :3]
-${outputs.heatmap} = IM((colored_diff * 255).astype(np.uint8), 'numpy.rgb_uint8')`;
+      const import1 = 'from skimage import io';
+      const import2 = 'from im2im import Image as IM';
+      return `${import1}
+${import2}
+from skimage import img_as_float
+
+in_im1 = ${inputs.image1}
+${outputs.image} = IM(in_im1.raw_image, in_im1.metadata)`;
+    }
+  }
+};
+
+export const GrayscaleDifferenceNodeSpec: computeNodeSpec = {
+  name: 'Grayscale Image Difference',
+  displayLabel: 'grayscale image difference',
+  description: 'Computes the difference between two grayscale images.',
+  category: 'comparison',
+  inputs: [
+    {
+      name: 'image1',
+      type: 'image',
+      displayLabel: 'underlay image',
+      description: 'The underlay image.'
+    },
+    {
+      name: 'image2',
+      type: 'image',
+      displayLabel: 'reference image',
+      description: 'The reference image to compare.'
+    }
+  ],
+  outputs: [
+    {
+      name: 'image',
+      type: 'image diff',
+      widget: {
+        type: 'ImageViewer',
+        showDiff: true,
+        isBinary: false
+      }
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      const import1 = 'from skimage import io';
+      const import2 = 'from im2im import Image as IM';
+      return `${import1}
+${import2}
+from skimage import img_as_float
+
+in_im1 = ${inputs.image1}
+${outputs.image} = IM(in_im1.raw_image, in_im1.metadata)`;
     }
   }
 };

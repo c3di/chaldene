@@ -99,8 +99,21 @@ function isSameCode(
   if (nodeA.id !== nodeB.id) {
     return false;
   }
-  const { inputs: inputsA = [], outputs: outputsA = [] } = nodeA.data;
-  const { inputs: inputsB = [], outputs: outputsB = [] } = nodeB.data;
+  const {
+    inputs: inputsA = [],
+    outputs: outputsA = [],
+    extraRun: extraRunA
+  } = nodeA.data;
+  const {
+    inputs: inputsB = [],
+    outputs: outputsB = [],
+    extraRun: extraRunB
+  } = nodeB.data;
+
+  // Check if extraRun has changed
+  if (extraRunA !== extraRunB) {
+    return false;
+  }
 
   for (let i = 0; i < inputsA.length; i++) {
     const edgeA = incommigEdgesA.find(e => e.targetHandle === inputsA[i].id);
@@ -112,6 +125,8 @@ function isSameCode(
       ) {
         return false;
       }
+    } else if (edgeA || edgeB) {
+      return false;
     } else if (inputsA[i].defaultValue !== inputsB[i].defaultValue) {
       return false;
     }
@@ -164,7 +179,9 @@ export function findCodeChangeNodes(
  */
 export function findConnectedSubgraph(
   graph: Graph,
-  nodes?: Node[]
+  nodes?: Node[],
+  only_descendants = true,
+  exclude_nodes: Node[] = []
 ): Graph | null {
   if (!nodes || nodes.length === 0) {
     return null;
@@ -173,6 +190,8 @@ export function findConnectedSubgraph(
   if (nodes.length === graph.nodes.length) {
     return graph;
   }
+
+  const excludedNodeIds = new Set(exclude_nodes.map(node => node.id));
 
   const { nodes: graphNodes, edges: graphEdges } = graph;
   const nodeSet = new Set(nodes.map(node => node.id));
@@ -188,13 +207,20 @@ export function findConnectedSubgraph(
     graphEdges.forEach(edge => {
       if (edge.source === nodeID) {
         includedEdges.add(edge);
-        dfs(edge.target);
+        if (!excludedNodeIds.has(edge.target)) {
+          dfs(edge.target);
+        }
       }
     });
 
     graphEdges.forEach(edge => {
       if (edge.target === nodeID) {
         includedEdges.add(edge);
+        if (!only_descendants) {
+          if (!excludedNodeIds.has(edge.source)) {
+            dfs(edge.source);
+          }
+        }
       }
     });
   }
@@ -217,4 +243,100 @@ export function findCodeChangedGraph(
 ): Graph | null {
   const nodes = findCodeChangeNodes(prevGraph, nextGraph);
   return findConnectedSubgraph(nextGraph, nodes);
+}
+
+/**
+ * Find all groups of nodes that are between source-changing nodes in the graph.
+ * Each group contains nodes that are reachable from one source-changing node until the next source-changing node(s).
+ * A source-changing node is one where the sourceChanged property is true.
+ */
+export function findNodeGroupsBetweenSourceChangers(graph: Graph): Node[][] {
+  const { nodes: graphNodes, edges: graphEdges } = graph;
+  const visited = new Set<string>();
+  const nodeGroups: Node[][] = [];
+
+  // Create adjacency list for faster lookups
+  const adjacencyList: Record<string, Edge[]> = {};
+  graphEdges.forEach(edge => {
+    if (!adjacencyList[edge.source]) {
+      adjacencyList[edge.source] = [];
+    }
+    adjacencyList[edge.source].push(edge);
+  });
+
+  function isSourceChangingNode(node: Node): boolean {
+    return node.data.sourceChanged === true;
+  }
+
+  // Check if there are any source-changing nodes in the graph
+  const hasSourceChangingNodes = graphNodes.some(node =>
+    isSourceChangingNode(node)
+  );
+  if (!hasSourceChangingNodes) {
+    return [];
+  }
+
+  function collectGroup(startNodeId: string): void {
+    const currentGroup = new Set<string>();
+    const nextSourceChangingNodes = new Set<string>();
+
+    function dfs(nodeId: string): void {
+      if (visited.has(nodeId)) {
+        return;
+      }
+
+      const node = graphNodes.find(n => n.id === nodeId);
+      if (!node) {
+        return;
+      }
+
+      visited.add(nodeId);
+
+      // Add to current group if it's the start node or not a source-changing node
+      if (nodeId === startNodeId || !isSourceChangingNode(node)) {
+        currentGroup.add(nodeId);
+      }
+
+      // Process neighbors
+      const neighbors = adjacencyList[nodeId] || [];
+      for (const edge of neighbors) {
+        const targetNode = graphNodes.find(n => n.id === edge.target);
+        if (!targetNode) {
+          continue;
+        }
+
+        if (isSourceChangingNode(targetNode)) {
+          // Found a source-changing node, mark it for next processing
+          nextSourceChangingNodes.add(targetNode.id);
+        } else if (!visited.has(targetNode.id)) {
+          dfs(targetNode.id);
+        }
+      }
+    }
+
+    // Start DFS from the start node
+    dfs(startNodeId);
+
+    // Save current group if not empty
+    if (currentGroup.size > 0) {
+      const groupNodes = graphNodes.filter(node => currentGroup.has(node.id));
+      nodeGroups.push(groupNodes);
+    }
+
+    // Process next source-changing nodes
+    nextSourceChangingNodes.forEach(nodeId => {
+      if (!visited.has(nodeId)) {
+        collectGroup(nodeId);
+      }
+    });
+  }
+
+  // Start from each source-changing node
+  for (const node of graphNodes) {
+    if (isSourceChangingNode(node) && !visited.has(node.id)) {
+      collectGroup(node.id);
+    }
+  }
+
+  return nodeGroups;
 }

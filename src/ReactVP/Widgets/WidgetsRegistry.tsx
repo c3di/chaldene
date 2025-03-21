@@ -8,11 +8,19 @@ export default class WidgetsRegistry extends Registry<Widget> {
   }
 
   public getOutputType(type: string): string | null {
-    return this.widgetOutputType[type] ?? null;
+    return type ? (this.widgetOutputType[type] ?? null) : null;
   }
 
-  public register(type: string, widget: Widget, outputType?: string): string {
-    this.widgetOutputType[type] = outputType ?? null;
+  public register(
+    type: string,
+    widget: Widget,
+    outputType?: string | string[]
+  ): string {
+    if (outputType) {
+      this.widgetOutputType[type] = Array.isArray(outputType)
+        ? outputType[0]
+        : outputType;
+    }
     return super.register(type, widget);
   }
 

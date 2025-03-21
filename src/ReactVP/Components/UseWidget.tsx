@@ -7,28 +7,41 @@ export default function useWidget(
   widget: any,
   defaultValue: any,
   editorContext: any,
-  identifier: any,
-  label?: string
+  identifier?: Identifier,
+  label?: string,
+  nodeDimensions?: { width: number; height?: number }
 ): JSX.Element | null {
   return useMemo(() => {
     const type = widget?.type;
     if (!type) {
       return null;
     }
+
     const WidgetComponent =
       editorContext?.widgetRegistry?.get(type) ?? NotFoundWidget;
+
     const widgetProps = {
       ...widget,
       forWhom: identifier,
       value: defaultValue,
+      ...widget?.value,
       setValue: (identifier?: Identifier, value?: any) => {
         editorContext
           ?.action('graph')
           .setValue(forWhichCategory, identifier, value);
       },
       label,
-      editorContext
+      editorContext,
+      ...(type === 'ImageViewer' ? { nodeDimensions } : {})
     };
     return <WidgetComponent {...widgetProps} />;
-  }, [widget, defaultValue, editorContext, identifier]);
+  }, [
+    widget,
+    defaultValue,
+    editorContext,
+    identifier,
+    forWhichCategory,
+    label,
+    nodeDimensions
+  ]);
 }

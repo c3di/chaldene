@@ -96,7 +96,7 @@ export default function PanelContextMenu({
         displayLabel: 'Copy code',
         description: 'Generate code for the graph and copy to clipboard',
         onClick: () => {
-          const code = editorContext?.code(false);
+          const code = editorContext?.code(false, false);
           if (code) {
             void navigator.clipboard.writeText(code);
           }

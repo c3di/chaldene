@@ -25,7 +25,6 @@ export default function FlowEditor({
 }: IFlowEditorProps): JSX.Element {
   const menuActions = editorContext.action('menu');
   const graphActions = editorContext.action('graph');
-  console.log('Flow Editor render once');
   return (
     <ReactFlowProvider>
       <ReactFlow

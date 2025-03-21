@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="7" failures="0" errors="0" time="24.98">
+  <testsuite name="chaldene" errors="0" failures="0" skipped="0" timestamp="2025-03-07T15:36:21" time="11.625" tests="1">
+    <testcase classname="chaldene should be tested" name="chaldene should be tested" time="0.008">
+    </testcase>
+  </testsuite>
+  <testsuite name="findNodeGroupsBetweenSourceChangers" errors="0" failures="0" skipped="0" timestamp="2025-03-07T15:36:21" time="12.481" tests="6">
+    <testcase classname="findNodeGroupsBetweenSourceChangers should return empty array for empty graph" name="findNodeGroupsBetweenSourceChangers should return empty array for empty graph" time="0.009">
+    </testcase>
+    <testcase classname="findNodeGroupsBetweenSourceChangers should return empty array for graph with no source-changing nodes" name="findNodeGroupsBetweenSourceChangers should return empty array for graph with no source-changing nodes" time="0.001">
+    </testcase>
+    <testcase classname="findNodeGroupsBetweenSourceChangers should group nodes between two source-changing nodes" name="findNodeGroupsBetweenSourceChangers should group nodes between two source-changing nodes" time="0.001">
+    </testcase>
+    <testcase classname="findNodeGroupsBetweenSourceChangers should handle multiple branches between source-changing nodes" name="findNodeGroupsBetweenSourceChangers should handle multiple branches between source-changing nodes" time="0.002">
+    </testcase>
+    <testcase classname="findNodeGroupsBetweenSourceChangers should handle disconnected components" name="findNodeGroupsBetweenSourceChangers should handle disconnected components" time="0.001">
+    </testcase>
+    <testcase classname="findNodeGroupsBetweenSourceChangers should handle single source-changing node" name="findNodeGroupsBetweenSourceChangers should handle single source-changing node" time="0.001">
+    </testcase>
+  </testsuite>
+</testsuites>

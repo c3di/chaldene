@@ -1,0 +1,97 @@
+.image-gallery-widget {
+    position: relative;
+    width: 100%;
+    max-height: 250px;
+    min-height: 100px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--vpl-scrollbar-color);
+}
+
+.image-gallery-widget .canvas-container {
+    position: relative;
+    height: 150px !important;
+    overflow: hidden;
+    --active-selection-stroke: none !important;
+    --selection-stroke: none !important;
+    background: var(--vpl-blue-gray-4);
+    border-radius: var(--vpl-border-radius);
+    box-shadow:
+        inset 2px 2px 5px rgba(0, 0, 0, 0.05),
+        inset -2px -2px 5px rgba(255, 255, 255, 0.5);
+    padding: 4px;
+}
+
+/* When images are loaded, let the height be dynamic */
+.image-gallery-widget .canvas-container.has-images {
+    height: auto !important;
+}
+
+.image-gallery-widget .canvas-container canvas {
+    height: 100% !important;
+}
+
+.fabric-object {
+    pointer-events: all !important;
+}
+
+.upper-canvas {
+    border: none !important;
+}
+
+canvas {
+    outline: none !important;
+}
+
+.gallery-controls {
+    display: flex;
+    gap: 4px;
+    padding: 0 4px 0 0;
+    justify-content: flex-end;
+}
+
+.gallery-controls button {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 4px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #666;
+    padding: 0;
+}
+
+.gallery-controls button:hover:not(:disabled) {
+    background-color: #e8e8e8;
+    color: #333;
+    transform: translateY(-1px);
+}
+
+.gallery-controls button:active {
+    background-color: #ddd;
+    transform: translateY(0px);
+}
+
+.gallery-controls button svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s ease;
+}
+
+.gallery-controls button:hover:not(:disabled) svg {
+    transform: scale(1.1);
+}
+
+.gallery-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.gallery-image {
+    pointer-events: auto;
+}

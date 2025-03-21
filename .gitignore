@@ -123,4 +123,7 @@ dmypy.json
 
 # Yarn cache
 .yarn/
-Untitled.ipynb
+
+
+package-lock.json
+yarn.lock

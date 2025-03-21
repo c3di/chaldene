@@ -6,3 +6,6 @@ import './searchMenu.css';
 import './style.css';
 import './contextMenu.css';
 import './controlPanel.css';
+import './imageViewer.css';
+import './imageCropper.css';
+import './imageGallery.css';

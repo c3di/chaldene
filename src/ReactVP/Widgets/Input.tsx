@@ -63,6 +63,7 @@ interface INumberProps extends WidgetProps {
   min?: number;
   max?: number;
   step?: number;
+  style?: React.CSSProperties;
 }
 
 export function NumericInput({
@@ -92,7 +93,6 @@ export function NumericInput({
       setValue={setValue}
       min={min}
       max={max}
-      step={step}
     />
   );
 }
@@ -105,43 +105,63 @@ export function Slider({
   max = 100,
   step = 1
 }: INumberProps): JSX.Element {
-  const [localValue, setLocalValue] = useState(value);
-  const percentage = ((localValue - min) / (max - min)) * 100;
+  const [localValue, setLocalValue] = useState<number | ''>(value);
+  const percentage =
+    (((typeof localValue === 'number' ? localValue : 0) - min) / (max - min)) *
+    100;
+
+  const handleValueChange = (newValue: number) => {
+    const clampedValue = Math.min(Math.max(newValue, min), max);
+    setLocalValue(clampedValue);
+    setValue?.(forWhom, clampedValue);
+  };
+
   return (
     <div className="slider-container widget">
       <input
         className="nodrag"
         type="range"
-        value={localValue}
+        value={typeof localValue === 'number' ? localValue : 0}
         min={min}
         max={max}
         step={step}
         onChange={e => {
           setLocalValue(parseFloat(e.target.value));
         }}
-        onMouseUp={e => {
-          setValue?.(forWhom, localValue);
+        onMouseUp={() => {
+          if (typeof localValue === 'number') {
+            handleValueChange(localValue);
+          }
         }}
         style={{
+          flex: 1,
           background: `linear-gradient(to right, var(--vpl-blue-3) ${percentage}%, var(--vpl-blue-gray-4) ${percentage}%)`
         }}
       />
-      <div
-        className="slider-value"
-        style={{
-          position: 'absolute',
-          top: '50%',
-          right: '30px',
-          transform: 'translateY(-50%)',
-          fontSize: '12px',
-          textAlign: 'center',
-          whiteSpace: 'nowrap',
-          cursor: 'default',
-          pointerEvents: 'none'
+      <input
+        className="nodrag common-input-style"
+        type="number"
+        value={localValue}
+        min={min}
+        max={max}
+        step={step}
+        onChange={e => {
+          const newValue = e.target.value;
+          if (newValue === '') {
+            setLocalValue('');
+          } else {
+            const parsed = parseFloat(newValue);
+            if (!Number.isNaN(parsed)) {
+              handleValueChange(parsed);
+            }
+          }
         }}
-      >
-        {localValue}
-      </div>
+        onBlur={() => {
+          if (localValue === '') {
+            handleValueChange(0);
+          }
+        }}
+      />
     </div>
   );
 }
@@ -153,32 +173,45 @@ export function NumberInput({
   defaultValue = 0,
   min = -Infinity,
   max = Infinity,
-  step
+  style
 }: INumberProps): JSX.Element {
-  const [localValue, setLocalValue] = useState(value);
+  const [localValue, setLocalValue] = useState<string>(value?.toString() ?? '');
   const debounceTimeout = useRef<number | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const inputValue = parseFloat(e.target.value);
-    const newValue = Number.isNaN(inputValue) ? defaultValue : inputValue;
-
-    setLocalValue(newValue > max ? max : newValue < min ? min : newValue);
-
+  const clearDebounce = () => {
     if (debounceTimeout.current) {
       clearTimeout(debounceTimeout.current);
+      debounceTimeout.current = null;
     }
+  };
 
-    debounceTimeout.current = window.setTimeout(() => {
-      setValue?.(forWhom, newValue);
-    }, 400);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    clearDebounce();
+
+    if (newValue !== '' && !Number.isNaN(parseFloat(newValue))) {
+      const parsed = parseFloat(newValue);
+      const clamped = Math.min(Math.max(parsed, min), max);
+      debounceTimeout.current = window.setTimeout(() => {
+        setValue?.(forWhom, clamped);
+      }, 400);
+    }
+  };
+
+  const handleBlur = () => {
+    if (localValue === '') {
+      setLocalValue(defaultValue.toString());
+      setValue?.(forWhom, defaultValue);
+    }
   };
 
   useEffect(() => {
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
-    }
-    setLocalValue(value);
+    clearDebounce();
+    setLocalValue(value?.toString() ?? '');
   }, [value]);
+
+  useEffect(() => clearDebounce, []);
 
   return (
     <input
@@ -187,8 +220,9 @@ export function NumberInput({
       value={localValue}
       min={min}
       max={max}
-      step={step}
       onChange={handleInputChange}
+      onBlur={handleBlur}
+      style={style}
     />
   );
 }

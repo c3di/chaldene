@@ -6,6 +6,7 @@ import type EditorContext from '../EditorContext';
 export interface IHandleProps extends IHandle {
   identifier: IHandleIdentifier;
   editorContext?: EditorContext;
+  nodeDimensions?: { width: number; height?: number };
 }
 
 export function InputHandle({
@@ -27,10 +28,15 @@ export function InputHandle({
     identifier
   );
 
+  const showLabel = widget?.type !== 'ImageCropper';
+  const isImageGallery = widget?.type === 'ImageGallery';
+
   return (
     <div
-      className="flex-container"
-      title={type ? `type: ${type}. ${description}` : `${description}`}
+      className={`flex-container ${isImageGallery ? 'image-gallery-container' : ''}`}
+      title={
+        type ? `type: ${type}. ` : '' + description ? `${description}` : ''
+      }
     >
       {!Widget && (
         <div className="handle-container-input">
@@ -47,15 +53,25 @@ export function InputHandle({
           />
         </div>
       )}
-      <span
-        className="label"
-        style={{
-          marginRight: '12px'
-        }}
-      >
-        {displayLabel}
-      </span>
-      {Widget ?? null}
+      {showLabel && (
+        <span
+          className={`label ${isImageGallery ? 'image-gallery-label' : ''}`}
+        >
+          {displayLabel}
+        </span>
+      )}
+      {Widget && (
+        <div
+          className={`widget-container ${
+            !showLabel ? 'widget-container-no-label' : ''
+          }`}
+          style={{
+            width: isImageGallery || showLabel ? '100%' : 'calc(100% - 25px)'
+          }}
+        >
+          {Widget}
+        </div>
+      )}
     </div>
   );
 }
@@ -68,14 +84,17 @@ export function OutputHandle({
   description,
   widget,
   editorContext,
-  connections
+  connections,
+  nodeDimensions
 }: IHandleProps): JSX.Element {
   const Widget = useWidget(
     'outputs',
     widget,
     widget?.value,
     editorContext,
-    identifier
+    identifier,
+    displayLabel,
+    nodeDimensions
   );
 
   const showLabel = widget?.type !== 'ImageViewer';
@@ -83,14 +102,21 @@ export function OutputHandle({
   return (
     <div
       className="flex-container"
-      style={{ justifyContent: 'flex-end' }}
-      title={type ? `type: ${type}. ${description}` : `${description}`}
+      style={{
+        justifyContent: 'flex-end'
+      }}
+      title={
+        type ? `type: ${type}. ` : '' + description ? `${description}` : ''
+      }
     >
       {Widget && (
         <div
           className={`widget-container ${
             !showLabel ? 'widget-container-no-label' : ''
           }`}
+          style={{
+            width: showLabel ? '100%' : 'calc(100% - 25px)'
+          }}
         >
           {Widget}
         </div>

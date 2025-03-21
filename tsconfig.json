@@ -20,5 +20,8 @@
     "target": "ES2018",
     "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*",
+    "types/**/*"
+  ]
 }

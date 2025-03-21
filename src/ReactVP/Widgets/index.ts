@@ -1,8 +1,8 @@
 import WidgetsRegistry from './WidgetsRegistry';
-import BoundingBoxInput from './BoundingBoxInput';
-import CanvasImage from './CanvasImage';
-import ImageCropper from './ImageCropper';
 import ImageViewer from './ImageViewerN';
+import HistogramRangeWidget from './HistogramRangeWidget';
+import ImageCropper from './ImageCropperWidget';
+import { ImageGallery } from './ImageGallery';
 
 import {
   Text,
@@ -23,19 +23,18 @@ export const widgetsRegistry = new WidgetsRegistry();
 export function registerWidget(
   forWhichType: string,
   widget: any,
-  outputType?: string
+  outputType?: string | string[]
 ): void {
   widgetsRegistry.register(forWhichType, widget, outputType);
 }
-
 registerWidget('String', Text, 'string');
 registerWidget('Boolean', Boolean, 'boolean');
 registerWidget('Number', NumericInput, 'number');
 registerWidget('Slider', Slider, 'number');
 registerWidget('Dropdown', Dropdown, 'enum');
 registerWidget('Tuple2', Tuple2Input, 'tuple2');
-registerWidget('BoundingBox', BoundingBoxInput);
-registerWidget('CanvasImage', CanvasImage);
-registerWidget('ImageCropper', ImageCropper);
 registerWidget('ImageViewer', ImageViewer);
 registerWidget('FileInputFromServer', FileInputFromServer, 'string');
+registerWidget('HistogramRange', HistogramRangeWidget, 'tuple2');
+registerWidget('ImageCropper', ImageCropper, 'tuple4');
+registerWidget('ImageGallery', ImageGallery, ['image', 'image[]']);
