@@ -81,6 +81,7 @@ export function ImageGallery({
   const canvasRef = useRef<fabric.Canvas | null>(null);
   const [canvasHeight, setCanvasHeight] = useState(150);
   const containerHeightRef = useRef<number>(250);
+  const [selectionVersion, setSelectionVersion] = useState(0);
 
   // Helper function to get sorted gallery objects
   const getSortedGalleryObjects = useCallback(() => {
@@ -94,21 +95,195 @@ export function ImageGallery({
     );
   }, []);
 
-  // Get selected objects helper
-  const getSelectedObjects = useCallback(() => {
-    const sortedObjects = getSortedGalleryObjects();
-    return sortedObjects.filter(obj => obj.selected);
-  }, [getSortedGalleryObjects]);
+  // Helper function to get selected filenames in proper order
+  const getSelectedFilenames = useCallback((objects: GalleryImage[]) => {
+    return objects
+      .filter(obj => obj.selected)
+      .map(obj => obj.data?.filename)
+      .filter(Boolean) as string[];
+  }, []);
 
-  // Derive isAllSelected from selection state
+  // Derive isAllSelected directly as a memoized value
   const isAllSelected = useMemo(() => {
     const sortedObjects = getSortedGalleryObjects();
-    const selectedObjects = getSelectedObjects();
-    return (
-      sortedObjects.length > 0 &&
-      selectedObjects.length === sortedObjects.length
-    );
-  }, [getSortedGalleryObjects, getSelectedObjects]);
+    return sortedObjects.length > 0 && sortedObjects.every(obj => obj.selected);
+  }, [getSortedGalleryObjects, selectionVersion]);
+
+  // Update selection and notify parent component
+  const updateSelection = useCallback(
+    (selectedFilenames: string[]) => {
+      setValue?.(forWhom, selectedFilenames);
+      setSelectionVersion(prev => prev + 1);
+
+      if (canvasRef.current) {
+        canvasRef.current.requestRenderAll();
+      }
+    },
+    [setValue, forWhom]
+  );
+
+  const handleSelection = useCallback(
+    (targets: GalleryImage | GalleryImage[], shiftKey: boolean) => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return;
+      }
+
+      // Always work with sorted objects for consistent behavior
+      const sortedObjects = getSortedGalleryObjects();
+      const targetsArray = Array.isArray(targets) ? targets : [targets];
+
+      // Handle "Select All" case - when all objects are targets
+      if (targetsArray.length === sortedObjects.length) {
+        // Get current all-selected state
+        const currentIsAllSelected = sortedObjects.every(img => img.selected);
+
+        // Toggle all selections based on current state
+        sortedObjects.forEach(img => {
+          img.toggleSelection(!currentIsAllSelected);
+        });
+
+        // Update selected filenames in the proper order
+        const filenames = !currentIsAllSelected
+          ? getSelectedFilenames(sortedObjects)
+          : [];
+
+        updateSelection(filenames);
+        return;
+      }
+
+      // Single thumbnail clicked without shift key
+      if (targetsArray.length === 1 && !shiftKey) {
+        // Deselect all images first
+        sortedObjects.forEach(img => {
+          img.toggleSelection(false);
+        });
+
+        // Select the clicked target
+        const target = targetsArray[0];
+        target.toggleSelection(true);
+
+        // Update with just this filename
+        const filename = target.data?.filename;
+        if (filename) {
+          updateSelection([filename]);
+        }
+      } else {
+        // Shift key is pressed for multi-selection
+        // Track currently selected items before making changes
+        const previouslySelected = getSelectedFilenames(sortedObjects);
+
+        // Only deselect others if shift key is not used
+        if (!shiftKey) {
+          sortedObjects.forEach(img => {
+            if (!targetsArray.includes(img)) {
+              img.toggleSelection(false);
+            }
+          });
+        }
+
+        // Toggle selection state for the target(s)
+        targetsArray.forEach(target => {
+          target.toggleSelection(!target.selected);
+        });
+
+        // For shift selections, maintain selection order
+        let filenames: string[];
+
+        if (shiftKey && previouslySelected.length > 0) {
+          // Get current selection
+          const currentSelection = getSelectedFilenames(sortedObjects);
+
+          // Keep previously selected items that are still selected
+          const keptFilenames = previouslySelected.filter(name =>
+            currentSelection.includes(name)
+          );
+
+          // Add newly selected items (ones not in previous selection)
+          const addedFilenames = currentSelection.filter(
+            name => !previouslySelected.includes(name)
+          );
+
+          // Combine in order: kept + newly added
+          filenames = [...keptFilenames, ...addedFilenames];
+        } else {
+          // Use image order for non-shift selections
+          filenames = getSelectedFilenames(sortedObjects);
+        }
+
+        updateSelection(filenames);
+      }
+    },
+    [getSortedGalleryObjects, getSelectedFilenames, updateSelection]
+  );
+
+  const handleSelectAll = useCallback(() => {
+    const sortedObjects = getSortedGalleryObjects();
+    if (sortedObjects.length === 0) {
+      return;
+    }
+
+    handleSelection(sortedObjects, false);
+  }, [getSortedGalleryObjects, handleSelection]);
+
+  // Memoized button disabled state function
+  const isDirectionButtonDisabled = useCallback(
+    (direction: 'left' | 'right') => {
+      if (!canvasRef.current) {
+        return true;
+      }
+
+      const sortedObjects = getSortedGalleryObjects();
+      if (sortedObjects.length === 0) {
+        return true;
+      }
+
+      const selectedObjects = sortedObjects.filter(obj => obj.selected);
+      if (selectedObjects.length === 0) {
+        return true;
+      }
+
+      const currentIndex = sortedObjects.indexOf(selectedObjects[0]);
+
+      // Disable left button if first item is selected
+      // Disable right button if last item is selected
+      return direction === 'left'
+        ? currentIndex === 0
+        : currentIndex === sortedObjects.length - 1;
+    },
+    [getSortedGalleryObjects]
+  );
+
+  const handleMoveSelection = useCallback(
+    (direction: 'left' | 'right') => {
+      if (isDirectionButtonDisabled(direction)) {
+        return;
+      }
+
+      const sortedObjects = getSortedGalleryObjects();
+      if (sortedObjects.length === 0) {
+        return;
+      }
+
+      // Find selected objects
+      const selectedObjects = sortedObjects.filter(obj => obj.selected);
+      if (selectedObjects.length === 0) {
+        return;
+      }
+
+      // Find current index in the sorted array
+      const currentIndex = sortedObjects.indexOf(selectedObjects[0]);
+      const newIndex =
+        direction === 'left'
+          ? Math.max(0, currentIndex - 1)
+          : Math.min(sortedObjects.length - 1, currentIndex + 1);
+
+      if (currentIndex !== newIndex) {
+        handleSelection(sortedObjects[newIndex], false);
+      }
+    },
+    [handleSelection, getSortedGalleryObjects, isDirectionButtonDisabled]
+  );
 
   const canvasKey = useMemo(() => {
     const id = typeof forWhom === 'object' ? forWhom.id : String(forWhom);
@@ -295,122 +470,6 @@ export function ImageGallery({
       }
     },
     [arrangeThumbnails]
-  );
-
-  const handleSelection = useCallback(
-    (targets: GalleryImage | GalleryImage[], shiftKey: boolean) => {
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        return;
-      }
-
-      const allGalleryImages = canvas
-        .getObjects()
-        .filter(obj => obj instanceof GalleryImage) as GalleryImage[];
-      const targetsArray = Array.isArray(targets) ? targets : [targets];
-
-      // Get current all-selected state for toggle behavior
-      const currentIsAllSelected =
-        allGalleryImages.length > 0 &&
-        allGalleryImages.every(img => img.selected);
-      const isSelectAll = targetsArray.length === allGalleryImages.length;
-
-      // Handle selection state
-      if (isSelectAll) {
-        const newState = !currentIsAllSelected;
-        allGalleryImages.forEach(img => {
-          img.toggleSelection(newState);
-        });
-      } else {
-        if (!shiftKey) {
-          allGalleryImages.forEach(img => {
-            if (!targetsArray.includes(img)) {
-              img.toggleSelection(false);
-            }
-          });
-        }
-        targetsArray.forEach(target => {
-          target.toggleSelection(!target.selected);
-        });
-      }
-
-      const selectedImages = allGalleryImages.filter(obj => obj.selected);
-      const filenames = selectedImages
-        .map(o => o.data?.filename)
-        .filter(Boolean) as string[];
-      setValue?.(forWhom, filenames);
-
-      canvas.requestRenderAll();
-    },
-    [setValue, forWhom]
-  );
-
-  // Memoized button disabled state function
-  const isDirectionButtonDisabled = useCallback(
-    (direction: 'left' | 'right') => {
-      if (!canvasRef.current) {
-        return true;
-      }
-
-      const sortedObjects = getSortedGalleryObjects();
-      if (sortedObjects.length === 0) {
-        return true;
-      }
-
-      const selectedObjects = sortedObjects.filter(obj => obj.selected);
-      if (selectedObjects.length === 0) {
-        return true;
-      }
-
-      const currentIndex = sortedObjects.indexOf(selectedObjects[0]);
-
-      // Disable left button if first item is selected
-      // Disable right button if last item is selected
-      return direction === 'left'
-        ? currentIndex === 0
-        : currentIndex === sortedObjects.length - 1;
-    },
-    [getSortedGalleryObjects]
-  );
-
-  const handleSelectAll = useCallback(() => {
-    const sortedObjects = getSortedGalleryObjects();
-    if (sortedObjects.length === 0) {
-      return;
-    }
-
-    handleSelection(sortedObjects, false);
-  }, [getSortedGalleryObjects, handleSelection]);
-
-  const handleMoveSelection = useCallback(
-    (direction: 'left' | 'right') => {
-      if (isDirectionButtonDisabled(direction)) {
-        return;
-      }
-
-      const sortedObjects = getSortedGalleryObjects();
-      if (sortedObjects.length === 0) {
-        return;
-      }
-
-      // Find selected objects
-      const selectedObjects = sortedObjects.filter(obj => obj.selected);
-      if (selectedObjects.length === 0) {
-        return;
-      }
-
-      // Find current index in the sorted array
-      const currentIndex = sortedObjects.indexOf(selectedObjects[0]);
-      const newIndex =
-        direction === 'left'
-          ? Math.max(0, currentIndex - 1)
-          : Math.min(sortedObjects.length - 1, currentIndex + 1);
-
-      if (currentIndex !== newIndex) {
-        handleSelection(sortedObjects[newIndex], false);
-      }
-    },
-    [handleSelection, getSortedGalleryObjects, isDirectionButtonDisabled]
   );
 
   useEffect(() => {
