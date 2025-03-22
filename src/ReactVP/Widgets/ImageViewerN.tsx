@@ -742,7 +742,7 @@ export default function ImageViewer({
       >
         <div
           ref={canvasElParent}
-          className={'nodrag nowheel widget'}
+          className={'nodrag nowheel widget canvas-container'}
           style={{
             width: isFullScreen ? '100vw' : '100%',
             height: isFullScreen ? 'calc(100vh - 24px)' : '100%',

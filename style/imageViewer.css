@@ -33,3 +33,11 @@
 .fullscreen-button:hover svg {
     transform: scale(1.1);
 }
+
+.image-viewer-widget .canvas-container {
+    background: var(--vpl-blue-gray-4);
+    border-radius: var(--vpl-border-radius);
+    box-shadow:
+        inset 2px 2px 5px rgba(0, 0, 0, 0.05),
+        inset -2px -2px 5px rgba(255, 255, 255, 0.5);
+}
