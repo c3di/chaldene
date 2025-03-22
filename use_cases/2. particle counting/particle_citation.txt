@@ -1,0 +1,3 @@
+Image: particle.png
+Source: MicroVision Laboratories, Inc., 2024. Retrieved from https://microvisionlabs.com/image-galleries/particle-size-analysis-images (Permission granted for use in our study)
+Description: Glass Beads SEM.
