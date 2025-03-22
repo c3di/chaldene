@@ -15,6 +15,7 @@ export default class EditorContext {
   public graphChangeListeners: Array<(graph: Graph) => void> = [];
   public onLiveExecution?: () => void = undefined;
   public focused: boolean = false;
+  public blockTriggerRunCode: boolean = true;
   public onFocus?: () => void = undefined;
   public onBlur?: () => void = undefined;
   public nodeSpecRegistry?: NodeSpecConfigRegistry = undefined;
@@ -171,7 +172,12 @@ export default class EditorContext {
   };
 
   public triggerLiveExecution = (): void => {
-    if (this.focused && this.isLiveExecution && this.getGraphToBeExecuted()) {
+    if (
+      !this.blockTriggerRunCode &&
+      this.focused &&
+      this.isLiveExecution &&
+      this.getGraphToBeExecuted()
+    ) {
       this.onLiveExecution?.();
     }
   };

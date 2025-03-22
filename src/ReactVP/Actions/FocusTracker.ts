@@ -10,6 +10,9 @@ export default class FocusTracker extends StateActions {
         this.stopFocusListener();
         this.editorContext?.action('menu').close();
         this.editorContext?.action('panels').close();
+        if (this.editorContext) {
+          this.editorContext.blockTriggerRunCode = true;
+        }
         this.editorContext?.onBlur?.();
       }
     }

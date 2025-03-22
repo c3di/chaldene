@@ -251,6 +251,9 @@ export default class GraphActions extends StateActions {
     }
 
     graph = this._updateSyncGroups(graph);
+    if (this.editorContext) {
+      this.editorContext.blockTriggerRunCode = false;
+    }
     this.stateAction(graph);
   };
 
@@ -649,6 +652,9 @@ export default class GraphActions extends StateActions {
       return;
     }
     const { nodeID, id } = identifier;
+    if (this.editorContext) {
+      this.editorContext.blockTriggerRunCode = false;
+    }
     this.stateAction((currentGraph: Graph) => ({
       ...currentGraph,
       nodes: currentGraph.nodes.map(n => {
