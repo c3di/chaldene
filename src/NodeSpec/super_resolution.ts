@@ -41,9 +41,9 @@ export const superResolutionNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      return `from api import super_resolution
-from im2im import Image as IM
-from im2im import im2im
+      return `from super_resolution.api import super_resolution
+from im2im import Image as IM, im2im
+import torch
 
 if torch.cuda.is_available():
   in_im = im2im(${inputs.image}, 'torch.gpu')
