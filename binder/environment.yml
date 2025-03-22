@@ -18,7 +18,8 @@ dependencies:
   - pip
   - wheel
   - pip:
-      - git+https://github.com/c3di/im2im.git
+      # - git+https://github.com/c3di/im2im.git
+      - ../dependencies/im2im-0.0.6.dev25+g57525fd-py3-none-any.whl
       - numpy
       - pillow
       - pandas
