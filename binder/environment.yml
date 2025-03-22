@@ -28,5 +28,6 @@ dependencies:
       - opencv-python
       - matplotlib
       - gwyfile
+      - git+https://github.com/Max-ChenFei/super_resolution/@merge-forked-repo
   # additional packages for demos
   # - ipywidgets
