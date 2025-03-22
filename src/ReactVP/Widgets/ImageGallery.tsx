@@ -74,7 +74,8 @@ class GalleryImage extends fabric.FabricImage {
 export function ImageGallery({
   forWhom,
   setValue,
-  images
+  images,
+  value
 }: IImageGalleryProps): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -411,6 +412,13 @@ export function ImageGallery({
         setLoading(true);
         setError(null);
 
+        // Store existing selection state before processing
+        const existingSelections = canvas
+          .getObjects()
+          .filter((obj: any) => obj instanceof GalleryImage && obj.selected)
+          .map((obj: any) => obj.data?.filename)
+          .filter(Boolean);
+
         const processed = await Promise.all(
           images.map(async (img, index) => {
             const existing = canvas
@@ -459,6 +467,31 @@ export function ImageGallery({
             container.classList.toggle('has-images', images.length > 0);
           }
           arrangeThumbnails(processed, canvas);
+
+          // After arranging, restore selection state
+          const allObjects = canvas.getObjects() as GalleryImage[];
+
+          // First prioritize value prop if it exists (for notebook reload case)
+          if (value && value.length > 0) {
+            allObjects.forEach(obj => {
+              if (obj.data?.filename) {
+                obj.toggleSelection(value.includes(obj.data.filename));
+              }
+            });
+          }
+          // Otherwise use existing selections (for within-session changes)
+          else if (existingSelections.length > 0) {
+            allObjects.forEach(obj => {
+              if (obj.data?.filename) {
+                obj.toggleSelection(
+                  existingSelections.includes(obj.data.filename)
+                );
+              }
+            });
+          }
+
+          canvas.requestRenderAll();
+          setSelectionVersion(prev => prev + 1);
         }
       } catch (err) {
         console.error('[Load] Failed:', err);
@@ -469,7 +502,7 @@ export function ImageGallery({
         }
       }
     },
-    [arrangeThumbnails]
+    [arrangeThumbnails, value]
   );
 
   useEffect(() => {
