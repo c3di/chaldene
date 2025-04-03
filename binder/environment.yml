@@ -24,7 +24,7 @@ dependencies:
       - scikit-image
       - scipy
       - comm
-      - opencv-python
+      - opencv-python-headless
       - matplotlib
       - git+https://github.com/Max-ChenFei/super_resolution/@merge-forked-repo
       - https://zenodo.org/records/15072357/files/im2im-0.1.dev0+d20250323-py3-none-any.whl
