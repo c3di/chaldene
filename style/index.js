@@ -9,3 +9,4 @@ import './controlPanel.css';
 import './imageViewer.css';
 import './imageCropper.css';
 import './imageGallery.css';
+import './MatrixDialog.css';

@@ -259,3 +259,13 @@ export const SelectionIcon = ({
     </g>
   </svg>
 );
+
+export const GridIcon = (): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" viewBox="0 0 24 24">
+    <path
+      className="jp-icon3"
+      fill="#616161"
+      d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v4h4V4H4zm6 0v4h4V4h-4zm6 0v4h4V4h-4zM4 10v4h4v-4H4zm6 0v4h4v-4h-4zm6 0v4h4v-4h-4zM4 16v4h4v-4H4zm6 0v4h4v-4h-4zm6 0v4h4v-4h-4z"
+    />
+  </svg>
+);

@@ -3,6 +3,7 @@ import ContextMenu from './ContextMenu';
 import type { GUIElementProps } from '../GUIElement';
 import { type ContextMenuElement } from './ContextMenu';
 import SearchMenu from './SearchMenu';
+import { openMatrixDialog } from '../../Widgets/MatrixDialog';
 
 import {
   AutoLayoutIcon,
@@ -10,7 +11,8 @@ import {
   CodeIcon,
   FitViewIcon,
   PasteIcon,
-  SelectAllIcon
+  SelectAllIcon,
+  GridIcon
 } from '../../Style';
 
 export default function PanelContextMenu({
@@ -86,6 +88,19 @@ export default function PanelContextMenu({
         onClick: sceneActions?.autoLayout
       },
       {
+        icon: <GridIcon />,
+        displayLabel: 'Parameter Matrix',
+        description: 'Edit all node parameters in a matrix view',
+        onClick: () => {
+          // Close the menu first
+          editorContext.action('menu').close();
+          // Use setTimeout to ensure menu is fully closed
+          setTimeout(() => {
+            openMatrixDialog(editorContext);
+          }, 100);
+        }
+      },
+      {
         icon: <CheckReadinessIcon />,
         displayLabel: 'Check readiness',
         description: 'Check if the graph is ready for execution',
@@ -103,7 +118,7 @@ export default function PanelContextMenu({
         }
       }
     ];
-  }, [editorContext, forWhom]);
+  }, [editorContext, forWhom, clientPosition]);
 
   return (
     <ContextMenu
