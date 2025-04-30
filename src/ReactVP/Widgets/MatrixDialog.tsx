@@ -10,6 +10,13 @@ interface IMatrixDialogProps extends WidgetProps {
 
 // Function to open the matrix dialog from anywhere in the application
 export function openMatrixDialog(editorContext: any): void {
+  // Verify that the editor has a graph
+  if (!editorContext || !editorContext.graph) {
+    // Show a warning message if no graph exists
+    alert('No workflow exists. Please create a workflow first.');
+    return;
+  }
+
   // Create a container element
   const container = document.createElement('div');
   container.id = 'matrix-dialog-container';
@@ -99,6 +106,32 @@ export default function MatrixDialog({
       return;
     }
 
+    // Get only the nodes from a working workflow
+    let workflowNodes = editorContext.graph.nodes;
+
+    // Check if the workflow is valid
+    const isWorkflowValid = editorContext.checkExecutionReadiness();
+
+    if (isWorkflowValid) {
+      // If workflow is valid, get the executable graph
+      const executableGraph = editorContext.getGraphToBeExecuted(false);
+      if (executableGraph) {
+        // Use only nodes from the executable graph
+        workflowNodes = executableGraph.nodes;
+      }
+    } else {
+      // If no valid workflow, still show parameters but indicate workflow is not ready
+      setNodeParameters([
+        {
+          nodeId: 'info',
+          nodeLabel: 'Note: Workflow is not ready for execution',
+          parameters: []
+        }
+      ]);
+      setLoading(false);
+      return;
+    }
+
     const nodesWithParams: Array<{
       nodeId: string;
       nodeLabel: string;
@@ -110,7 +143,12 @@ export default function MatrixDialog({
       }>;
     }> = [];
 
-    editorContext.graph.nodes.forEach(node => {
+    workflowNodes.forEach(node => {
+      // Skip "read image" nodes
+      if (node.data.displayLabel?.toLowerCase().includes('read image')) {
+        return;
+      }
+
       const params: Array<{
         id: string;
         name: string;
