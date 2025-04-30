@@ -128,6 +128,13 @@ export class VPEditor implements CodeEditor.IEditor {
     }
   }
 
+  /**
+   * Set the base options for the editor.
+   */
+  setBaseOptions(options: Record<string, any>): void {
+    this.setOptions(options);
+  }
+
   injectExtension(ext: any): void {}
 
   /**
