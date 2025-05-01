@@ -111,6 +111,7 @@ export const GaussianBlurNodeSpec: computeNodeSpec = {
     },
     {
       name: 'sigma',
+      type: 'number',
       displayLabel: 'sigma',
       description: 'Standard deviation for Gaussian kernel.',
       defaultValue: 1.0,
@@ -122,6 +123,7 @@ export const GaussianBlurNodeSpec: computeNodeSpec = {
     },
     {
       name: 'mode',
+      type: 'enum',
       displayLabel: 'mode',
       description:
         'The mode parameter determines how the array borders are handled, where cval is the value when mode is equal to "constant". Default is "nearest".',

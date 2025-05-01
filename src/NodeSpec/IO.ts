@@ -20,6 +20,7 @@ export const readImageNodeSpec: computeNodeSpec = {
     {
       name: 'mode',
       displayLabel: 'mode',
+      type: 'enum',
       description:
         'mode - The read mode used for optionally converting the image. Default: GRAY.',
       defaultValue: 'GRAY',

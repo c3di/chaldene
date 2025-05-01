@@ -296,6 +296,7 @@ export const removeSmallHolesNodeSpec: computeNodeSpec = {
     },
     {
       name: 'area_threshold',
+      type: 'number',
       displayLabel: 'area threshold',
       description:
         'The maximum area, in pixels, of a contiguous hole that will be filled.',
@@ -346,6 +347,7 @@ export const removeSmallObjectsNodeSpec: computeNodeSpec = {
     },
     {
       name: 'min_size',
+      type: 'number',
       displayLabel: 'min size',
       description: 'Objects smaller than this size will be removed',
       defaultValue: 64,
@@ -394,6 +396,7 @@ export const splitTouchingObjectsNodeSpec: computeNodeSpec = {
     },
     {
       name: 'sigma',
+      type: 'number',
       displayLabel: 'sigma',
       description:
         'The standard deviation of the Gaussian kernel used for smoothing the image.',
