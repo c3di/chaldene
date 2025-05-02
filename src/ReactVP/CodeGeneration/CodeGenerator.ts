@@ -20,6 +20,10 @@ import {
   captureFolderImagesCode,
   FolderImageCaptureDependencies
 } from './CaptureFolderImages';
+import {
+  generateMatrixParameterCode,
+  MatrixParameterDependencies
+} from './MatrixParameterProcessor';
 import { findConnectedSubgraph } from '../Type/Utils';
 
 export default class CodeGenerator {
@@ -41,7 +45,8 @@ export default class CodeGenerator {
     editorID: string,
     { id, data }: Node,
     incomingEdges: Edge[],
-    inspect_included: boolean = true
+    inspect_included: boolean = true,
+    parameterMatrix?: Record<string, Record<string, any>>
   ): string {
     const generator = getCodeGenerator(data.specName, this.name);
     if (!generator) {
@@ -67,14 +72,39 @@ export default class CodeGenerator {
 
     let imageInputVar: string | null = null;
 
+    // Check if we're in matrix mode
+    const hasMatrix = Boolean(
+      parameterMatrix && Object.keys(parameterMatrix).length > 0
+    );
+
+    // Check if this node has parameters in the matrix
+    const hasMatrixParameters = parameterMatrix && parameterMatrix[id];
+
     inputs?.forEach(input => {
       const edge = incomingEdges.find(e => e.targetHandle === input.id);
 
       const outputType = this.widgetsRegistry.getOutputType(input.widget?.type);
 
-      inputValues[input.name] = edge
-        ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
-        : this.widgetValueToCodeLiteral(outputType, input.defaultValue);
+      // Create a parameter matrix reference if this input has matrix parameters
+      const inputId = `${id}_input_${input.id}`;
+      const hasMatrixValue =
+        hasMatrixParameters && parameterMatrix![id][inputId] !== undefined;
+
+      if (hasMatrix && hasMatrixValue) {
+        // Instead of hardcoding the value, use a reference to the parameter_matrix
+        // Generate code to extract the input name from the parameter ID
+        const inputName = input.id;
+
+        // For a parameter like 'sigma' that was stored as '2_input_in1'
+        // we just need 'in1' for the actual code generation
+        inputValues[input.name] =
+          `parameter_matrix.get(${id}, {}).get('${inputName}', ${this.widgetValueToCodeLiteral(outputType, input.defaultValue)})`;
+      } else {
+        // No matrix value, use the normal approach
+        inputValues[input.name] = edge
+          ? uniqueHandleName(editorID, edge.source, edge.sourceHandle!)
+          : this.widgetValueToCodeLiteral(outputType, input.defaultValue);
+      }
 
       if (input.name === 'image' && edge) {
         imageInputVar = inputValues[input.name];
@@ -128,6 +158,12 @@ export default class CodeGenerator {
       });
     }
 
+    // If we're using a matrix, generate code to handle parameter access
+    if (hasMatrix && hasMatrixParameters) {
+      // Add a comment about matrix parameters
+      code += `# Using matrix parameters for node ${id}\n`;
+    }
+
     // Main node code
     code += `${generator(inputValues, outputValues)}\n`;
 
@@ -171,10 +207,20 @@ export default class CodeGenerator {
   public codeFromSubGraph(
     editorID: string,
     graph: Graph | null,
-    inspect_included = true
+    inspect_included = true,
+    parameterMatrix?: Record<string, Record<string, any>>
   ): string {
     if (graph === null || graph?.nodes.length === 0) {
       return '';
+    }
+
+    // Check if editorContext has a parameterMatrix that was set by MatrixDialog
+    if (!parameterMatrix && (graph as any).editorContext?.parameterMatrix) {
+      parameterMatrix = (graph as any).editorContext.parameterMatrix;
+      console.log(
+        '[CodeGenerator] Using parameter matrix from graph context:',
+        parameterMatrix
+      );
     }
 
     const nodes = topologicalSortDAG(graph);
@@ -185,7 +231,8 @@ export default class CodeGenerator {
         editorID,
         node,
         edges.filter(e => e.target === node.id),
-        inspect_included
+        inspect_included,
+        parameterMatrix
       );
     });
     return code ? code.join('\n') : '';
@@ -200,7 +247,8 @@ export default class CodeGenerator {
     graph: Graph,
     node: Node,
     sourceHandle: string,
-    inspect_included = true
+    inspect_included = true,
+    parameterMatrix?: Record<string, Record<string, any>>
   ): string {
     const next_nodes = graph.edges
       .filter(e => e.source === node.id && e.sourceHandle === sourceHandle)
@@ -213,23 +261,25 @@ export default class CodeGenerator {
     return this.codeFromSubGraph(
       editorID,
       graph_after_batch!,
-      inspect_included
+      inspect_included,
+      parameterMatrix
     );
   }
 
-  // todo: merge to other nodes
   public codeFromBatchProcess(
     editorID: string,
     graph: Graph,
     batch_process_node: Node,
-    inspect_included = true
+    inspect_included = true,
+    parameterMatrix?: Record<string, Record<string, any>>
   ): string {
     const inner_loop_code = this.codeFromGraphConnectedToNode(
       editorID,
       graph,
       batch_process_node,
       batch_process_node.data.outputs![0].id,
-      inspect_included
+      inspect_included,
+      parameterMatrix
     ).replace(/^/gm, '    ');
 
     const out_loop_code = this.codeFromGraphConnectedToNode(
@@ -237,7 +287,8 @@ export default class CodeGenerator {
       graph,
       batch_process_node,
       batch_process_node.data.outputs![1].id,
-      inspect_included
+      inspect_included,
+      parameterMatrix
     );
     const image_per_batch_var = uniqueHandleName(
       editorID,
@@ -291,37 +342,311 @@ ${out_loop_code}`;
     return code;
   }
 
+  public codeFromMatrix(
+    editorID: string,
+    graph: Graph,
+    parameterMatrix: Record<string, Record<string, any>>
+  ): string {
+    console.log('[CodeGenerator] Generating matrix code for graph');
+
+    // Get nodes in execution order
+    const nodes = topologicalSortDAG(graph);
+    const edges = graph.edges;
+
+    if (nodes.length === 0) {
+      console.warn('[CodeGenerator] No nodes found in graph');
+      return '';
+    }
+
+    // Find the first image node (usually a read_image node)
+    const imageNodeIndex = nodes.findIndex(node =>
+      node.data.outputs?.some(output => isImageType(output.type))
+    );
+
+    if (imageNodeIndex === -1) {
+      console.warn('[CodeGenerator] No image output node found in graph');
+      return '';
+    }
+
+    // Generate code for the input image node
+    const imageNode = nodes[imageNodeIndex];
+    const imageNodeCode = this.generateNodeCode(
+      editorID,
+      imageNode,
+      edges.filter(e => e.target === imageNode.id),
+      false
+    );
+
+    // Find the output variable name from the image node
+    const imageOutputVar = imageNode.data.outputs?.find(output =>
+      isImageType(output.type)
+    );
+
+    if (!imageOutputVar) {
+      console.warn('[CodeGenerator] No image output found in image node');
+      return '';
+    }
+
+    const imageVarName = uniqueHandleName(
+      editorID,
+      imageNode.id,
+      imageOutputVar.id
+    );
+    console.log(`[CodeGenerator] Found image variable: ${imageVarName}`);
+
+    // Collect workflow stages (skip the image node)
+    const workflowStages: string[] = [];
+
+    // Initialize workflow stages first
+    workflowStages.push('# Initialize workflow stages');
+    workflowStages.push('stages = []');
+    workflowStages.push('');
+
+    // Generate workflow stages for all nodes after the image node
+    for (let i = imageNodeIndex + 1; i < nodes.length; i++) {
+      const node = nodes[i];
+      const nodeGenerator = getCodeGenerator(node.data.specName, this.name);
+
+      if (!nodeGenerator) {
+        console.warn(`[CodeGenerator] No generator for node ${node.id}`);
+        continue;
+      }
+
+      // Find the input to this node
+      const incomingEdges = edges.filter(e => e.target === node.id);
+      let inputVar = '';
+
+      if (incomingEdges.length > 0) {
+        // Find the source node and its output
+        const sourceEdge = incomingEdges[0];
+        const sourceNode = nodes.find(n => n.id === sourceEdge.source);
+
+        if (sourceNode && sourceNode.data.outputs) {
+          const sourceOutput = sourceNode.data.outputs.find(
+            output => sourceEdge.sourceHandle === output.id
+          );
+
+          if (sourceOutput) {
+            inputVar = uniqueHandleName(
+              editorID,
+              sourceNode.id,
+              sourceOutput.id
+            );
+          }
+        }
+      }
+
+      // If no input found, use the image variable for the first processing node
+      if (!inputVar && i === imageNodeIndex + 1) {
+        inputVar = imageVarName;
+      } else if (!inputVar) {
+        // For subsequent nodes, use previous node's output
+        const prevNode = nodes[i - 1];
+        if (prevNode.data.outputs && prevNode.data.outputs.length > 0) {
+          inputVar = uniqueHandleName(
+            editorID,
+            prevNode.id,
+            prevNode.data.outputs[0].id
+          );
+        }
+      }
+
+      // Find the output variable for this node
+      const outputVar =
+        node.data.outputs && node.data.outputs.length > 0
+          ? uniqueHandleName(editorID, node.id, node.data.outputs[0].id)
+          : `result_${node.id}`;
+
+      // Create a function that will apply this node's operation with parameters
+      const functionName = `apply_node_${node.id}`;
+
+      // Generate the function definition that will execute this node with parameters
+      const nodeFunctionCode = this.generateNodeFunctionCode(
+        node,
+        inputVar,
+        outputVar,
+        functionName
+      );
+
+      // Add the function definition
+      workflowStages.push(nodeFunctionCode);
+
+      // Log the generated node function code
+      console.log(
+        `[CodeGenerator] Generated node function for ${node.id} (${node.data.displayLabel || 'unnamed'}):\n`,
+        nodeFunctionCode
+      );
+
+      // Add this stage to the workflow
+      workflowStages.push(
+        `stages.append(('${inputVar}', ${functionName}, '${outputVar}', '${node.id}'))`
+      );
+    }
+
+    // Generate the complete matrix processing code
+    const code = `
+# Generate input image first
+${imageNodeCode}
+
+# Define workflow stage functions
+${workflowStages.join('\n\n')}
+
+# Reference the input image to make sure it's included
+${imageVarName} 
+`;
+
+    return code;
+  }
+
+  // Helper method to generate node code with parameters
+  private generateNodeWrappedWithParams(
+    node: Node,
+    inputVar: string,
+    outputVar: string
+  ): string {
+    const generator = getCodeGenerator(node.data.specName, this.name);
+    if (!generator) {
+      return `# No code generator for ${node.data.specName}`;
+    }
+
+    // Build input and output dictionaries for the generator
+    const inputValues: Record<string, string> = {};
+
+    node.data.inputs?.forEach(input => {
+      // Use parameter values for number and enum types
+      if (input.type === 'number' || input.type === 'enum') {
+        inputValues[input.name] = input.name;
+      } else if (input.name === 'image') {
+        // For image input, use the provided input variable
+        inputValues[input.name] = inputVar;
+      } else {
+        // For other types, use the default value
+        const outputType = this.widgetsRegistry.getOutputType(
+          input.widget?.type
+        );
+        inputValues[input.name] = this.widgetValueToCodeLiteral(
+          outputType,
+          input.defaultValue
+        );
+      }
+    });
+
+    // Set outputs
+    const outputValues: Record<string, string> = {};
+    if (node.data.outputs && node.data.outputs.length > 0) {
+      outputValues[node.data.outputs[0].name] = outputVar;
+    }
+
+    // Generate code with our input/output mappings
+    const nodeCode = generator(inputValues, outputValues);
+
+    // Strip imports from the middle of the code so we don't duplicate them
+    return nodeCode
+      .split('\n')
+      .filter((line, index) => {
+        // Keep imports only at the beginning
+        if (line.startsWith('import ') || line.startsWith('from ')) {
+          return index < 3;
+        }
+        return true;
+      })
+      .join('\n');
+  }
+
   public codeFromGraph(
     editorID: string,
     graph: Graph,
-    inspect_included: boolean = true
+    inspect_included: boolean = true,
+    parameterMatrix?: Record<string, Record<string, any>>
   ): string {
     // Users are encouraged to structure their workflow as a single DAG.
     // If multiple independent DAGs are needed, we recommend building each one
     // in a separate cell within the notebook. So here we assume the graph is a
     // single DAG.
-    // inspect_included = true;
-    let code: string = '';
 
-    const batch_process_node = this.batch_process_node(graph);
-    if (batch_process_node) {
-      code = this.codeFromBatchProcess(
-        editorID,
-        graph,
-        batch_process_node,
-        inspect_included
+    // Check if editorContext has a parameterMatrix that was set by MatrixDialog
+    if (!parameterMatrix && (graph as any).editorContext?.parameterMatrix) {
+      parameterMatrix = (graph as any).editorContext.parameterMatrix;
+      console.log(
+        '[CodeGenerator] Found parameter matrix in graph context',
+        parameterMatrix
       );
-    } else {
-      code = this.codeFromSubGraph(editorID, graph, inspect_included);
     }
 
-    if (!inspect_included) {
-      return code;
-    }
-    return `${ImageCaptureDependencies}
+    // Check if we're in matrix mode
+    const isMatrixMode =
+      parameterMatrix && Object.keys(parameterMatrix).length > 0;
+
+    if (isMatrixMode && parameterMatrix) {
+      // Generate matrix processing code only
+      const matrixCode = this.codeFromMatrix(editorID, graph, parameterMatrix);
+      const workflowStagesVar = 'stages';
+      const fullMatrixCode = `${MatrixParameterDependencies}
+${matrixCode}
+${generateMatrixParameterCode(parameterMatrix, workflowStagesVar)}
+`.trim();
+
+      return fullMatrixCode;
+    } else {
+      // Normal graph processing
+      let code: string = '';
+
+      const batch_process_node = this.batch_process_node(graph);
+      if (batch_process_node) {
+        code = this.codeFromBatchProcess(
+          editorID,
+          graph,
+          batch_process_node,
+          inspect_included
+        );
+      } else {
+        code = this.codeFromSubGraph(editorID, graph, inspect_included);
+      }
+
+      if (!inspect_included) {
+        return code;
+      }
+
+      const fullCode = `${ImageCaptureDependencies}
 ${FolderImageCaptureDependencies}
 ${HistogramCaptureDependencies}
 ${code}
 `.trim();
+
+      return fullCode;
+    }
+  }
+
+  // Fix the parameter ID in the node function
+  private generateNodeFunctionCode(
+    node: Node,
+    inputVar: string,
+    outputVar: string,
+    functionName: string
+  ): string {
+    const paramInputs =
+      node.data.inputs?.filter(
+        input => input.type === 'number' || input.type === 'enum'
+      ) || [];
+
+    return `
+def ${functionName}(input_image, params):
+    ${node.data.displayLabel ? `# ${node.data.displayLabel}` : ''}
+    # Extract parameters from the params dictionary
+    ${
+      paramInputs
+        .map(input => {
+          const paramName = input.name;
+          const paramId = input.id;
+          return `${paramName} = params.get('${paramId}')`;
+        })
+        .join('\n    ') || '# No parameters for this node'
+    }
+    
+    # Generate code using the extracted parameters
+    ${this.generateNodeWrappedWithParams(node, inputVar, outputVar)}
+    
+    return ${outputVar}
+`;
   }
 }

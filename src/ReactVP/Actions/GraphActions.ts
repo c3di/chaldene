@@ -678,9 +678,32 @@ export default class GraphActions extends StateActions {
 
   /*
    * @param identifier: string - editorID_nodeID_handleID
+   * Matrix results use identifiers like "matrix_result_X"
    */
   public updateInspection = (whichVar: string, value: any): void => {
-    const [, nodeID, id] = whichVar.split('_');
+    console.log(`[GraphActions] Updating inspection for ${whichVar}`, value);
+
+    // Check if this is a matrix result
+    if (
+      whichVar.startsWith('matrix_result_') ||
+      whichVar === 'matrix_complete'
+    ) {
+      // Matrix results are handled differently - we don't need to update any nodes
+      // Just log the receipt
+      console.log(`[GraphActions] Received matrix result: ${whichVar}`);
+      return;
+    }
+
+    // Standard node-based inspection
+    const parts = whichVar.split('_');
+    if (parts.length < 3) {
+      console.warn(`[GraphActions] Invalid inspection identifier: ${whichVar}`);
+      return;
+    }
+
+    // Second part is nodeID, third part is handleID
+    const nodeID = parts[1];
+    const id = parts[2];
 
     this.stateAction((currentGraph: Graph) => {
       const updatedGraph = {

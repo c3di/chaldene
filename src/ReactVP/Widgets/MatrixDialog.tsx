@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import { type WidgetProps } from './Widget';
 import { createPortal } from 'react-dom';
@@ -6,6 +6,7 @@ import { NumberInput } from './Input';
 import { CloseIcon } from '../Style';
 import RangeSlider from 'react-range-slider-input';
 import 'react-range-slider-input/dist/style.css';
+import { GridImageGallery } from './GridImageGallery';
 
 interface IMatrixDialogProps extends WidgetProps {
   onClose: () => void;
@@ -27,6 +28,7 @@ interface IParameter {
   type: string;
   readOnly?: boolean;
   config: IParamConfig;
+  originalConfig?: { hasSlider: boolean };
 }
 
 // Function to open the matrix dialog from anywhere in the application
@@ -87,9 +89,12 @@ function NumericParameterInput({
   const [value, setValue] = useState<number>(param.value as number);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Check if min and max are both defined
+  // Check if min and max are both defined in the original parameter,
+  // not just from dialog configuration
   const hasDefinedRange =
-    param.config.min !== undefined && param.config.max !== undefined;
+    param.config.min !== undefined &&
+    param.config.max !== undefined &&
+    param.originalConfig?.hasSlider === true; // Only use slider if it was originally defined with a slider
 
   // Default range values if specified
   const min = param.config.min;
@@ -384,6 +389,59 @@ export default function MatrixDialog({
   >([]);
 
   const [loading, setLoading] = useState(true);
+  const [processingMatrix, setProcessingMatrix] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [matrixResults, setMatrixResults] = useState<
+    Array<{
+      imageUrl: string;
+      index: number;
+      params: Record<string, Record<string, any>>;
+      error?: string;
+    }>
+  >([]);
+  const [totalCombinations, setTotalCombinations] = useState<number>(0);
+  const [processedCombinations, setProcessedCombinations] = useState<number>(0);
+
+  // Register this component with the editorContext to receive matrix results
+  useEffect(() => {
+    if (editorContext) {
+      // Handle receiving matrix results from VPWidget
+      const matrixResultsHandler = (results: any) => {
+        console.log(
+          '[MatrixDialog] Received matrix results from VPWidget',
+          results
+        );
+        if (
+          results &&
+          results.type === 'matrix_results' &&
+          Array.isArray(results.results)
+        ) {
+          setMatrixResults(results.results);
+          setProcessingMatrix(false);
+          setProcessedCombinations(results.results.length);
+          if (results.total_combinations) {
+            setTotalCombinations(results.total_combinations);
+          }
+        } else if (results && results.type === 'error') {
+          console.error(
+            '[MatrixDialog] Matrix processing error:',
+            results.error
+          );
+          setProcessingMatrix(false);
+        }
+      };
+
+      // Register the handler with editorContext
+      editorContext.matrixResultsHandler = matrixResultsHandler;
+
+      // Cleanup function
+      return () => {
+        if (editorContext.matrixResultsHandler === matrixResultsHandler) {
+          editorContext.matrixResultsHandler = undefined;
+        }
+      };
+    }
+  }, [editorContext]);
 
   // Collect all node parameters except images
   useEffect(() => {
@@ -456,7 +514,8 @@ export default function MatrixDialog({
                   step:
                     input.widget?.step !== undefined ? input.widget.step : 1,
                   options: undefined
-                }
+                },
+                originalConfig: { hasSlider: input.widget?.hasSlider === true }
               });
             } else if (input.type === 'enum') {
               // Add enum parameter
@@ -468,7 +527,8 @@ export default function MatrixDialog({
                 type: 'enum',
                 config: {
                   options: input.widget?.options || []
-                }
+                },
+                originalConfig: { hasSlider: input.widget?.hasSlider === true }
               });
             } else {
               // Add other types as read-only parameters
@@ -479,7 +539,8 @@ export default function MatrixDialog({
                   input.defaultValue !== undefined ? input.defaultValue : '',
                 type: input.type,
                 readOnly: true,
-                config: {}
+                config: {},
+                originalConfig: { hasSlider: false }
               });
             }
           }
@@ -527,100 +588,292 @@ export default function MatrixDialog({
     []
   );
 
-  const handleApply = useCallback(() => {
-    // Create a matrix of all parameters
-    const paramMatrix = nodeParameters.reduce(
-      (
-        matrix: Record<string, Record<string, number | string | string[]>>,
-        node
-      ) => {
-        matrix[node.nodeId] = {};
-        node.parameters.forEach(param => {
-          matrix[node.nodeId][param.id] = param.value;
-        });
-        return matrix;
-      },
-      {}
-    );
+  // Convert the collected parameters to a matrix for execution
+  const buildParameterMatrix = useCallback(() => {
+    const parameterMatrix: Record<string, Record<string, any>> = {};
 
-    // Update the output value which will trigger backend processing
-    setValue?.(forWhom, paramMatrix);
-    onClose();
-  }, [nodeParameters, forWhom, onClose, setValue]);
+    nodeParameters.forEach(node => {
+      if (node.parameters.length > 0) {
+        parameterMatrix[node.nodeId] = {};
+
+        node.parameters.forEach(param => {
+          // Include the parameter if it's not read-only
+          if (!param.readOnly) {
+            // Extract the simple parameter ID (like "in1") from the full ID (like "nodeId_input_in1")
+            const simplifiedParamId = param.id.split('_').pop() || param.id;
+
+            if (
+              param.type === 'number' &&
+              param.config.min !== undefined &&
+              param.config.max !== undefined &&
+              param.config.step !== undefined
+            ) {
+              // Generate range of values for numeric parameters
+              const min = param.config.min;
+              const max = param.config.max;
+              const step = param.config.step;
+
+              // Calculate values in the range
+              const values = [];
+              for (let val = min; val <= max; val += step) {
+                values.push(parseFloat(val.toFixed(5))); // Fix floating point precision issues
+              }
+
+              // Only use array if there are multiple values
+              parameterMatrix[node.nodeId][simplifiedParamId] =
+                values.length > 1 ? values : values[0];
+
+              console.log(
+                `[MatrixDialog] Generated range for ${param.name}: [${values.join(', ')}]`
+              );
+            } else if (param.type === 'enum') {
+              // For enum parameters, use the selected values array
+              parameterMatrix[node.nodeId][simplifiedParamId] = param.value;
+            } else {
+              // For other types, use the current value
+              parameterMatrix[node.nodeId][simplifiedParamId] = param.value;
+            }
+          }
+        });
+
+        // Remove the node if it has no usable parameters
+        if (Object.keys(parameterMatrix[node.nodeId]).length === 0) {
+          delete parameterMatrix[node.nodeId];
+        }
+      }
+    });
+
+    return parameterMatrix;
+  }, [nodeParameters]);
+
+  // Execute the matrix with parameter combinations
+  const executeMatrix = useCallback(() => {
+    if (!editorContext) {
+      console.warn(
+        '[MatrixDialog] Cannot execute matrix: editorContext is missing'
+      );
+      return;
+    }
+
+    // Clear previous results
+    setMatrixResults([]);
+    setProcessingMatrix(true);
+    setProcessedCombinations(0);
+    setTotalCombinations(0);
+
+    // Build the parameter matrix
+    const parameterMatrix = buildParameterMatrix();
+    console.log('[MatrixDialog] Built parameter matrix:', parameterMatrix);
+
+    // Calculate total number of combinations (for UI purposes only)
+    let totalCount = 1;
+    Object.values(parameterMatrix).forEach(params => {
+      Object.values(params).forEach((value: any) => {
+        if (Array.isArray(value)) {
+          totalCount *= value.length;
+        }
+      });
+    });
+    setTotalCombinations(totalCount);
+
+    // Get the graph to execute
+    if (editorContext.getGraphToBeExecuted) {
+      const graph = editorContext.getGraphToBeExecuted(false);
+
+      if (graph) {
+        try {
+          // Attach the parameter matrix to the graph for the code generator to use
+          (graph as any).editorContext = {
+            parameterMatrix
+          };
+
+          // Generate code with parameter matrix
+          if (editorContext.code && editorContext.onLiveExecution) {
+            // Generate code with inspect_included=false for matrix processing
+            const code = editorContext.code(false, false);
+
+            // Log the generated code for debugging
+            console.group('[MatrixDialog] Generated Matrix Code:');
+            console.log(code);
+            console.groupEnd();
+
+            // Execute the code - VPWidget will handle the results through the comm channel
+            if (code) {
+              setTimeout(() => {
+                editorContext.onLiveExecution!();
+              }, 50);
+            } else {
+              console.error('[MatrixDialog] Generated code is empty or null');
+              setProcessingMatrix(false);
+            }
+          } else {
+            console.error(
+              '[MatrixDialog] Code generator or live execution not available'
+            );
+            setProcessingMatrix(false);
+          }
+        } catch (error) {
+          console.error('[MatrixDialog] Error executing matrix:', error);
+          setProcessingMatrix(false);
+        }
+      } else {
+        console.warn('[MatrixDialog] No valid graph to execute');
+        setProcessingMatrix(false);
+      }
+    } else {
+      console.warn('[MatrixDialog] getGraphToBeExecuted is not available');
+      setProcessingMatrix(false);
+    }
+  }, [buildParameterMatrix, editorContext]);
+
+  // Convert matrix results to gallery images
+  const matrixResultsAsGalleryImages = useMemo(() => {
+    return matrixResults.map(result => ({
+      filename: `result-${result.index}`,
+      base64: result.imageUrl,
+      params: result.params,
+      error: result.error
+    }));
+  }, [matrixResults]);
+
+  // Update the existing handleApply function to include matrix execution
+  const handleApply = useCallback(() => {
+    // Update the matrix in the graph data
+    const parameterMatrix = buildParameterMatrix();
+    setValue?.(forWhom, parameterMatrix);
+  }, [setValue, forWhom, buildParameterMatrix]);
+
+  // Handle selection of images
+  const handleImageSelection = useCallback((_: any, selected: string[]) => {
+    setSelectedImages(selected);
+    // Here you could show details of the selected parameter combinations
+  }, []);
+
+  // Simplify the processing UI display
+  const processingContent = useMemo(() => {
+    if (processingMatrix) {
+      return (
+        <div className="processing-matrix">
+          Processing parameter combinations...
+          {totalCombinations > 0 && (
+            <div className="processing-status">
+              {processedCombinations} of {totalCombinations} combinations
+              processed
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  }, [processingMatrix, processedCombinations, totalCombinations]);
 
   return (
     <MatrixDialogPortal onClose={onClose}>
       <div className="matrix-dialog">
-        <div className="matrix-dialog-content">
-          <div className="matrix-dialog-header">
-            <h2>Parameter Matrix</h2>
-            <button
-              className="close-icon-button"
-              onClick={onClose}
-              title="Close"
-              aria-label="Close dialog"
-            >
-              <CloseIcon />
-            </button>
-          </div>
+        <div className="matrix-dialog-header">
+          <h2>Parameter Matrix</h2>
+          <button
+            className="close-icon-button"
+            onClick={onClose}
+            title="Close"
+            aria-label="Close dialog"
+          >
+            <CloseIcon />
+          </button>
+        </div>
 
+        <div className="matrix-dialog-content">
           {loading ? (
             <div className="loading">Loading parameters...</div>
           ) : (
-            <>
-              {nodeParameters.length === 0 ? (
-                <div className="no-parameters">
-                  No numeric parameters found in the workflow.
-                </div>
-              ) : (
-                <div className="matrix-parameters">
-                  {nodeParameters.map(node => (
-                    <div key={node.nodeId} className="node-parameters">
-                      <h3>{node.nodeLabel}</h3>
-                      <div className="parameters-list">
-                        {node.parameters.map(param => (
-                          <div
-                            key={param.id}
-                            className={`parameter-item ${param.readOnly ? 'parameter-readonly' : ''}`}
-                          >
-                            <label>{param.name}</label>
-                            {param.type === 'number' ? (
-                              <NumericParameterInput
-                                param={param}
-                                onChange={val =>
-                                  handleValueChange(node.nodeId, param.id, val)
-                                }
-                              />
-                            ) : param.type === 'enum' ? (
-                              <EnumParameterInput
-                                param={param}
-                                onChange={val =>
-                                  handleValueChange(node.nodeId, param.id, val)
-                                }
-                              />
-                            ) : param.readOnly ? (
-                              <ReadOnlyInput param={param} />
-                            ) : (
-                              <NumberInput
-                                forWhom={{
-                                  nodeID: node.nodeId,
-                                  id: param.id,
-                                  type: 'target'
-                                }}
-                                value={param.value as number}
-                                setValue={(_, val) => {
-                                  handleValueChange(node.nodeId, param.id, val);
-                                }}
-                              />
-                            )}
-                          </div>
-                        ))}
+            <div className="matrix-layout">
+              <div className="matrix-parameters-panel">
+                {nodeParameters.length === 0 ? (
+                  <div className="no-parameters">
+                    No numeric parameters found in the workflow.
+                  </div>
+                ) : (
+                  <div className="matrix-parameters">
+                    {nodeParameters.map(node => (
+                      <div key={node.nodeId} className="node-parameters">
+                        <h3>{node.nodeLabel}</h3>
+                        <div className="parameters-list">
+                          {node.parameters.map(param => (
+                            <div
+                              key={param.id}
+                              className={`parameter-item ${param.readOnly ? 'parameter-readonly' : ''}`}
+                            >
+                              <label>{param.name}</label>
+                              {param.type === 'number' ? (
+                                <NumericParameterInput
+                                  param={param}
+                                  onChange={val =>
+                                    handleValueChange(
+                                      node.nodeId,
+                                      param.id,
+                                      val
+                                    )
+                                  }
+                                />
+                              ) : param.type === 'enum' ? (
+                                <EnumParameterInput
+                                  param={param}
+                                  onChange={val =>
+                                    handleValueChange(
+                                      node.nodeId,
+                                      param.id,
+                                      val
+                                    )
+                                  }
+                                />
+                              ) : param.readOnly ? (
+                                <ReadOnlyInput param={param} />
+                              ) : (
+                                <NumberInput
+                                  forWhom={{
+                                    nodeID: node.nodeId,
+                                    id: param.id,
+                                    type: 'target'
+                                  }}
+                                  value={param.value as number}
+                                  setValue={(_, val) => {
+                                    handleValueChange(
+                                      node.nodeId,
+                                      param.id,
+                                      val
+                                    );
+                                  }}
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="matrix-gallery-panel">
+                {processingContent}
+                {!processingMatrix && matrixResults.length === 0 ? (
+                  <div className="no-gallery-images">
+                    No images available. Click "Run" to generate matrix results.
+                  </div>
+                ) : matrixResultsAsGalleryImages.length > 0 ? (
+                  <GridImageGallery
+                    forWhom={{
+                      id: 'matrix-gallery',
+                      type: 'gallery',
+                      nodeID: 'matrix'
+                    }}
+                    images={matrixResultsAsGalleryImages}
+                    setValue={handleImageSelection}
+                    value={selectedImages}
+                  />
+                ) : null}
+              </div>
+            </div>
           )}
 
           <div className="matrix-dialog-buttons">
@@ -628,18 +881,13 @@ export default function MatrixDialog({
               className="run-button"
               onClick={() => {
                 handleApply();
-                if (editorContext && editorContext.code) {
-                  const code = editorContext.code(false, false);
-                  if (code) {
-                    // Execute the code if available
-                    editorContext.onLiveExecution?.();
-                  }
-                }
-                onClose();
+                executeMatrix();
               }}
-              disabled={loading || nodeParameters.length === 0}
+              disabled={
+                loading || nodeParameters.length === 0 || processingMatrix
+              }
             >
-              Run
+              {processingMatrix ? 'Processing...' : 'Run'}
             </button>
             <button
               className="apply-button"

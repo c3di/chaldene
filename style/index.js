@@ -10,3 +10,4 @@ import './imageViewer.css';
 import './imageCropper.css';
 import './imageGallery.css';
 import './MatrixDialog.css';
+import './GridImageGallery.css';

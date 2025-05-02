@@ -135,17 +135,52 @@ export class VPWidget extends ReactWidget {
   }
 
   updateInspection(id: string, data: any) {
+    console.log(`[VPWidget] Updating inspection for ${id}`, data);
     this._context?.action('graph').updateInspection(id, data);
   }
 
   listenToInspectResult(currentKernel: any): void {
+    console.log('[VPWidget] Setting up inspection listener');
     currentKernel?.registerCommTarget('inspection', (comm: any, msg: any) => {
+      console.log('[VPWidget] Inspection comm channel established', msg);
       comm.onMsg = (msg: any) => {
+        console.log('[VPWidget] Received inspection message', msg);
         const data = msg.content.data;
+
+        // Special handling for matrix results
+        if (data.type === 'matrix_results') {
+          console.log('[VPWidget] Received matrix results', data);
+          if (this._context?.matrixResultsHandler) {
+            // Forward to the MatrixDialog
+            this._context.matrixResultsHandler(data);
+          } else {
+            console.warn(
+              '[VPWidget] Received matrix results but no handler is registered'
+            );
+          }
+          return;
+        }
+
+        // Special handling for matrix errors
+        if (data.type === 'error' && data.handle_id === 'matrix_error') {
+          console.error('[VPWidget] Matrix processing error:', data.error);
+          if (this._context?.matrixResultsHandler) {
+            // Forward to the MatrixDialog
+            this._context.matrixResultsHandler(data);
+          }
+          return;
+        }
+
+        // Regular inspection handling
         if (data.handle_id) {
+          console.log(
+            `[VPWidget] Processing message with handle_id: ${data.handle_id}`
+          );
           const { handle_id, ...inspectionData } = data;
 
           this?.updateInspection(handle_id, inspectionData);
+        } else {
+          console.warn('[VPWidget] Received message without handle_id', data);
         }
       };
     });

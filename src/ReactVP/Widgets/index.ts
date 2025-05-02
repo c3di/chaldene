@@ -38,3 +38,5 @@ registerWidget('FileInputFromServer', FileInputFromServer, 'string');
 registerWidget('HistogramRange', HistogramRangeWidget, 'tuple2');
 registerWidget('ImageCropper', ImageCropper, 'tuple4');
 registerWidget('ImageGallery', ImageGallery, ['image', 'image[]']);
+export * from './ImageGallery';
+export * from './GridImageGallery';

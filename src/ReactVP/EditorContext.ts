@@ -25,6 +25,8 @@ export default class EditorContext {
   public codeGeneratorRegistry: CodeGeneratorRegistry;
   public onChangeForCodeGeneration?: (startNodeID: string) => void = undefined;
   public readonly editorID: string = '';
+  // Handler for matrix parameter results
+  public matrixResultsHandler?: (results: any) => void;
   private readonly executeLanguage: string;
   private prevExecGraph?: Graph = undefined;
   private isLiveExecution: boolean = true;

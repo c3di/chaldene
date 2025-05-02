@@ -13,7 +13,7 @@ declare module 'fabric' {
   }
 }
 
-interface IGalleryImage {
+export interface IGalleryImage {
   filename: string;
   base64: string;
   imageUrl?: string;
@@ -24,7 +24,7 @@ interface IImageGalleryProps extends WidgetProps {
   images?: IGalleryImage[];
   value?: string[];
 }
-class GalleryImage extends fabric.FabricImage {
+export class GalleryImage extends fabric.FabricImage {
   public selected: boolean = false;
 
   constructor(
