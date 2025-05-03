@@ -91,8 +91,33 @@ export class VPWidget extends ReactWidget {
     }
   }
 
+  private _cachedCode: string | null = null;
+  private _codeTimestamp: number = 0;
+
   getCode(): string {
-    return this._context?.code() ?? '';
+    // Check for recently cached code (valid for 500ms)
+    const currentTime = Date.now();
+    if (this._cachedCode && currentTime - this._codeTimestamp < 500) {
+      return this._cachedCode;
+    }
+
+    if (!this._context) {
+      return '';
+    }
+
+    // Get the code from the context
+    const code = this._context.code();
+
+    // Handle null code by returning empty string or cached code
+    if (code === null) {
+      return this._cachedCode || '';
+    }
+
+    // Cache the code for subsequent calls
+    this._cachedCode = code;
+    this._codeTimestamp = currentTime;
+
+    return code;
   }
 
   setContext(context: EditorContext): void {
@@ -100,6 +125,9 @@ export class VPWidget extends ReactWidget {
 
     this._context.addGraphChangeListener(new_graph => {
       this.setContent(JSON.stringify(new_graph));
+      // Clear code cache when graph changes
+      this._cachedCode = null;
+      this._codeTimestamp = 0;
     });
 
     this._context.onLiveExecution = this.run.bind(this);
@@ -135,61 +163,67 @@ export class VPWidget extends ReactWidget {
   }
 
   updateInspection(id: string, data: any) {
-    console.log(`[VPWidget] Updating inspection for ${id}`, data);
     this._context?.action('graph').updateInspection(id, data);
   }
 
   listenToInspectResult(currentKernel: any): void {
-    console.log('[VPWidget] Setting up inspection listener');
-    currentKernel?.registerCommTarget('inspection', (comm: any, msg: any) => {
-      console.log('[VPWidget] Inspection comm channel established', msg);
-      comm.onMsg = (msg: any) => {
-        console.log('[VPWidget] Received inspection message', msg);
-        const data = msg.content.data;
+    if (!currentKernel) {
+      return;
+    }
 
-        // Special handling for matrix results
-        if (data.type === 'matrix_results') {
-          console.log('[VPWidget] Received matrix results', data);
-          if (this._context?.matrixResultsHandler) {
-            // Forward to the MatrixDialog
-            this._context.matrixResultsHandler(data);
-          } else {
-            console.warn(
-              '[VPWidget] Received matrix results but no handler is registered'
-            );
+    try {
+      currentKernel.registerCommTarget('inspection', (comm: any, msg: any) => {
+        // Log when the comm is closed
+        comm.onClose = (msg: any) => {
+          // Connection closed
+        };
+
+        comm.onMsg = (msg: any) => {
+          const data = msg.content.data;
+
+          // Special handling for matrix results
+          if (data.type === 'matrix_results') {
+            if (this._context?.matrixResultsHandler) {
+              // Forward to the MatrixDialog
+              this._context.matrixResultsHandler(data);
+            }
+            return;
           }
-          return;
-        }
 
-        // Special handling for matrix errors
-        if (data.type === 'error' && data.handle_id === 'matrix_error') {
-          console.error('[VPWidget] Matrix processing error:', data.error);
-          if (this._context?.matrixResultsHandler) {
-            // Forward to the MatrixDialog
-            this._context.matrixResultsHandler(data);
+          // Special handling for matrix errors
+          if (data.type === 'error' && data.handle_id === 'matrix_error') {
+            if (this._context?.matrixResultsHandler) {
+              // Forward to the MatrixDialog
+              this._context.matrixResultsHandler(data);
+            }
+            return;
           }
-          return;
-        }
 
-        // Regular inspection handling
-        if (data.handle_id) {
-          console.log(
-            `[VPWidget] Processing message with handle_id: ${data.handle_id}`
-          );
-          const { handle_id, ...inspectionData } = data;
-
-          this?.updateInspection(handle_id, inspectionData);
-        } else {
-          console.warn('[VPWidget] Received message without handle_id', data);
-        }
-      };
-    });
+          // Regular inspection handling
+          if (data.handle_id) {
+            this?.updateInspection(data.handle_id, data);
+          }
+        };
+      });
+    } catch (error) {
+      // Error registering comm target
+    }
   }
 
   run(): void {
     if (this._hostNotebookPanel) {
       const { content, context, sessionDialogs, translator } =
         this._hostNotebookPanel;
+
+      // Get the code that will be executed and ensure it's cached
+      const code = this.getCode();
+
+      // Ensure the code is cached for subsequent calls
+      if (code && code.length > 0) {
+        this._cachedCode = code;
+        this._codeTimestamp = Date.now();
+      }
+
       this.onStartRun();
       // avoid jump to edit mode of cell
       Object.defineProperty(this._hostNotebookPanel.content, 'mode', {
@@ -201,6 +235,7 @@ export class VPWidget extends ReactWidget {
         },
         configurable: true
       });
+
       NotebookActions.run(
         content,
         context.sessionContext,

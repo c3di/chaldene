@@ -12,26 +12,43 @@ from PIL import Image
 from comm import create_comm
 from im2im import im2im, Image as IM
 
-matrix_comm = create_comm(target_name='inspection')
+# Set up communication channels
+try:
+    matrix_comm = create_comm(target_name='inspection')
+except Exception as e:
+    print(f"[MATRIX] ERROR creating comm channels: {str(e)}\\n{traceback.format_exc()}", flush=True)
+
 
 def capture_image_as_base64(image_var):
-    buf = PythonIO.BytesIO()
-    image_var.save(buf, format="PNG")
-    buf.seek(0)
-    
-    image_base64 = base64.b64encode(buf.read()).decode("utf-8")
-    buf.close()
-    
-    return f"data:image/png;base64,{image_base64}"
+    try:
+        buf = PythonIO.BytesIO()
+        
+        # Handle different image types
+        if hasattr(image_var, 'raw_image'):
+            # Convert im2im.Image to PIL Image
+            from PIL import Image as PILImage
+            import numpy as np
+            
+            img_array = image_var.raw_image
+            if img_array.dtype.kind == 'f':
+                img_array = (img_array * 255).astype(np.uint8)
+            
+            PILImage.fromarray(img_array).save(buf, format="PNG")
+        else:
+            # Direct save for PIL images
+            image_var.save(buf, format="PNG")
+            
+        buf.seek(0)
+        image_base64 = base64.b64encode(buf.read()).decode("utf-8")
+        buf.close()
+        
+        return f"data:image/png;base64,{image_base64}"
+    except Exception as e:
+        print(f"[MATRIX] Error capturing image: {str(e)}", flush=True)
+        return None
 
 def ${matrixProcessorFunctionName}(parameter_matrix, workflow_stages):
-    """
-    Process a matrix of parameters through workflow stages
-    
-    Args:
-        parameter_matrix: Dictionary of node parameters
-        workflow_stages: List of (input_var, operation_func, output_var, node_id) tuples representing the workflow
-    """
+    """Process a matrix of parameters through workflow stages"""
     try:    
         # Extract parameter combinations
         param_keys = []
@@ -40,18 +57,11 @@ def ${matrixProcessorFunctionName}(parameter_matrix, workflow_stages):
         # Organize parameters by node ID
         for node_id, params in parameter_matrix.items():
             for param_id, param_value in params.items():
-                if isinstance(param_value, list):
-                    # Handle multi-value parameters
-                    param_keys.append((node_id, param_id))
-                    param_values.append(param_value)
-                else:
-                    # Single values become single-item lists for consistent processing
-                    param_keys.append((node_id, param_id))
-                    param_values.append([param_value])
+                param_keys.append((node_id, param_id))
+                param_values.append([param_value] if not isinstance(param_value, list) else param_value)
         
-        # Generate all parameter combinations
+        # Generate parameter combinations
         combinations = list(itertools.product(*param_values))
-        total_combinations = len(combinations)
         
         # Process each combination
         results = []
@@ -62,34 +72,32 @@ def ${matrixProcessorFunctionName}(parameter_matrix, workflow_stages):
                 params = {}
                 param_info = {}
                 for (node_id, param_id), value in zip(param_keys, combination):
-                    input_name = param_id.split('_')[-1]  # Extract input name from param_id
-                    
                     if node_id not in params:
                         params[node_id] = {}
                         param_info[node_id] = {}
                     
-                    params[node_id][input_name] = value
+                    params[node_id][param_id] = value
                     param_info[node_id][param_id] = value
                 
                 # Execute each stage of the workflow
                 current_vars = {}
                 
-                for stage_idx, (input_var, operation_func, output_var, node_id) in enumerate(workflow_stages):
-                    # Get input value from previous stage result or from original variable
+                for input_var, operation_func, output_var, node_id in workflow_stages:
+                    # Get input value from previous stage or original variable
                     stage_input = current_vars.get(input_var, globals().get(input_var))
                     
                     # If this node has parameters for this combination
+                    node_params = {}
                     if node_id in params:
-                        # Run operation with these parameters
-                        stage_result = operation_func(stage_input, params[node_id])
+                        node_params = params[node_id]
+                        stage_result = operation_func(stage_input, node_params)
                     else:
-                        # Run operation with default parameters
                         stage_result = operation_func(stage_input, {})
                     
                     # Store result for next stage
                     current_vars[output_var] = stage_result
                 
-                # Get the final result - last stage's output
+                # Get the final result
                 if workflow_stages:
                     final_output = current_vars.get(workflow_stages[-1][2])
                     
@@ -97,9 +105,21 @@ def ${matrixProcessorFunctionName}(parameter_matrix, workflow_stages):
                         # Convert to base64 and add to results
                         base64_image = capture_image_as_base64(final_output)
                         
-                        # Add to results
+                        if base64_image:
+                            results.append({
+                                'imageUrl': base64_image,
+                                'params': param_info,
+                                'index': i
+                            })
+                        else:
+                            results.append({
+                                'error': "Failed to capture image",
+                                'params': param_info,
+                                'index': i
+                            })
+                    else:
                         results.append({
-                            'imageUrl': base64_image,
+                            'error': "No output produced",
                             'params': param_info,
                             'index': i
                         })
@@ -116,18 +136,32 @@ def ${matrixProcessorFunctionName}(parameter_matrix, workflow_stages):
                 })
         
         # Send all results at once
-        matrix_comm.send({
-            'handle_id': 'matrix_results',
-            'type': 'matrix_results',
-            'results': results,
-            'total_combinations': total_combinations
-        })
+        try:
+            matrix_comm.send({
+                'handle_id': 'matrix_results',
+                'type': 'matrix_results',
+                'results': results,
+                'total_combinations': len(combinations)
+            })
+        except Exception as e:
+            print(f"[MATRIX] Error sending results: {str(e)}", flush=True)
         
         return results
         
     except Exception as e:
-        traceback.print_exc()
+        print(f"[MATRIX] Error in matrix processing: {str(e)}", flush=True)
         
+        # Also send error via matrix_comm
+        try:
+            matrix_comm.send({
+                'handle_id': 'matrix_error',
+                'type': 'error',
+                'error': str(e),
+                'traceback': traceback.format_exc()
+            })
+        except Exception as e2:
+            print(f"[MATRIX] Could not send error via comm: {str(e2)}", flush=True)
+            
         return []
 `;
 
@@ -139,52 +173,42 @@ def ${matrixProcessorFunctionName}(parameter_matrix, workflow_stages):
  */
 export function generateMatrixParameterCode(
   parameterMatrix: Record<string, Record<string, any>>,
-  workflowStages: string
+  workflowStagesVar: string
 ): string {
   // Helper function to convert JavaScript values to Python string representation
   const valueToPythonStr = (value: any): string => {
     if (Array.isArray(value)) {
-      // Convert array to Python list
       return `[${value.map(item => valueToPythonStr(item)).join(', ')}]`;
     } else if (typeof value === 'string') {
-      // Strings need to be quoted with single quotes
       return `'${value.replace(/'/g, "\\'")}'`;
     } else if (value === null || value === undefined) {
-      // Null or undefined becomes None
       return 'None';
     } else if (typeof value === 'boolean') {
-      // Boolean to Python boolean (uppercase first letter)
       return value ? 'True' : 'False';
     } else {
-      // Numbers and other types
       return String(value);
     }
   };
 
-  // Generate Python dictionary string manually to ensure correct format
+  // Generate Python dictionary string
   let pythonMatrix = '{\n';
 
   Object.entries(parameterMatrix).forEach(([nodeId, params], nodeIdx) => {
     pythonMatrix += `  '${nodeId}': {\n`;
 
     Object.entries(params).forEach(([paramId, value], paramIdx) => {
-      pythonMatrix += `    '${paramId}': ${valueToPythonStr(value)}`;
-
-      // Add comma if not the last parameter
+      const simpleParamId = paramId.split('_').pop() || paramId;
+      pythonMatrix += `    '${simpleParamId}': ${valueToPythonStr(value)}`;
       if (paramIdx < Object.keys(params).length - 1) {
         pythonMatrix += ',';
       }
-
       pythonMatrix += '\n';
     });
 
     pythonMatrix += '  }';
-
-    // Add comma if not the last node
     if (nodeIdx < Object.keys(parameterMatrix).length - 1) {
       pythonMatrix += ',';
     }
-
     pythonMatrix += '\n';
   });
 
@@ -192,8 +216,6 @@ export function generateMatrixParameterCode(
 
   return `
 parameter_matrix = ${pythonMatrix}
-
-# Execute the matrix parameter processor with the workflow stages
-${matrixProcessorFunctionName}(parameter_matrix, ${workflowStages})
+result = ${matrixProcessorFunctionName}(parameter_matrix, ${workflowStagesVar})
 `;
 }

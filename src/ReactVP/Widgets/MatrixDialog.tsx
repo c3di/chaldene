@@ -423,10 +423,6 @@ export default function MatrixDialog({
             setTotalCombinations(results.total_combinations);
           }
         } else if (results && results.type === 'error') {
-          console.error(
-            '[MatrixDialog] Matrix processing error:',
-            results.error
-          );
           setProcessingMatrix(false);
         }
       };
@@ -553,11 +549,6 @@ export default function MatrixDialog({
           nodeLabel: node.data.displayLabel || `Node ${node.id}`,
           parameters: params
         });
-        console.log(
-          `Added node ${node.data.displayLabel} with ${params.length} parameters`
-        );
-      } else {
-        console.log(`No parameters found for node ${node.data.displayLabel}`);
       }
     });
 
@@ -593,92 +584,64 @@ export default function MatrixDialog({
     const parameterMatrix: Record<string, Record<string, any>> = {};
 
     nodeParameters.forEach(node => {
-      if (node.parameters.length > 0) {
-        parameterMatrix[node.nodeId] = {};
+      if (node.parameters.length === 0 || node.nodeId === 'info') {
+        return;
+      }
 
-        node.parameters.forEach(param => {
-          // Include the parameter if it's not read-only
-          if (!param.readOnly) {
-            // Extract the simple parameter ID (like "in1") from the full ID (like "nodeId_input_in1")
-            const simplifiedParamId = param.id.split('_').pop() || param.id;
+      parameterMatrix[node.nodeId] = {};
 
-            if (
-              param.type === 'number' &&
-              param.config.min !== undefined &&
-              param.config.max !== undefined &&
-              param.config.step !== undefined
-            ) {
-              // Generate range of values for numeric parameters
-              const min = param.config.min;
-              const max = param.config.max;
-              const step = param.config.step;
-
-              // Calculate values in the range
-              const values = [];
-              for (let val = min; val <= max; val += step) {
-                values.push(parseFloat(val.toFixed(5))); // Fix floating point precision issues
-              }
-
-              // Only use array if there are multiple values
-              parameterMatrix[node.nodeId][simplifiedParamId] =
-                values.length > 1 ? values : values[0];
-
-              console.log(
-                `[MatrixDialog] Generated range for ${param.name}: [${values.join(', ')}]`
-              );
-            } else if (param.type === 'enum') {
-              // For enum parameters, use the selected values array
-              parameterMatrix[node.nodeId][simplifiedParamId] = param.value;
-            } else {
-              // For other types, use the current value
-              parameterMatrix[node.nodeId][simplifiedParamId] = param.value;
-            }
-          }
-        });
-
-        // Remove the node if it has no usable parameters
-        if (Object.keys(parameterMatrix[node.nodeId]).length === 0) {
-          delete parameterMatrix[node.nodeId];
+      node.parameters.forEach(param => {
+        if (param.readOnly) {
+          return;
         }
+
+        const paramId = param.id.split('_').pop() || param.id;
+
+        if (
+          param.type === 'number' &&
+          param.config.min !== undefined &&
+          param.config.max !== undefined
+        ) {
+          // Generate range values
+          const { min, max, step = 1 } = param.config;
+          const values = [];
+          for (let val = min; val <= max; val += step) {
+            values.push(parseFloat(val.toFixed(5)));
+          }
+          parameterMatrix[node.nodeId][paramId] =
+            values.length > 1 ? values : values[0];
+        } else {
+          // For other types, use the current value
+          parameterMatrix[node.nodeId][paramId] = param.value;
+        }
+      });
+
+      // Remove empty nodes
+      if (Object.keys(parameterMatrix[node.nodeId]).length === 0) {
+        delete parameterMatrix[node.nodeId];
       }
     });
 
     return parameterMatrix;
   }, [nodeParameters]);
 
-  // Execute the matrix with parameter combinations
-  const executeMatrix = useCallback(() => {
-    if (!editorContext) {
-      console.warn(
-        '[MatrixDialog] Cannot execute matrix: editorContext is missing'
-      );
-      return;
-    }
-
-    // Clear previous results
-    setMatrixResults([]);
+  // Execute with matrix parameters
+  const executeMatrixCode = useCallback(async () => {
     setProcessingMatrix(true);
+    setMatrixResults([]);
     setProcessedCombinations(0);
-    setTotalCombinations(0);
 
     // Build the parameter matrix
     const parameterMatrix = buildParameterMatrix();
-    console.log('[MatrixDialog] Built parameter matrix:', parameterMatrix);
 
-    // Calculate total number of combinations (for UI purposes only)
-    let totalCount = 1;
-    Object.values(parameterMatrix).forEach(params => {
-      Object.values(params).forEach((value: any) => {
-        if (Array.isArray(value)) {
-          totalCount *= value.length;
-        }
-      });
-    });
-    setTotalCombinations(totalCount);
+    if (!editorContext) {
+      setProcessingMatrix(false);
+      return;
+    }
 
-    // Get the graph to execute
-    if (editorContext.getGraphToBeExecuted) {
-      const graph = editorContext.getGraphToBeExecuted(false);
+    try {
+      // Use the graph directly
+      const graph = editorContext.graph ? { ...editorContext.graph } : null;
 
       if (graph) {
         try {
@@ -687,41 +650,20 @@ export default function MatrixDialog({
             parameterMatrix
           };
 
-          // Generate code with parameter matrix
-          if (editorContext.code && editorContext.onLiveExecution) {
-            // Generate code with inspect_included=false for matrix processing
-            const code = editorContext.code(false, false);
+          // Also set the parameter matrix directly on the editorContext for direct access
+          (editorContext as any).parameterMatrix = parameterMatrix;
 
-            // Log the generated code for debugging
-            console.group('[MatrixDialog] Generated Matrix Code:');
-            console.log(code);
-            console.groupEnd();
-
-            // Execute the code - VPWidget will handle the results through the comm channel
-            if (code) {
-              setTimeout(() => {
-                editorContext.onLiveExecution!();
-              }, 50);
-            } else {
-              console.error('[MatrixDialog] Generated code is empty or null');
-              setProcessingMatrix(false);
-            }
-          } else {
-            console.error(
-              '[MatrixDialog] Code generator or live execution not available'
-            );
-            setProcessingMatrix(false);
-          }
+          // Let the code generator do its job through the normal execution path
+          setTimeout(() => {
+            editorContext.onLiveExecution!();
+          }, 100);
         } catch (error) {
-          console.error('[MatrixDialog] Error executing matrix:', error);
           setProcessingMatrix(false);
         }
       } else {
-        console.warn('[MatrixDialog] No valid graph to execute');
         setProcessingMatrix(false);
       }
-    } else {
-      console.warn('[MatrixDialog] getGraphToBeExecuted is not available');
+    } catch (error) {
       setProcessingMatrix(false);
     }
   }, [buildParameterMatrix, editorContext]);
@@ -878,16 +820,11 @@ export default function MatrixDialog({
 
           <div className="matrix-dialog-buttons">
             <button
-              className="run-button"
-              onClick={() => {
-                handleApply();
-                executeMatrix();
-              }}
-              disabled={
-                loading || nodeParameters.length === 0 || processingMatrix
-              }
+              className="primary-button run-button"
+              onClick={executeMatrixCode}
+              disabled={processingMatrix || nodeParameters.length === 0}
             >
-              {processingMatrix ? 'Processing...' : 'Run'}
+              Run Matrix
             </button>
             <button
               className="apply-button"

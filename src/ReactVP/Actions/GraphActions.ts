@@ -500,7 +500,6 @@ export default class GraphActions extends StateActions {
   };
 
   public applyEdgeChanges = (changes: EdgeChange[]): void => {
-    console.log('onEdgesChange', changes);
     const acceptChanges = changes.filter(change => change.type === 'select');
 
     this.stateAction((currentGraph: Graph) => ({
@@ -681,19 +680,6 @@ export default class GraphActions extends StateActions {
    * Matrix results use identifiers like "matrix_result_X"
    */
   public updateInspection = (whichVar: string, value: any): void => {
-    console.log(`[GraphActions] Updating inspection for ${whichVar}`, value);
-
-    // Check if this is a matrix result
-    if (
-      whichVar.startsWith('matrix_result_') ||
-      whichVar === 'matrix_complete'
-    ) {
-      // Matrix results are handled differently - we don't need to update any nodes
-      // Just log the receipt
-      console.log(`[GraphActions] Received matrix result: ${whichVar}`);
-      return;
-    }
-
     // Standard node-based inspection
     const parts = whichVar.split('_');
     if (parts.length < 3) {

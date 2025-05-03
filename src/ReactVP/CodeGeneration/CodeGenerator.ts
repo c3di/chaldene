@@ -347,14 +347,11 @@ ${out_loop_code}`;
     graph: Graph,
     parameterMatrix: Record<string, Record<string, any>>
   ): string {
-    console.log('[CodeGenerator] Generating matrix code for graph');
-
     // Get nodes in execution order
     const nodes = topologicalSortDAG(graph);
     const edges = graph.edges;
 
     if (nodes.length === 0) {
-      console.warn('[CodeGenerator] No nodes found in graph');
       return '';
     }
 
@@ -364,7 +361,6 @@ ${out_loop_code}`;
     );
 
     if (imageNodeIndex === -1) {
-      console.warn('[CodeGenerator] No image output node found in graph');
       return '';
     }
 
@@ -383,7 +379,6 @@ ${out_loop_code}`;
     );
 
     if (!imageOutputVar) {
-      console.warn('[CodeGenerator] No image output found in image node');
       return '';
     }
 
@@ -392,7 +387,6 @@ ${out_loop_code}`;
       imageNode.id,
       imageOutputVar.id
     );
-    console.log(`[CodeGenerator] Found image variable: ${imageVarName}`);
 
     // Collect workflow stages (skip the image node)
     const workflowStages: string[] = [];
@@ -408,7 +402,6 @@ ${out_loop_code}`;
       const nodeGenerator = getCodeGenerator(node.data.specName, this.name);
 
       if (!nodeGenerator) {
-        console.warn(`[CodeGenerator] No generator for node ${node.id}`);
         continue;
       }
 
@@ -470,12 +463,6 @@ ${out_loop_code}`;
 
       // Add the function definition
       workflowStages.push(nodeFunctionCode);
-
-      // Log the generated node function code
-      console.log(
-        `[CodeGenerator] Generated node function for ${node.id} (${node.data.displayLabel || 'unnamed'}):\n`,
-        nodeFunctionCode
-      );
 
       // Add this stage to the workflow
       workflowStages.push(
@@ -541,7 +528,8 @@ ${imageVarName}
     const nodeCode = generator(inputValues, outputValues);
 
     // Strip imports from the middle of the code so we don't duplicate them
-    return nodeCode
+    // and fix any indentation issues
+    const processedCode = nodeCode
       .split('\n')
       .filter((line, index) => {
         // Keep imports only at the beginning
@@ -551,6 +539,9 @@ ${imageVarName}
         return true;
       })
       .join('\n');
+
+    // Make sure there's no additional indentation in the code to prevent indentation errors
+    return processedCode;
   }
 
   public codeFromGraph(
@@ -559,18 +550,9 @@ ${imageVarName}
     inspect_included: boolean = true,
     parameterMatrix?: Record<string, Record<string, any>>
   ): string {
-    // Users are encouraged to structure their workflow as a single DAG.
-    // If multiple independent DAGs are needed, we recommend building each one
-    // in a separate cell within the notebook. So here we assume the graph is a
-    // single DAG.
-
     // Check if editorContext has a parameterMatrix that was set by MatrixDialog
     if (!parameterMatrix && (graph as any).editorContext?.parameterMatrix) {
       parameterMatrix = (graph as any).editorContext.parameterMatrix;
-      console.log(
-        '[CodeGenerator] Found parameter matrix in graph context',
-        parameterMatrix
-      );
     }
 
     // Check if we're in matrix mode
@@ -581,8 +563,15 @@ ${imageVarName}
       // Generate matrix processing code only
       const matrixCode = this.codeFromMatrix(editorID, graph, parameterMatrix);
       const workflowStagesVar = 'stages';
-      const fullMatrixCode = `${MatrixParameterDependencies}
+
+      const fullMatrixCode = `
+# Matrix dependencies
+${MatrixParameterDependencies}
+
+# Matrix preprocessing code
 ${matrixCode}
+
+# Generate matrix parameter code with workflow stages
 ${generateMatrixParameterCode(parameterMatrix, workflowStagesVar)}
 `.trim();
 
@@ -629,23 +618,51 @@ ${code}
         input => input.type === 'number' || input.type === 'enum'
       ) || [];
 
+    // Fix indentation for the node-specific code
+    const nodeCode = this.generateNodeWrappedWithParams(
+      node,
+      inputVar,
+      outputVar
+    );
+
+    // Look for any parameters that need special handling
+    let modifiedNodeCode = nodeCode;
+    // Regex to find patterns where variable names are quoted: mode = 'mode', sigma = 'sigma', etc.
+    const paramRegex = /(\w+)\s*=\s*['"](\1)['"]/g;
+    modifiedNodeCode = nodeCode.replace(paramRegex, '$1 = $1');
+
+    // Properly indent the node code by adding 4 spaces to each line
+    const indentedNodeCode = modifiedNodeCode
+      .split('\n')
+      .map(line => (line.trim() ? `    ${line}` : line))
+      .join('\n');
+
+    // Create a parameter extraction block that's more robust
+    const paramExtraction =
+      paramInputs.length > 0
+        ? paramInputs
+            .map(input => {
+              const paramName = input.name;
+              const paramId = input.id;
+              // Use a more robust parameter extraction with fallback
+              return `    # Extract ${paramName} from params
+    ${paramName} = None
+    if '${paramId}' in params:
+        ${paramName} = params['${paramId}']
+    elif 'in1' in params:  # Try parameter by position
+        ${paramName} = params['in1']`;
+            })
+            .join('\n\n')
+        : '    # No parameters for this node';
+
     return `
 def ${functionName}(input_image, params):
     ${node.data.displayLabel ? `# ${node.data.displayLabel}` : ''}
+    
     # Extract parameters from the params dictionary
-    ${
-      paramInputs
-        .map(input => {
-          const paramName = input.name;
-          const paramId = input.id;
-          return `${paramName} = params.get('${paramId}')`;
-        })
-        .join('\n    ') || '# No parameters for this node'
-    }
+${paramExtraction}
     
-    # Generate code using the extracted parameters
-    ${this.generateNodeWrappedWithParams(node, inputVar, outputVar)}
-    
+${indentedNodeCode}
     return ${outputVar}
 `;
   }

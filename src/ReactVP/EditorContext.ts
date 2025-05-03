@@ -163,6 +163,20 @@ export default class EditorContext {
   };
 
   public getGraphToBeExecuted = (increment: boolean = true): Graph | null => {
+    // Check if we have matrix parameters (either in graph.editorContext or directly on this context)
+    const hasMatrixParams =
+      ((this.graph as any)?.editorContext?.parameterMatrix &&
+        Object.keys((this.graph as any).editorContext.parameterMatrix).length >
+          0) ||
+      ((this as any).parameterMatrix &&
+        Object.keys((this as any).parameterMatrix).length > 0);
+
+    // For matrix mode, bypass the readiness check
+    if (hasMatrixParams) {
+      return this.graph || null;
+    }
+
+    // Regular path for non-matrix mode
     if (!this.graph || !this.checkExecutionReadiness()) {
       return null;
     }
@@ -191,6 +205,32 @@ export default class EditorContext {
     increment: boolean = true,
     inspect_included = true
   ): string | null => {
+    // Check for matrix parameters
+    const matrixParams =
+      (this as any).parameterMatrix ||
+      (this.graph as any)?.editorContext?.parameterMatrix;
+
+    // Special handling for matrix parameters
+    if (matrixParams && Object.keys(matrixParams).length > 0) {
+      // Get graph (bypassing readiness check)
+      const graph = this.graph;
+      if (!graph) {
+        return null;
+      }
+
+      // Generate code with matrix parameters
+      try {
+        const codes = this.codeGeneratorRegistry
+          .get(this.executeLanguage)
+          .codeFromGraph(this.editorID, graph, inspect_included, matrixParams);
+
+        return codes;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    // Normal code generation path
     const graphToBeExecuted = this.getGraphToBeExecuted(increment);
     if (!graphToBeExecuted) {
       return null;
