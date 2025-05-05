@@ -5,6 +5,8 @@
     position: relative;
     margin-bottom: 15px;
     box-sizing: border-box;
+    max-width: 100%;
+    /* Ensure it can use full width */
 }
 
 .grid-image-gallery-widget .gallery-controls {
@@ -36,6 +38,12 @@
     gap: 10px;
 }
 
+.input-group {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
 .layout-input-group {
     display: flex;
     flex-direction: column;
@@ -56,6 +64,26 @@
     color: var(--vpl-ui-font-color1, #2d3748);
     font-size: 0.9em;
     text-align: center;
+}
+
+.layout-input.input-error {
+    border-color: var(--vpl-red-1, #e53e3e);
+    background-color: rgba(229, 62, 62, 0.05);
+}
+
+.validation-error {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    margin-top: 4px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    color: white;
+    background-color: var(--vpl-red-1, #e53e3e);
+    z-index: 5;
 }
 
 .layout-separator {
@@ -80,9 +108,13 @@
     background-color: var(--vpl-blue-0, #3182ce);
 }
 
+/* Grid layout container */
 .grid-image-gallery-widget .gallery-grid {
     position: relative;
     width: 100%;
+    display: grid;
+    gap: 10px;
+    /* Consistent gap between cells */
 }
 
 .grid-image-gallery-widget .gallery-cell {
@@ -95,6 +127,18 @@
     box-sizing: border-box;
     padding: 0;
     width: 100%;
+    /* Remove the forced aspect ratio */
+    /* aspect-ratio: 1; */
+    /* Force square aspect ratio */
+    contain: strict;
+}
+
+/* Add specific aspect ratio classes that can be applied conditionally */
+.grid-image-gallery-widget .layout-1x1 .gallery-cell,
+.grid-image-gallery-widget .layout-2x2 .gallery-cell,
+.grid-image-gallery-widget .layout-3x3 .gallery-cell {
+    aspect-ratio: 1;
+    /* Square for balanced layouts */
 }
 
 .grid-image-gallery-widget .gallery-loading,
@@ -115,12 +159,18 @@
     border-left: 3px solid var(--vpl-red-1, #e53e3e);
 }
 
-/* Canvas container styles */
+/* Canvas styles */
 .grid-image-gallery-widget canvas {
     display: block;
     touch-action: none;
     box-sizing: border-box;
     margin: 0;
+    width: 100% !important;
+    height: 100% !important;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background: #f9f9f9;
+    box-sizing: border-box;
 }
 
 /* Fabric canvas wrapper styles */
@@ -129,7 +179,7 @@
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
-    border: none !important;
+    height: 100% !important;
 }
 
 /* Ensure upper canvas is properly sized and positioned */
@@ -171,4 +221,9 @@
     .layout-separator {
         margin: 0;
     }
+}
+
+.lower-canvas {
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: crisp-edges !important;
 }
