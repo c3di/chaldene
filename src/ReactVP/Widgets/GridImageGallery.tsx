@@ -30,8 +30,15 @@ export function GridImageGallery({
   const [cellHeight, setCellHeight] = useState<number>(300);
   const [currentPage, setCurrentPage] = useState<number>(0);
 
+  // Add states for selection and comparison
+  const [compareMode, setCompareMode] = useState<boolean>(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    null
+  );
+  const [gridImages, setGridImages] = useState<IGalleryImage[][]>([]);
+
   const canvasRefs = useRef<(fabric.Canvas | null)[]>([]);
-  const isInitializing = useRef(false);
+  const isInitializing = useRef<string | false>(false);
   const debounceTimeout = useRef<number | null>(null);
 
   const clearDebounce = useCallback(() => {
@@ -114,12 +121,13 @@ export function GridImageGallery({
     // Parse and validate
     const parsed = parseInt(inputValue, 10);
     if (!isNaN(parsed) && parsed > 0 && parsed <= 4) {
-      // Valid input, update layout
       const newLayout = [...layout];
       newLayout[index] = parsed;
-      setLayout(newLayout as [number, number]);
-      // Reset to first page when layout changes
+
       setCurrentPage(0);
+
+      isInitializing.current = false;
+      setLayout(newLayout as [number, number]);
 
       // Clear validation error
       setValidationError(prev => ({
@@ -172,27 +180,79 @@ export function GridImageGallery({
     return keys;
   }, [forWhom]);
 
-  // Distribute images across the grid cells with pagination
-  const gridImages = useMemo(() => {
-    if (!images) {
-      return [];
-    }
+  // A simpler approach for selecting images
+  const selectImage = useCallback(
+    (imageIndex: number) => {
+      setSelectedImageIndex(imageIndex);
 
+      // Calculate which page this image is on and switch to it if needed
+      const itemsPerPage = gridDimensions.total;
+      const targetPage = Math.floor(imageIndex / itemsPerPage);
+      if (targetPage !== currentPage) {
+        setCurrentPage(targetPage);
+      }
+    },
+    [currentPage, gridDimensions.total]
+  );
+
+  // A simple direct DOM approach for cell clicks
+  const handleCellClick = useCallback(
+    (imageIndex: number) => {
+      // Skip if no valid image at this index
+      if (!images || imageIndex >= images.length) {
+        return;
+      }
+
+      // Clear previous selections visually
+      document.querySelectorAll('.gallery-cell').forEach(cell => {
+        cell.classList.remove('selected');
+      });
+
+      // Mark this cell as selected
+      const cellIndex = imageIndex % gridDimensions.total;
+      const selectedCell = document.querySelector(`.cell-${cellIndex}`);
+      if (selectedCell) {
+        selectedCell.classList.add('selected');
+      }
+
+      // Update the selected image index
+      selectImage(imageIndex);
+
+      // Prepare the image data to send to the parent component
+      const selectedImage = images[imageIndex];
+      if ('params' in selectedImage && selectedImage.params) {
+        // Send complete parameter data to parent
+        setValue?.(forWhom, {
+          filename: selectedImage.filename,
+          params: selectedImage.params
+        });
+      } else {
+        // Fall back to just the filename if no params
+        setValue?.(forWhom, [selectedImage.filename]);
+      }
+    },
+    [gridDimensions.total, selectImage, setValue, forWhom, images]
+  );
+
+  // Calculate page indices to know which images to display
+  const pageStartIndex = currentPage * gridDimensions.total;
+
+  // Update grid images array to use direct indexing
+  useEffect(() => {
     const cellCount = gridDimensions.total;
     const newGridImages: IGalleryImage[][] = [];
 
-    // Calculate starting index based on current page
-    const startIndex = currentPage * cellCount;
-
     for (let i = 0; i < cellCount; i++) {
-      const imageIndex = startIndex + i;
-      // For all cells, assign a single image if available
-      const image = imageIndex < images.length ? images[imageIndex] : null;
-      newGridImages.push(image ? [image] : []);
+      const imageIndex = pageStartIndex + i;
+      if (images && imageIndex < images.length) {
+        newGridImages.push([images[imageIndex]]);
+      } else {
+        newGridImages.push([]);
+      }
     }
 
-    return newGridImages;
-  }, [images, gridDimensions.total, currentPage]);
+    setGridImages(newGridImages);
+  }, [gridDimensions.total, pageStartIndex, images]);
 
   // Arrange thumbnails in each canvas
   const arrangeThumbnails = useCallback(
@@ -216,6 +276,7 @@ export function GridImageGallery({
         if (canvas.upperCanvasEl) {
           canvas.upperCanvasEl.style.background = 'transparent';
           canvas.upperCanvasEl.style.backgroundColor = 'transparent';
+          canvas.upperCanvasEl.style.pointerEvents = 'auto'; // Ensure interaction events work
         }
 
         if (thumbnails.length > 0 && thumbnails[0].fabricObject) {
@@ -237,7 +298,31 @@ export function GridImageGallery({
             originY: 'center',
             left: canvasWidth / 2,
             top: canvasHeight / 2,
-            selectable: true
+            selectable: true, // Make sure it's selectable
+            hasControls: false, // No resize handles
+            hasBorders: true, // Show borders when selected
+            evented: true, // Ensure it can receive events
+            perPixelTargetFind: false, // For better performance
+            hoverCursor: 'pointer' // Show pointer on hover
+          });
+
+          // Apply a subtle hover effect
+          fabricObject.on('mouseover', () => {
+            fabricObject.set(
+              'shadow',
+              new fabric.Shadow({
+                color: 'rgba(0,0,0,0.3)',
+                blur: 10,
+                offsetX: 0,
+                offsetY: 0
+              })
+            );
+            canvas.requestRenderAll();
+          });
+
+          fabricObject.on('mouseout', () => {
+            fabricObject.set('shadow', null);
+            canvas.requestRenderAll();
           });
 
           canvas.add(fabricObject);
@@ -249,7 +334,7 @@ export function GridImageGallery({
         console.error('[GridImageGallery] Error in arrangeThumbnails:', err);
       }
     },
-    []
+    [layout]
   );
 
   const createImageObject = useCallback(
@@ -280,9 +365,6 @@ export function GridImageGallery({
                 opacity: 1,
                 visible: true
               });
-              if (image.getElement() instanceof HTMLImageElement) {
-                image.getElement().style.imageRendering = 'high-quality';
-              }
 
               resolve(image);
             } catch (error) {
@@ -306,8 +388,13 @@ export function GridImageGallery({
     []
   );
 
+  // Restore the loadImages function with enhanced event binding
   const loadImages = useCallback(
-    async (canvas: fabric.Canvas, images: IGalleryImage[]) => {
+    async (
+      canvas: fabric.Canvas,
+      images: IGalleryImage[],
+      canvasIndex: number
+    ) => {
       if (!canvas || canvas.isDisposed) {
         return;
       }
@@ -346,11 +433,44 @@ export function GridImageGallery({
             canvas.wrapperEl.classList.toggle('has-images', images.length > 0);
             canvas.wrapperEl.style.display = 'block';
             canvas.wrapperEl.style.visibility = 'visible';
+            canvas.wrapperEl.style.cursor = 'pointer';
           }
 
+          // Configure canvas for interaction
+          canvas.selection = false;
+          canvas.defaultCursor = 'pointer';
+          canvas.hoverCursor = 'pointer';
+
+          if (canvas.upperCanvasEl) {
+            canvas.upperCanvasEl.style.pointerEvents = 'auto';
+            canvas.upperCanvasEl.style.cursor = 'pointer';
+          }
+
+          // Ensure both canvas elements are clickable
+          if (canvas.lowerCanvasEl) {
+            canvas.lowerCanvasEl.style.cursor = 'pointer';
+          }
+
+          // Remove any existing event listeners first to prevent duplicates
+          canvas.off('mouse:down');
+
+          // Bind cell click handler directly
+          canvas.on('mouse:down', e => {
+            const cellIndex = canvasIndex % gridDimensions.total;
+            const imageIndex = pageStartIndex + cellIndex;
+
+            if (images && imageIndex < images.length) {
+              handleCellClick(imageIndex);
+            }
+          });
+
           arrangeThumbnails(processed, canvas);
+
+          // Force render to ensure changes take effect
+          canvas.renderAll();
         }
       } catch (err) {
+        console.error('[GridImageGallery] Error loading images:', err);
         setError('Failed to load images');
       } finally {
         if (!canvas.isDisposed) {
@@ -358,83 +478,23 @@ export function GridImageGallery({
         }
       }
     },
-    [arrangeThumbnails, createImageObject]
+    [
+      arrangeThumbnails,
+      createImageObject,
+      gridDimensions.total,
+      handleCellClick,
+      pageStartIndex
+    ]
   );
 
-  // Handle selection of images
-  const handleSelection = useCallback(
-    (
-      canvasIndex: number,
-      target: GalleryImage | GalleryImage[],
-      shiftKey: boolean
-    ) => {
-      const canvas = canvasRefs.current[canvasIndex];
-      if (!canvas) {
-        return;
-      }
-
-      const allGalleryImages = canvas
-        .getObjects()
-        .filter(obj => obj instanceof GalleryImage) as GalleryImage[];
-      const targetsArray = Array.isArray(target) ? target : [target];
-
-      // Handle selection state
-      if (!shiftKey) {
-        // Clear selections in all canvases first
-        canvasRefs.current.forEach((otherCanvas, idx) => {
-          if (otherCanvas && idx !== canvasIndex) {
-            otherCanvas.getObjects().forEach(obj => {
-              if (obj instanceof GalleryImage) {
-                obj.toggleSelection(false);
-              }
-            });
-            otherCanvas.renderAll();
-          }
-        });
-
-        allGalleryImages.forEach(img => {
-          if (!targetsArray.includes(img)) {
-            img.toggleSelection(false);
-          }
-        });
-      }
-
-      targetsArray.forEach(target => {
-        target.toggleSelection(!target.selected);
-      });
-
-      // Get all selected images across all canvases
-      const selectedImages: string[] = [];
-      canvasRefs.current.forEach(canvas => {
-        if (canvas) {
-          const selected = canvas
-            .getObjects()
-            .filter(
-              obj => obj instanceof GalleryImage && obj.selected
-            ) as GalleryImage[];
-
-          selected.forEach(img => {
-            if (img.data?.filename) {
-              selectedImages.push(img.data.filename);
-            }
-          });
-        }
-      });
-
-      setValue?.(forWhom, selectedImages);
-      canvas.requestRenderAll();
-    },
-    [setValue, forWhom]
-  );
+  // Toggle compare mode
+  const toggleCompareMode = useCallback(() => {
+    setCompareMode(prev => !prev);
+  }, []);
 
   // Function to calculate cell size based on container width and column count
   const calculateCellSize = useCallback(
-    (
-      containerWidth: number,
-      columns: number,
-      rows: number,
-      images?: IGalleryImage[][]
-    ) => {
+    (containerWidth: number, columns: number, rows: number) => {
       const gapSpace = (columns - 1) * 10;
       const cellWidth = (containerWidth - gapSpace) / columns;
       let cellHeight = cellWidth; // Default is square
@@ -463,28 +523,82 @@ export function GridImageGallery({
       }
 
       setCellHeight(cellHeight);
+
+      // Directly update existing canvas heights
+      canvasRefs.current.forEach((canvas, i) => {
+        if (canvas && !canvas.isDisposed) {
+          canvas.setHeight(cellHeight);
+          canvas.setDimensions({
+            width: canvas.getWidth(),
+            height: cellHeight
+          });
+
+          if (canvas.wrapperEl) {
+            canvas.wrapperEl.style.height = `${cellHeight}px`;
+          }
+
+          canvas.renderAll();
+        }
+      });
+
       return cellHeight;
     },
-    []
+    [canvasRefs]
   );
 
-  // Setup canvas and event listeners
+  // Setup canvas and event listeners - modify to pass index to loadImages
   useEffect(() => {
     // If already initializing, skip this cycle
     if (isInitializing.current) {
       return;
     }
 
-    isInitializing.current = true;
+    // Store layout hash to check for actual changes
+    const currentLayoutHash = `${layout[0]}-${layout[1]}-${pageStartIndex}`;
+    const prevLayoutHash = isInitializing.current ? isInitializing.current : '';
+
+    // Skip if this exact layout and page was already initialized
+    if (currentLayoutHash === prevLayoutHash) {
+      return;
+    }
+
+    isInitializing.current = currentLayoutHash;
 
     // Initialize canvases based on layout
     const totalCanvases = gridDimensions.total;
 
-    // Dispose existing canvases properly
+    // Clean up existing canvases
+    cleanupExistingCanvases();
+
+    // Initialize new canvases with a small delay to ensure DOM is ready
+    const initTimeout = setTimeout(() => {
+      initializeCanvases(totalCanvases);
+      isInitializing.current = currentLayoutHash;
+    }, 150);
+
+    // Cleanup function
+    return () => {
+      clearTimeout(initTimeout);
+    };
+  }, [
+    layout[0],
+    layout[1],
+    pageStartIndex,
+    canvasKeys,
+    gridDimensions.total,
+    gridDimensions.cols,
+    gridDimensions.rows,
+    calculateCellSize,
+    loadImages
+  ]);
+
+  // Helper function to clean up existing canvases
+  const cleanupExistingCanvases = useCallback(() => {
     const currentCanvasRefs = canvasRefs.current;
     currentCanvasRefs.forEach((canvas, index) => {
       if (canvas) {
         try {
+          canvas.off('mouse:down'); // Remove event listeners explicitly
           canvas.getObjects().forEach(obj => canvas.remove(obj));
           canvas.dispose();
           canvasRefs.current[index] = null;
@@ -497,12 +611,14 @@ export function GridImageGallery({
       }
     });
 
-    // Reset heights with current layout dimensions
+    // Reset canvas references array
     const maxCanvases = 16; // 4x4
     canvasRefs.current = Array(maxCanvases).fill(null);
+  }, []);
 
-    // Add a small delay to ensure DOM is ready and previous cleanup is complete
-    const initTimeout = setTimeout(() => {
+  // Helper function to initialize canvases
+  const initializeCanvases = useCallback(
+    (totalCanvases: number) => {
       // Get the container element to measure available width
       const gridContainer = document.querySelector('.gallery-grid');
       const containerWidth = gridContainer
@@ -513,18 +629,12 @@ export function GridImageGallery({
       const cellHeight = calculateCellSize(
         containerWidth,
         gridDimensions.cols,
-        gridDimensions.rows,
-        gridImages
+        gridDimensions.rows
       );
 
       for (let i = 0; i < totalCanvases; i++) {
         const canvasElement = document.getElementById(canvasKeys[i]);
-        if (!canvasElement) {
-          continue;
-        }
-
-        // Verify this canvas hasn't already been initialized
-        if (canvasRefs.current[i]) {
+        if (!canvasElement || canvasRefs.current[i]) {
           continue;
         }
 
@@ -533,141 +643,99 @@ export function GridImageGallery({
           canvasElement.removeChild(canvasElement.firstChild);
         }
 
-        // Get parent width or use default
-        const parentWidth = canvasElement.parentElement?.clientWidth || 500;
-
         try {
-          // Get parent width accounting for padding and borders correctly
-          const parentElement = canvasElement.parentElement;
-          const parentStyle = parentElement
-            ? window.getComputedStyle(parentElement)
-            : null;
-
-          // Calculate the actual inner width available for the canvas
-          let actualParentWidth = parentWidth;
-          if (parentStyle && parentElement) {
-            const parentRect = parentElement.getBoundingClientRect();
-            actualParentWidth = parentRect.width;
-            // Remove border and padding to get the exact content area size
-            actualParentWidth -=
-              parseFloat(parentStyle.paddingLeft) +
-              parseFloat(parentStyle.paddingRight) +
-              parseFloat(parentStyle.borderLeftWidth) +
-              parseFloat(parentStyle.borderRightWidth);
-          }
-
           // Create the canvas with responsive dimensions
-          const newCanvas = new fabric.Canvas(canvasElement.id, {
-            width: canvasElement.parentElement?.clientWidth || parentWidth,
-            height: cellHeight, // Use dynamic height
-            selection: true,
-            renderOnAddRemove: true,
-            selectionColor: 'transparent',
-            selectionBorderColor: 'transparent',
-            defaultCursor: 'default',
-            hoverCursor: 'default',
-            preserveObjectStacking: true,
-            backgroundColor: '#f9f9f9',
-            imageSmoothingEnabled: true,
-            enableRetinaScaling: true
-          });
-
-          // Make upper canvas transparent
-          if (newCanvas.upperCanvasEl) {
-            newCanvas.upperCanvasEl.style.background = 'transparent';
-            newCanvas.upperCanvasEl.style.backgroundColor = 'transparent';
-          }
-
-          // Set appropriate CSS to ensure the canvas container is sized correctly
-          if (newCanvas.wrapperEl) {
-            newCanvas.wrapperEl.style.width = '100%';
-            newCanvas.wrapperEl.style.height = `${cellHeight}px`;
-            newCanvas.wrapperEl.style.position = 'relative';
-            newCanvas.wrapperEl.style.display = 'block';
-            newCanvas.wrapperEl.style.boxSizing = 'border-box';
-          }
-
-          // Set CSS for the lower canvas to ensure proper sizing
-          const lowerCanvasEl = newCanvas.getElement();
-          if (lowerCanvasEl) {
-            lowerCanvasEl.style.boxSizing = 'border-box';
-            lowerCanvasEl.style.width = '100%';
-            lowerCanvasEl.style.height = '100%';
-          }
-
-          newCanvas.setDimensions({
-            width: actualParentWidth,
-            height: cellHeight // Use dynamic height
-          });
-
-          // Set up mouse events
-          newCanvas.on('mouse:down', e => {
-            if (e.target && e.target instanceof GalleryImage) {
-              handleSelection(i, e.target, e.e.shiftKey);
-            }
-          });
+          const newCanvas = createCanvas(canvasElement, cellHeight);
 
           // Store the canvas reference
           canvasRefs.current[i] = newCanvas;
 
-          // Load images for this canvas if available
+          // Calculate the cell index for this canvas
+          const cellIndex = i % gridDimensions.total;
+          const imageIndex = pageStartIndex + cellIndex;
+
+          // Load images for this canvas with index
           if (gridImages[i] && gridImages[i].length > 0) {
-            loadImages(newCanvas, gridImages[i]);
+            loadImages(newCanvas, gridImages[i], i);
+          } else {
+            // Even with no images, bind the click handler
+            newCanvas.on('mouse:down', () => {
+              if (images && imageIndex < images.length) {
+                handleCellClick(imageIndex);
+              }
+            });
           }
         } catch (error) {
           console.error(
             `[GridImageGallery] Error initializing canvas ${i}:`,
             error
           );
-          // Make sure to null out the reference if initialization fails
           canvasRefs.current[i] = null;
         }
       }
+    },
+    [
+      calculateCellSize,
+      canvasKeys,
+      gridDimensions.total,
+      gridDimensions.cols,
+      gridDimensions.rows,
+      gridImages,
+      pageStartIndex,
+      loadImages,
+      handleCellClick,
+      images
+    ]
+  );
 
-      // Reset the initializing flag when done
-      isInitializing.current = false;
-    }, 150);
-
-    // Cleanup function
-    return () => {
-      // Clear the timeout to prevent initializing after unmount
-      clearTimeout(initTimeout);
-
-      // Set initializing to false to allow future initialization
-      isInitializing.current = false;
-
-      // Properly dispose all canvases
-      canvasRefs.current.forEach((canvas, index) => {
-        if (canvas) {
-          try {
-            canvas.getObjects().forEach(obj => canvas.remove(obj));
-            canvas.dispose();
-          } catch (error) {
-            console.error('[GridImageGallery] Error disposing canvas:', error);
-          }
-        }
+  // Helper function to create a canvas with proper configuration
+  const createCanvas = useCallback(
+    (canvasElement: HTMLElement, height: number): fabric.Canvas => {
+      const newCanvas = new fabric.Canvas(canvasElement.id, {
+        width: canvasElement.parentElement?.clientWidth || 500,
+        height: height,
+        selection: false,
+        renderOnAddRemove: true,
+        selectionColor: 'rgba(0, 120, 215, 0.2)',
+        selectionBorderColor: '#0078D7',
+        defaultCursor: 'pointer',
+        hoverCursor: 'pointer',
+        preserveObjectStacking: true,
+        backgroundColor: '#f9f9f9',
+        imageSmoothingEnabled: true,
+        enableRetinaScaling: true,
+        interactive: true
       });
-      canvasRefs.current = [];
-    };
-  }, [
-    canvasKeys,
-    gridDimensions.total,
-    gridDimensions.cols, // Add columns as dependency since it affects cell size
-    gridDimensions.rows, // Add rows as dependency
-    gridImages,
-    handleSelection,
-    loadImages,
-    getCurrentLayout,
-    calculateCellSize, // Add new dependency
-    setCellHeight // Add as dependency since we use it in calculateCellSize
-  ]);
+
+      // Configure the upper canvas
+      if (newCanvas.upperCanvasEl) {
+        newCanvas.upperCanvasEl.style.background = 'transparent';
+        newCanvas.upperCanvasEl.style.backgroundColor = 'transparent';
+        newCanvas.upperCanvasEl.style.pointerEvents = 'auto';
+        newCanvas.upperCanvasEl.style.cursor = 'pointer';
+      }
+
+      // Configure the wrapper element
+      if (newCanvas.wrapperEl) {
+        newCanvas.wrapperEl.style.width = '100%';
+        newCanvas.wrapperEl.style.height = `${height}px`;
+        newCanvas.wrapperEl.style.position = 'relative';
+        newCanvas.wrapperEl.style.display = 'block';
+        newCanvas.wrapperEl.style.boxSizing = 'border-box';
+        newCanvas.wrapperEl.style.cursor = 'pointer';
+      }
+
+      return newCanvas;
+    },
+    []
+  );
 
   // Update images when gridImages change
   useEffect(() => {
     canvasRefs.current.forEach((canvas, index) => {
       if (canvas && !canvas.isDisposed && gridImages[index]) {
         setTimeout(() => {
-          loadImages(canvas, gridImages[index]);
+          loadImages(canvas, gridImages[index], index);
         }, 50);
       } else if (canvas && !gridImages[index]) {
         // If there are no images for this canvas, clear it
@@ -676,6 +744,25 @@ export function GridImageGallery({
       }
     });
   }, [gridImages, loadImages]);
+
+  // Add window resize listener to recalculate cell heights
+  useEffect(() => {
+    const handleResize = () => {
+      // Get the container element to measure available width
+      const gridContainer = document.querySelector('.gallery-grid');
+      if (gridContainer) {
+        const containerWidth = gridContainer.clientWidth;
+        calculateCellSize(
+          containerWidth,
+          gridDimensions.cols,
+          gridDimensions.rows
+        );
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [calculateCellSize, gridDimensions.cols, gridDimensions.rows]);
 
   // Update layout when initialLayout changes
   useEffect(() => {
@@ -687,37 +774,53 @@ export function GridImageGallery({
     }
   }, [initialLayout, getCurrentLayout]);
 
-  // Add global CSS rule for upper canvas in the component
+  // Recalculate cell height whenever the layout changes
   useEffect(() => {
-    // Create a style element
-    const styleEl = document.createElement('style');
-    styleEl.type = 'text/css';
-    styleEl.innerHTML = `
-      .grid-image-gallery-widget .upper-canvas {
-        background: transparent !important;
-        background-color: transparent !important;
-        pointer-events: none !important;
-      }
-      
-      .grid-image-gallery-widget .lower-canvas {
-        z-index: 1 !important;
-      }
-    `;
+    // Get the container element to measure available width
+    const gridContainer = document.querySelector('.gallery-grid');
+    if (gridContainer) {
+      const containerWidth = gridContainer.clientWidth;
+      // Force recalculation of cell size when layout changes
+      calculateCellSize(
+        containerWidth,
+        gridDimensions.cols,
+        gridDimensions.rows
+      );
 
-    // Add it to the document head
-    document.head.appendChild(styleEl);
-
-    // Clean up on unmount
-    return () => {
-      document.head.removeChild(styleEl);
-    };
-  }, []);
+      // Force reinitialization
+      isInitializing.current = false;
+    }
+  }, [layout, gridDimensions.cols, gridDimensions.rows, calculateCellSize]);
 
   return (
     <div
       className={`grid-image-gallery-widget widget layout-${getCurrentLayout()}`}
     >
       <div className="gallery-controls">
+        {images && images.length > gridDimensions.total && (
+          <div className="gallery-nav-buttons">
+            <span className="gallery-page-indicator">
+              {currentPage + 1}/{totalPages}
+            </span>
+            <button
+              className="gallery-nav-button"
+              onClick={() => handleNavigation('prev')}
+              disabled={isNavButtonDisabled('prev')}
+              title="Previous page"
+            >
+              <LeftArrowIcon />
+            </button>
+            <button
+              className="gallery-nav-button"
+              onClick={() => handleNavigation('next')}
+              disabled={isNavButtonDisabled('next')}
+              title="Next page"
+            >
+              <RightArrowIcon />
+            </button>
+          </div>
+        )}
+
         <div className="layout-inputs">
           <div className="input-group">
             <input
@@ -754,57 +857,52 @@ export function GridImageGallery({
           </div>
         </div>
 
-        {/* Navigation buttons with arrow icons */}
-        {images && images.length > gridDimensions.total && (
-          <div className="gallery-nav-buttons">
-            <span className="gallery-page-indicator">
-              {currentPage + 1}/{totalPages}
-            </span>
-            <button
-              className="gallery-nav-button"
-              onClick={() => handleNavigation('prev')}
-              disabled={isNavButtonDisabled('prev')}
-              title="Previous page"
-            >
-              <LeftArrowIcon />
-            </button>
-            <button
-              className="gallery-nav-button"
-              onClick={() => handleNavigation('next')}
-              disabled={isNavButtonDisabled('next')}
-              title="Next page"
-            >
-              <RightArrowIcon />
-            </button>
-          </div>
-        )}
+        <div className="gallery-action-buttons">
+          <button
+            className={`gallery-action-button ${compareMode ? 'active' : ''}`}
+            onClick={toggleCompareMode}
+            title="Compare images"
+          >
+            Compare
+          </button>
+        </div>
       </div>
 
       <div
         className="gallery-grid"
         style={{
-          gridTemplateColumns: `repeat(${gridDimensions.cols}, 1fr)`,
-          gridAutoRows: 'auto',
-          gridAutoFlow: 'row'
+          gridTemplateColumns: `repeat(${gridDimensions.cols}, 1fr)`
         }}
       >
-        {canvasKeys.slice(0, gridDimensions.total).map((key, index) => {
-          // Cell height should be set at render time based on calculated values
-          // This makes each cell's height match the canvas height that was calculated
-          const cellStyle: React.CSSProperties = {
-            height: `${cellHeight}px`
-          };
+        {images &&
+          Array.from({ length: gridDimensions.total }).map((_, cellIndex) => {
+            const imageIndex = pageStartIndex + cellIndex;
+            const hasImage = images && imageIndex < images.length;
+            const isSelected = selectedImageIndex === imageIndex;
 
-          return (
-            <div
-              key={key}
-              className={`gallery-cell cell-${index}`}
-              style={cellStyle}
-            >
-              <canvas id={key} width="100%" height="100%" />
-            </div>
-          );
-        })}
+            return (
+              <div
+                key={`cell-${cellIndex}`}
+                className={`gallery-cell cell-${cellIndex} ${isSelected ? 'selected' : ''} ${!hasImage ? 'empty' : ''}`}
+                style={{ height: `${cellHeight}px` }}
+                onClick={
+                  hasImage ? () => handleCellClick(imageIndex) : undefined
+                }
+                title={hasImage ? `Image ${imageIndex + 1}` : 'No image'}
+              >
+                {hasImage && (
+                  <div className="gallery-image-container">
+                    <img
+                      src={
+                        images[imageIndex].base64 || images[imageIndex].imageUrl
+                      }
+                      alt={`Thumbnail ${imageIndex}`}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
       </div>
 
       {loading && <div className="gallery-loading">Loading images...</div>}

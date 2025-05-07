@@ -29,6 +29,7 @@ interface IParameter {
   readOnly?: boolean;
   config: IParamConfig;
   originalConfig?: { hasSlider: boolean };
+  displayValue?: string;
 }
 
 // Function to open the matrix dialog from anywhere in the application
@@ -69,9 +70,13 @@ export function openMatrixDialog(editorContext: any): void {
       forWhom={identifier}
       editorContext={editorContext}
       onClose={handleClose}
-      setValue={(id, val) => {
-        if (editorContext?.graph) {
-          editorContext.updateGraph(editorContext.graph);
+      setValue={(_, updatedParameterMatrix) => {
+        if (editorContext) {
+          (editorContext as any).appliedParameterMatrix =
+            updatedParameterMatrix;
+          if (editorContext.graph && editorContext.updateGraph) {
+            editorContext.updateGraph(editorContext.graph);
+          }
         }
       }}
     />
@@ -81,10 +86,12 @@ export function openMatrixDialog(editorContext: any): void {
 // Component for numeric inputs with range slider
 function NumericParameterInput({
   param,
-  onChange
+  onChange,
+  onConfigChange
 }: {
   param: IParameter;
   onChange: (value: number) => void;
+  onConfigChange: (configKey: keyof IParamConfig, value: number) => void;
 }) {
   const [value, setValue] = useState<number>(param.value as number);
   const [isEditing, setIsEditing] = useState(false);
@@ -161,16 +168,16 @@ function NumericParameterInput({
           value={min !== undefined ? min : 0}
           setValue={(_, val) => {
             // Ensure min ≤ max if max is defined
+            let newMin = val;
             if (max !== undefined && val > max) {
-              param.config.min = max;
-            } else {
-              param.config.min = val;
+              newMin = max;
             }
+            onConfigChange('min', newMin);
 
             // Force re-render with updated range
-            if (val > value) {
-              setValue(val);
-              onChange(val);
+            if (newMin > value) {
+              setValue(newMin);
+              onChange(newMin);
             }
           }}
         />
@@ -186,16 +193,16 @@ function NumericParameterInput({
           value={max !== undefined ? max : 100}
           setValue={(_, val) => {
             // Ensure max ≥ min if min is defined
+            let newMax = val;
             if (min !== undefined && val < min) {
-              param.config.max = min;
-            } else {
-              param.config.max = val;
+              newMax = min;
             }
+            onConfigChange('max', newMax);
 
             // Force re-render with updated range
-            if (val < value) {
-              setValue(val);
-              onChange(val);
+            if (newMax < value) {
+              setValue(newMax);
+              onChange(newMax);
             }
           }}
         />
@@ -210,7 +217,7 @@ function NumericParameterInput({
           }}
           value={step}
           setValue={(_, val) => {
-            param.config.step = val > 0 ? val : 0.01;
+            onConfigChange('step', val > 0 ? val : 0.01);
           }}
         />
       </div>
@@ -374,7 +381,6 @@ const MatrixDialogPortal = ({
 };
 
 export default function MatrixDialog({
-  value,
   setValue,
   forWhom,
   onClose,
@@ -407,10 +413,6 @@ export default function MatrixDialog({
     if (editorContext) {
       // Handle receiving matrix results from VPWidget
       const matrixResultsHandler = (results: any) => {
-        console.log(
-          '[MatrixDialog] Received matrix results from VPWidget',
-          results
-        );
         if (
           results &&
           results.type === 'matrix_results' &&
@@ -441,57 +443,29 @@ export default function MatrixDialog({
 
   // Collect all node parameters except images
   useEffect(() => {
-    if (!editorContext || !editorContext.graph) {
+    if (!editorContext || !editorContext.graph || !editorContext.graph.nodes) {
+      setNodeParameters([]); // Clear parameters if no graph or nodes
       setLoading(false);
       return;
     }
 
-    // Get only the nodes from a working workflow
-    let workflowNodes = editorContext.graph.nodes;
-
-    // Check if the workflow is valid
-    const isWorkflowValid = editorContext.checkExecutionReadiness();
-
-    if (isWorkflowValid) {
-      // If workflow is valid, get the executable graph
-      const executableGraph = editorContext.getGraphToBeExecuted(false);
-      if (executableGraph) {
-        // Use only nodes from the executable graph
-        workflowNodes = executableGraph.nodes;
-      }
-    } else {
-      // If no valid workflow, still show parameters but indicate workflow is not ready
-      setNodeParameters([
-        {
-          nodeId: 'info',
-          nodeLabel: 'Note: Workflow is not ready for execution',
-          parameters: []
-        }
-      ]);
-      setLoading(false);
-      return;
-    }
-
-    const nodesWithParams: Array<{
+    const rawNodes = editorContext.graph.nodes; // Always use the raw graph nodes for UI listing
+    const localNodesWithParams: Array<{
       nodeId: string;
       nodeLabel: string;
       parameters: Array<IParameter>;
     }> = [];
 
-    workflowNodes.forEach(node => {
+    rawNodes.forEach(node => {
       const params: Array<IParameter> = [];
-
-      // Process inputs
       if (node.data.inputs) {
         node.data.inputs.forEach((input: any) => {
-          // Skip image inputs
           if (
             input.type &&
             typeof input.type === 'string' &&
             !input.type.toLowerCase().includes('image')
           ) {
             if (input.type === 'number') {
-              // Add numeric parameter
               params.push({
                 id: `${node.id}_input_${input.id}`,
                 name: input.name || input.id,
@@ -514,7 +488,6 @@ export default function MatrixDialog({
                 originalConfig: { hasSlider: input.widget?.hasSlider === true }
               });
             } else if (input.type === 'enum') {
-              // Add enum parameter
               params.push({
                 id: `${node.id}_input_${input.id}`,
                 name: input.name || input.id,
@@ -527,7 +500,6 @@ export default function MatrixDialog({
                 originalConfig: { hasSlider: input.widget?.hasSlider === true }
               });
             } else {
-              // Add other types as read-only parameters
               params.push({
                 id: `${node.id}_input_${input.id}`,
                 name: input.name || input.id,
@@ -544,7 +516,7 @@ export default function MatrixDialog({
       }
 
       if (params.length > 0) {
-        nodesWithParams.push({
+        localNodesWithParams.push({
           nodeId: node.id,
           nodeLabel: node.data.displayLabel || `Node ${node.id}`,
           parameters: params
@@ -552,8 +524,26 @@ export default function MatrixDialog({
       }
     });
 
-    console.log(`Total nodes with parameters: ${nodesWithParams.length}`);
-    setNodeParameters(nodesWithParams);
+    // Check workflow readiness and add an info message if needed, but still show parameters
+    const isWorkflowValid = editorContext.checkExecutionReadiness?.();
+    if (!isWorkflowValid) {
+      const infoMessage =
+        localNodesWithParams.length > 0
+          ? 'Note: Workflow may not be ready for full execution'
+          : 'Note: Workflow is not ready for execution, and no parameters found.';
+
+      setNodeParameters([
+        {
+          nodeId: 'info',
+          nodeLabel: infoMessage,
+          parameters: []
+        },
+        ...localNodesWithParams
+      ]);
+    } else {
+      setNodeParameters(localNodesWithParams);
+    }
+
     setLoading(false);
   }, [editorContext]);
 
@@ -567,6 +557,38 @@ export default function MatrixDialog({
               parameters: node.parameters.map(param => {
                 if (param.id === paramId) {
                   return { ...param, value: newValue };
+                }
+                return param;
+              })
+            };
+          }
+          return node;
+        })
+      );
+    },
+    []
+  );
+
+  const handleParamConfigChange = useCallback(
+    (
+      nodeId: string,
+      paramId: string,
+      configKey: keyof IParamConfig,
+      configValue: number
+    ) => {
+      setNodeParameters(prevNodes =>
+        prevNodes.map(node => {
+          if (node.nodeId === nodeId) {
+            return {
+              ...node,
+              parameters: node.parameters.map(param => {
+                if (param.id === paramId) {
+                  // Create a new config object to avoid direct mutation
+                  const newConfig = {
+                    ...param.config,
+                    [configKey]: configValue
+                  };
+                  return { ...param, config: newConfig };
                 }
                 return param;
               })
@@ -680,16 +702,66 @@ export default function MatrixDialog({
 
   // Update the existing handleApply function to include matrix execution
   const handleApply = useCallback(() => {
-    // Update the matrix in the graph data
-    const parameterMatrix = buildParameterMatrix();
-    setValue?.(forWhom, parameterMatrix);
+    const newParameterMatrix = buildParameterMatrix();
+    setValue?.(forWhom, newParameterMatrix);
   }, [setValue, forWhom, buildParameterMatrix]);
 
   // Handle selection of images
-  const handleImageSelection = useCallback((_: any, selected: string[]) => {
-    setSelectedImages(selected);
-    // Here you could show details of the selected parameter combinations
-  }, []);
+  const handleImageSelection = useCallback(
+    (_: any, selected: string[] | any) => {
+      setSelectedImages(Array.isArray(selected) ? selected : []);
+
+      // Check if this is a parameter selection from GridImageGallery
+      if (selected && !Array.isArray(selected) && selected.params) {
+        const selectedParams = selected.params;
+
+        setNodeParameters(prevNodeParameters =>
+          prevNodeParameters.map(node => {
+            if (selectedParams[node.nodeId]) {
+              const nodeParamsFromSelection = selectedParams[node.nodeId];
+              return {
+                ...node,
+                parameters: node.parameters.map(param => {
+                  const paramId = param.id.split('_').pop() || param.id;
+                  let newDisplayValue: string | undefined = undefined;
+
+                  if (nodeParamsFromSelection[paramId] !== undefined) {
+                    const valueFromSelection = nodeParamsFromSelection[paramId];
+                    if (param.type === 'number') {
+                      newDisplayValue =
+                        typeof valueFromSelection === 'number'
+                          ? valueFromSelection.toString()
+                          : String(valueFromSelection);
+                    } else if (param.type === 'enum') {
+                      newDisplayValue = String(valueFromSelection);
+                    } else {
+                      newDisplayValue = String(valueFromSelection);
+                    }
+                  }
+                  // Return a new param object with updated displayValue or existing if no change
+                  return newDisplayValue !== param.displayValue
+                    ? { ...param, displayValue: newDisplayValue }
+                    : param;
+                })
+              };
+            }
+            // If node not in selected params, ensure displayValues are cleared if they were previously set for this node
+            // This handles deselecting or selecting an image that doesn't affect this node.
+            let nodeChanged = false;
+            const newParameters = node.parameters.map(param => {
+              if (param.displayValue !== undefined) {
+                nodeChanged = true;
+                return { ...param, displayValue: undefined };
+              }
+              return param;
+            });
+            return nodeChanged ? { ...node, parameters: newParameters } : node;
+          })
+        );
+      }
+    },
+    []
+  );
 
   // Simplify the processing UI display
   const processingContent = useMemo(() => {
@@ -745,7 +817,17 @@ export default function MatrixDialog({
                               key={param.id}
                               className={`parameter-item ${param.readOnly ? 'parameter-readonly' : ''}`}
                             >
-                              <label>{param.name}</label>
+                              <label>
+                                {param.name}
+                                {param.displayValue !== undefined && (
+                                  <span
+                                    className="selected-param-value"
+                                    title="Selected value"
+                                  >
+                                    {param.displayValue}
+                                  </span>
+                                )}
+                              </label>
                               {param.type === 'number' ? (
                                 <NumericParameterInput
                                   param={param}
@@ -754,6 +836,14 @@ export default function MatrixDialog({
                                       node.nodeId,
                                       param.id,
                                       val
+                                    )
+                                  }
+                                  onConfigChange={(configKey, configVal) =>
+                                    handleParamConfigChange(
+                                      node.nodeId,
+                                      param.id,
+                                      configKey,
+                                      configVal
                                     )
                                   }
                                 />

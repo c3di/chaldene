@@ -12,7 +12,7 @@
 .grid-image-gallery-widget .gallery-controls {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     position: relative;
     margin-bottom: 10px;
     padding: 8px;
@@ -43,6 +43,8 @@
     display: flex;
     flex-direction: column;
     position: relative;
+    width: 50px;
+    /* Make input-group width shorter */
 }
 
 .layout-input-group {
@@ -114,7 +116,7 @@
     width: 100%;
     display: grid;
     gap: 10px;
-    /* Consistent gap between cells */
+    /* Grid template columns will be set dynamically via inline style */
 }
 
 .grid-image-gallery-widget .gallery-cell {
@@ -127,10 +129,47 @@
     box-sizing: border-box;
     padding: 0;
     width: 100%;
-    /* Remove the forced aspect ratio */
-    /* aspect-ratio: 1; */
-    /* Force square aspect ratio */
     contain: strict;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Gallery cell states */
+.grid-image-gallery-widget .gallery-cell:hover {
+    border-color: var(--vpl-blue-1, #4299e1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.grid-image-gallery-widget .gallery-cell.selected {
+    border: 2px solid var(--vpl-blue-1, #4299e1);
+    box-shadow: 0 0 0 1px var(--vpl-blue-1, #4299e1), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.grid-image-gallery-widget .gallery-cell.empty {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.gallery-image-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.gallery-image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 /* Add specific aspect ratio classes that can be applied conditionally */
@@ -170,7 +209,6 @@
     border: 1px solid #eee;
     border-radius: 4px;
     background: #f9f9f9;
-    box-sizing: border-box;
 }
 
 /* Fabric canvas wrapper styles */
@@ -180,6 +218,9 @@
     padding: 0 !important;
     width: 100% !important;
     height: 100% !important;
+    cursor: pointer;
+    position: relative;
+    display: block;
 }
 
 /* Ensure upper canvas is properly sized and positioned */
@@ -187,6 +228,9 @@
     box-sizing: border-box !important;
     width: 100% !important;
     left: 0 !important;
+    pointer-events: auto !important;
+    background: transparent !important;
+    background-color: transparent !important;
 }
 
 /* Ensure lower canvas is properly sized and positioned */
@@ -194,6 +238,9 @@
     box-sizing: border-box !important;
     width: 100% !important;
     left: 0 !important;
+    z-index: 1 !important;
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: crisp-edges !important;
 }
 
 /* Hide spinner buttons on number inputs */
@@ -224,7 +271,9 @@
 }
 
 @media (max-width: 480px) {
-    .gallery-nav-buttons {
+
+    .gallery-nav-buttons,
+    .gallery-action-buttons {
         position: relative;
         right: auto;
         margin-top: 8px;
@@ -233,6 +282,7 @@
 
     .grid-image-gallery-widget .gallery-controls {
         flex-direction: column;
+        gap: 10px;
     }
 }
 
@@ -246,8 +296,62 @@
     display: flex;
     align-items: center;
     gap: 7px;
-    position: absolute;
-    right: 10px;
+    position: relative;
+}
+
+.gallery-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    min-width: 170px;
+    /* Ensure enough space for both buttons */
+    justify-content: flex-end;
+}
+
+.gallery-action-button {
+    background-color: var(--vpl-blue-1, #4299e1);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+    min-width: 80px;
+    /* Ensure minimum width of buttons */
+}
+
+.gallery-action-button:hover {
+    background-color: var(--vpl-blue-0, #3182ce);
+}
+
+.gallery-action-button:disabled {
+    background-color: var(--vpl-blue-gray-4, #cbd5e0);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.gallery-action-button.active {
+    background-color: var(--vpl-green-1, #38a169);
+}
+
+/* Parameter value display */
+.parameter-value-display {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.9em;
+    padding: 2px 6px;
+    background-color: var(--vpl-blue-1, #4299e1);
+    color: white;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+/* Page indicator */
+.gallery-page-indicator {
+    font-size: 0.8rem;
+    color: var(--vpl-ui-font-color2, #4a5568);
 }
 
 .gallery-nav-button {
@@ -279,8 +383,41 @@
     fill: var(--vpl-ui-font-color1, #2d3748);
 }
 
-/* Page indicator */
-.gallery-page-indicator {
-    font-size: 0.8rem;
+.selected-parameters {
+    margin-bottom: 15px;
+    padding: 12px;
+    background-color: var(--vpl-blue-gray-5, #edf2f7);
+    border-radius: 4px;
+    border-left: 3px solid var(--vpl-blue-1, #4299e1);
+}
+
+.selected-parameters h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: var(--vpl-ui-font-color1, #2d3748);
+}
+
+.selected-parameters .node-params {
+    margin-bottom: 10px;
+}
+
+.selected-parameters h5 {
+    margin: 0 0 5px 0;
+    font-size: 0.9rem;
+    font-weight: 500;
     color: var(--vpl-ui-font-color2, #4a5568);
+}
+
+.selected-parameters ul {
+    list-style-type: none;
+    padding-left: 10px;
+    margin: 0;
+}
+
+.selected-parameters li {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
 }
