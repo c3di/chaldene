@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import * as fabric from 'fabric';
 import { WidgetProps } from './Widget';
 import { GalleryImage, IGalleryImage } from './ImageGallery';
+import { LeftArrowIcon, RightArrowIcon } from '../Style';
 
 interface IGridImageGalleryProps extends WidgetProps {
   images?: IGalleryImage[];
@@ -26,8 +27,8 @@ export function GridImageGallery({
     row?: string;
     col?: string;
   }>({});
-  // Store calculated cell height for use in rendering
   const [cellHeight, setCellHeight] = useState<number>(300);
+  const [currentPage, setCurrentPage] = useState<number>(0);
 
   const canvasRefs = useRef<(fabric.Canvas | null)[]>([]);
   const isInitializing = useRef(false);
@@ -44,6 +45,38 @@ export function GridImageGallery({
   const getCurrentLayout = useCallback(() => {
     return `${layout[0]}x${layout[1]}`;
   }, [layout]);
+
+  // Calculate total pages for navigation
+  const totalPages = useMemo(() => {
+    if (!images) {
+      return 1;
+    }
+    const imagesPerPage = layout[0] * layout[1];
+    return Math.ceil(images.length / imagesPerPage);
+  }, [images, layout]);
+
+  // Handle navigation between pages
+  const handleNavigation = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (direction === 'prev' && currentPage > 0) {
+        setCurrentPage(prev => prev - 1);
+      } else if (direction === 'next' && currentPage < totalPages - 1) {
+        setCurrentPage(prev => prev + 1);
+      }
+    },
+    [currentPage, totalPages]
+  );
+
+  // Check if navigation buttons should be disabled
+  const isNavButtonDisabled = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (direction === 'prev') {
+        return currentPage === 0;
+      }
+      return currentPage >= totalPages - 1;
+    },
+    [currentPage, totalPages]
+  );
 
   // Initialize rows and cols from initialLayout only on first render
   useEffect(() => {
@@ -85,6 +118,8 @@ export function GridImageGallery({
       const newLayout = [...layout];
       newLayout[index] = parsed;
       setLayout(newLayout as [number, number]);
+      // Reset to first page when layout changes
+      setCurrentPage(0);
 
       // Clear validation error
       setValidationError(prev => ({
@@ -137,7 +172,7 @@ export function GridImageGallery({
     return keys;
   }, [forWhom]);
 
-  // Distribute images across the grid cells
+  // Distribute images across the grid cells with pagination
   const gridImages = useMemo(() => {
     if (!images) {
       return [];
@@ -146,14 +181,18 @@ export function GridImageGallery({
     const cellCount = gridDimensions.total;
     const newGridImages: IGalleryImage[][] = [];
 
+    // Calculate starting index based on current page
+    const startIndex = currentPage * cellCount;
+
     for (let i = 0; i < cellCount; i++) {
+      const imageIndex = startIndex + i;
       // For all cells, assign a single image if available
-      const image = i < images.length ? images[i] : null;
+      const image = imageIndex < images.length ? images[imageIndex] : null;
       newGridImages.push(image ? [image] : []);
     }
 
     return newGridImages;
-  }, [images, gridDimensions.total]);
+  }, [images, gridDimensions.total, currentPage]);
 
   // Arrange thumbnails in each canvas
   const arrangeThumbnails = useCallback(
@@ -388,9 +427,6 @@ export function GridImageGallery({
     [setValue, forWhom]
   );
 
-  // Grid width and aspect ratio control
-  const gridAspectRatio = useMemo(() => 1, []); // 1:1 for square cells
-
   // Function to calculate cell size based on container width and column count
   const calculateCellSize = useCallback(
     (
@@ -401,26 +437,35 @@ export function GridImageGallery({
     ) => {
       const gapSpace = (columns - 1) * 10;
       const cellWidth = (containerWidth - gapSpace) / columns;
+      let cellHeight = cellWidth; // Default is square
 
-      // Default cell height is square (1:1 aspect ratio)
-      let cellHeight = Math.floor(cellWidth * gridAspectRatio);
-
-      // Special case: When layout is tall (more rows than columns)
-      // apply height reduction to fit better on screen
-      if (rows > columns) {
-        if (rows === 4 && columns === 1) {
-          cellHeight = Math.floor(cellWidth * 0.4);
-        } else {
-          // Calculate reduction based on how much taller than wide
-          const aspectAdjustment = Math.max(0.7, 1 - (rows - columns) * 0.1);
-          cellHeight = Math.floor(cellWidth * aspectAdjustment);
+      // For vertical layouts (Nx1) where N > 1, make cells shorter to fit on screen
+      if (columns === 1 && rows > 1) {
+        // Use a more dramatic height reduction for tall layouts
+        switch (rows) {
+          case 2:
+            cellHeight = Math.min(250, cellWidth * 0.5);
+            break;
+          case 3:
+            cellHeight = Math.min(180, cellWidth * 0.4);
+            break;
+          case 4:
+            cellHeight = Math.min(150, cellWidth * 0.3);
+            break;
+          default:
+            cellHeight = Math.min(200, cellWidth * 0.6);
         }
       }
-      setCellHeight(cellHeight);
+      // For layouts with more rows than columns, but not single-column or 1x1
+      else if (rows > columns && !(rows === 1 && columns === 1)) {
+        const heightRatio = Math.max(0.4, 1 - (rows - columns) * 0.2);
+        cellHeight = Math.min(200, cellWidth * heightRatio);
+      }
 
+      setCellHeight(cellHeight);
       return cellHeight;
     },
-    [gridAspectRatio]
+    []
   );
 
   // Setup canvas and event listeners
@@ -708,6 +753,31 @@ export function GridImageGallery({
             )}
           </div>
         </div>
+
+        {/* Navigation buttons with arrow icons */}
+        {images && images.length > gridDimensions.total && (
+          <div className="gallery-nav-buttons">
+            <span className="gallery-page-indicator">
+              {currentPage + 1}/{totalPages}
+            </span>
+            <button
+              className="gallery-nav-button"
+              onClick={() => handleNavigation('prev')}
+              disabled={isNavButtonDisabled('prev')}
+              title="Previous page"
+            >
+              <LeftArrowIcon />
+            </button>
+            <button
+              className="gallery-nav-button"
+              onClick={() => handleNavigation('next')}
+              disabled={isNavButtonDisabled('next')}
+              title="Next page"
+            >
+              <RightArrowIcon />
+            </button>
+          </div>
+        )}
       </div>
 
       <div
