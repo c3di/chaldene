@@ -373,4 +373,11 @@ export class VPEditor implements CodeEditor.IEditor {
   private _model: CodeEditor.IModel;
   private _uuid = '';
   private _options: Record<string, any> = {};
+
+  /**
+   * Set the base options for the editor.
+   */
+  setBaseOptions(options: Record<string, any>): void {
+    this._options = { ...this._options, ...options };
+  }
 }

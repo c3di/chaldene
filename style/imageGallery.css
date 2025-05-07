@@ -29,6 +29,11 @@
     height: 100% !important;
 }
 
+/* Hide scrollbar on the fabric wrapper */
+.image-gallery-widget .canvas-container [data-fabric="wrapper"] {
+    overflow: hidden !important;
+}
+
 .fabric-object {
     pointer-events: all !important;
 }
