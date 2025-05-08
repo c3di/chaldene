@@ -116,7 +116,9 @@
     width: 100%;
     display: grid;
     gap: 10px;
-    /* Grid template columns will be set dynamically via inline style */
+    height: 87vh;
+    min-height: 600px;
+    overflow-y: auto;
 }
 
 .grid-image-gallery-widget .gallery-cell {
@@ -132,6 +134,10 @@
     contain: strict;
     cursor: pointer;
     transition: border-color 0.2s, box-shadow 0.2s;
+    /* Ensure canvas is centered and sized properly */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Gallery cell states */
@@ -162,15 +168,6 @@
     overflow: hidden;
 }
 
-.gallery-image-container img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
 
 /* Add specific aspect ratio classes that can be applied conditionally */
 .grid-image-gallery-widget .layout-1x1 .gallery-cell,
