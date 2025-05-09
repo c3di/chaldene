@@ -7,8 +7,18 @@ import React, {
 } from 'react';
 import * as fabric from 'fabric';
 import { WidgetProps } from './Widget';
-import { GalleryImage, IGalleryImage } from './ImageGallery';
+import { IGalleryImage } from './ImageGallery';
 import { LeftArrowIcon, RightArrowIcon } from '../Style';
+
+// Copied from ImageViewerN.tsx for consistent mouse position handling
+const getMousePosition = (e: Event): { x: number; y: number } => {
+  if (e instanceof MouseEvent) {
+    return { x: e.clientX, y: e.clientY };
+  } else if (e instanceof TouchEvent && e.touches.length > 0) {
+    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+  return { x: 0, y: 0 };
+};
 
 interface IGridImageGalleryProps extends WidgetProps {
   images?: IGalleryImage[];
@@ -19,6 +29,12 @@ interface IGridImageGalleryProps extends WidgetProps {
 
 type GridLayout = string;
 
+interface ITransform {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
 export function GridImageGallery({
   forWhom,
   setValue,
@@ -28,8 +44,6 @@ export function GridImageGallery({
 }: IGridImageGalleryProps): JSX.Element {
   const [layout, setLayout] = useState<[number, number]>([1, 1]);
   const [layoutInput, setLayoutInput] = useState<[string, string]>(['1', '1']);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<{
     row?: string;
     col?: string;
@@ -41,7 +55,20 @@ export function GridImageGallery({
     null
   );
 
+  // States and Refs for Pan and Zoom Synchronization
+  const [syncedTransform, setSyncedTransform] = useState<ITransform | null>(
+    null
+  );
+  const isPanningRef = useRef(false);
+  const lastPanPositionRef = useRef({ x: 0, y: 0 });
+  const syncedTransformRef = useRef(syncedTransform); // Ref to hold current syncedTransform for callbacks
+
+  useEffect(() => {
+    syncedTransformRef.current = syncedTransform;
+  }, [syncedTransform]);
+
   const canvasRefs = useRef<(fabric.Canvas | null)[]>([]);
+  const canvasElementRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const isInitializing = useRef<boolean>(false);
   const hasInitializedOnce = useRef<boolean>(false);
 
@@ -100,10 +127,18 @@ export function GridImageGallery({
     canvasRefs.current.forEach((canvas, index) => {
       if (canvas) {
         try {
-          canvas.off('mouse:down');
+          canvas.off({
+            'mouse:down': () => {},
+            'mouse:move': () => {},
+            'mouse:up': () => {},
+            'mouse:wheel': () => {}
+          });
           canvas.clear();
           canvas.dispose();
           canvasRefs.current[index] = null;
+          if (canvasElementRefs.current[index]) {
+            canvasElementRefs.current[index] = null;
+          }
         } catch (err) {
           console.error(
             `[GridImageGallery] Error disposing canvas ${index}:`,
@@ -113,6 +148,7 @@ export function GridImageGallery({
       }
     });
     canvasRefs.current = Array(16).fill(null);
+    canvasElementRefs.current = Array(16).fill(null);
   }, []);
 
   const calculateCellSize = useCallback(
@@ -149,181 +185,34 @@ export function GridImageGallery({
   );
 
   const createCanvas = useCallback(
-    (canvasElement: HTMLElement, height: number): fabric.Canvas => {
-      const parentWidth = canvasElement.parentElement?.clientWidth || 300;
-      const newCanvas = new fabric.Canvas(canvasElement.id, {
+    (
+      fabricCanvasDOMElement: HTMLCanvasElement,
+      height: number
+    ): fabric.Canvas => {
+      const parentWidth =
+        fabricCanvasDOMElement.parentElement?.clientWidth || 300;
+      const newCanvas = new fabric.Canvas(fabricCanvasDOMElement, {
+        // Pass the actual canvas element
         width: parentWidth,
         height: height,
-        selection: false,
-        renderOnAddRemove: true,
-        selectionColor: 'rgba(0, 120, 215, 0.2)',
-        selectionBorderColor: '#0078D7',
-        defaultCursor: 'pointer',
-        hoverCursor: 'pointer',
-        preserveObjectStacking: true,
+        selection: false, // Important for pan/zoom behavior
+        renderOnAddRemove: true, // Default is true
         backgroundColor: '#f9f9f9',
         imageSmoothingEnabled: true,
         enableRetinaScaling: true,
-        interactive: true
+        interactive: true,
+        defaultCursor: 'grab',
+        hoverCursor: 'grab',
+        preserveObjectStacking: true
       });
-      if (newCanvas.upperCanvasEl) {
-        newCanvas.upperCanvasEl.style.background = 'transparent';
-        newCanvas.upperCanvasEl.style.backgroundColor = 'transparent';
-        newCanvas.upperCanvasEl.style.pointerEvents = 'auto';
-        newCanvas.upperCanvasEl.style.cursor = 'pointer';
-      }
+      // Ensure parent wrapper dimensions are set correctly by fabric
       if (newCanvas.wrapperEl) {
         newCanvas.wrapperEl.style.width = '100%';
         newCanvas.wrapperEl.style.height = `${height}px`;
-        newCanvas.wrapperEl.style.position = 'relative';
-        newCanvas.wrapperEl.style.display = 'block';
-        newCanvas.wrapperEl.style.boxSizing = 'border-box';
-        newCanvas.wrapperEl.style.cursor = 'pointer';
       }
       return newCanvas;
     },
     []
-  );
-
-  const arrangeThumbnails = useCallback(
-    (thumbnails: IGalleryImage[], canvas: fabric.Canvas) => {
-      if (!canvas || canvas.isDisposed) {
-        return;
-      }
-      try {
-        canvas.clear();
-        const canvasWidth = canvas.getWidth();
-        const canvasHeight = canvas.getHeight();
-
-        if (
-          thumbnails.length > 0 &&
-          thumbnails[0].fabricObject &&
-          canvasWidth > 0 &&
-          canvasHeight > 0
-        ) {
-          const fabricObject = thumbnails[0].fabricObject;
-          const originalWidth = fabricObject.width || 100;
-          const originalHeight = fabricObject.height || 100;
-
-          if (originalWidth > 0 && originalHeight > 0) {
-            const scaleX = canvasWidth / originalWidth;
-            const scaleY = canvasHeight / originalHeight;
-            const scale = Math.min(scaleX, scaleY);
-
-            fabricObject.set({
-              scaleX: scale,
-              scaleY: scale,
-              originX: 'center',
-              originY: 'center',
-              left: canvasWidth / 2,
-              top: canvasHeight / 2,
-              selectable: true,
-              visible: true,
-              opacity: 1,
-              evented: true,
-              active: true
-            });
-            canvas.add(fabricObject);
-            setTimeout(() => {
-              if (!canvas.isDisposed) {
-                canvas.renderAll();
-              }
-            }, 50);
-            canvas.renderAll();
-          }
-        }
-      } catch (err) {
-        console.error('[DEBUG] Error in arrangeThumbnails:', err);
-      }
-    },
-    []
-  );
-
-  const createImageObject = useCallback(
-    async (img: IGalleryImage, index: number): Promise<IGalleryImage> => {
-      if (!img.base64) {
-        return { ...img };
-      }
-      try {
-        const imageSource = img.base64;
-        const fabricImg = await new Promise<fabric.Image>((resolve, reject) => {
-          const imgElement = new Image();
-          imgElement.onload = () => {
-            try {
-              const image = new fabric.Image(imgElement, {
-                left: 0,
-                top: 0,
-                originX: 'center',
-                originY: 'center',
-                selectable: true,
-                hasControls: false,
-                hasBorders: true,
-                borderColor: '#2196F3',
-                data: { filename: img.filename, originalIndex: index },
-                evented: true,
-                opacity: 1,
-                visible: true,
-                crossOrigin: 'anonymous'
-              });
-              if (image.getElement() instanceof HTMLImageElement) {
-                (image.getElement() as HTMLImageElement).style.imageRendering =
-                  'high-quality';
-              }
-              resolve(image);
-            } catch (error) {
-              reject(error);
-            }
-          };
-          imgElement.onerror = reject;
-          imgElement.src = imageSource;
-        });
-        return { ...img, fabricObject: fabricImg as unknown as GalleryImage };
-      } catch (error) {
-        console.error('[DEBUG] Error in createImageObject:', error);
-        return { ...img };
-      }
-    },
-    []
-  );
-
-  const loadImages = useCallback(
-    async (canvas: fabric.Canvas, imagesToLoad: IGalleryImage[]) => {
-      if (!canvas || canvas.isDisposed) {
-        return;
-      }
-      try {
-        setLoading(true);
-        setError(null);
-        const processed = await Promise.all(
-          imagesToLoad.map((img, idx) =>
-            createImageObject(img, pageStartIndex + idx)
-          )
-        );
-        if (!canvas.isDisposed) {
-          if (canvas.wrapperEl) {
-            canvas.wrapperEl.classList.toggle(
-              'has-images',
-              imagesToLoad.length > 0
-            );
-            Object.assign(canvas.wrapperEl.style, {
-              display: 'block',
-              visibility: 'visible'
-            });
-          }
-          arrangeThumbnails(
-            processed.filter(p => p.fabricObject),
-            canvas
-          );
-        }
-      } catch (err) {
-        setError('Failed to load images');
-      } finally {
-        if (!canvas.isDisposed) {
-          setLoading(false);
-        }
-      }
-    },
-    [createImageObject, arrangeThumbnails, pageStartIndex]
   );
 
   const initializeCanvases = useCallback(
@@ -354,32 +243,155 @@ export function GridImageGallery({
       cleanupExistingCanvases();
 
       for (let i = 0; i < totalCanvases; i++) {
-        const canvasElement = document.getElementById(canvasKeys[i]);
-        if (!canvasElement) {
+        const canvasDOMElement = document.getElementById(
+          canvasKeys[i]
+        ) as HTMLCanvasElement | null;
+        if (!canvasDOMElement) {
           console.warn(
             `[DEBUG] Canvas element ${canvasKeys[i]} not found for index ${i}`
           );
           continue;
         }
-        while (canvasElement.firstChild) {
-          canvasElement.removeChild(canvasElement.firstChild);
-        }
+        canvasElementRefs.current[i] = canvasDOMElement; // Store ref to actual canvas element
 
         try {
           const newCanvas = createCanvas(
-            canvasElement,
+            canvasDOMElement,
             currentDynamicCellHeight
           );
           canvasRefs.current[i] = newCanvas;
-          const imageIndex = currentPageStartIndex + i;
-          const imageToLoad =
-            images && imageIndex < images.length ? [images[imageIndex]] : [];
 
-          if (imageToLoad.length > 0) {
-            loadImages(newCanvas, imageToLoad);
+          const imageIndexOnPage = currentPageStartIndex + i;
+          const imageToLoad =
+            images && imageIndexOnPage < images.length
+              ? images[imageIndexOnPage]
+              : null;
+
+          if (imageToLoad && imageToLoad.base64) {
+            const imgElement = new Image();
+            imgElement.crossOrigin = 'anonymous';
+            imgElement.src = imageToLoad.base64;
+            imgElement.onload = () => {
+              const img = new fabric.FabricImage(imgElement);
+              if (newCanvas.isDisposed || !img) {
+                return;
+              }
+
+              newCanvas.backgroundImage = img;
+              const canvasWidth = newCanvas.getWidth();
+              const canvasHeight = newCanvas.getHeight();
+              const imgWidth = img.width || 1;
+              const imgHeight = img.height || 1;
+
+              // Initial fit
+              const initialZoom = Math.min(
+                canvasWidth / imgWidth,
+                canvasHeight / imgHeight
+              );
+              const initialX = (canvasWidth - imgWidth * initialZoom) / 2;
+              const initialY = (canvasHeight - imgHeight * initialZoom) / 2;
+
+              if (syncedTransformRef.current) {
+                newCanvas.setZoom(syncedTransformRef.current.zoom);
+                if (newCanvas.viewportTransform) {
+                  newCanvas.viewportTransform[4] = syncedTransformRef.current.x;
+                  newCanvas.viewportTransform[5] = syncedTransformRef.current.y;
+                }
+              } else {
+                newCanvas.setZoom(initialZoom);
+                if (newCanvas.viewportTransform) {
+                  newCanvas.viewportTransform[4] = initialX;
+                  newCanvas.viewportTransform[5] = initialY;
+                }
+              }
+              newCanvas.requestRenderAll();
+
+              // Add Event Listeners
+              newCanvas.on('mouse:down', opt => {
+                if (opt.e instanceof MouseEvent && opt.e.button !== 0) {
+                  return;
+                } // Only main button
+                isPanningRef.current = true;
+                const { x, y } = getMousePosition(opt.e);
+                lastPanPositionRef.current = { x, y };
+                newCanvas.defaultCursor = 'grabbing';
+                newCanvas.hoverCursor = 'grabbing';
+                if (canvasElementRefs.current[i]) {
+                  canvasElementRefs.current[i]!.classList.add('grabbing');
+                  canvasElementRefs.current[i]!.classList.remove('grab');
+                }
+                newCanvas.requestRenderAll();
+                opt.e.preventDefault();
+              });
+
+              newCanvas.on('mouse:move', opt => {
+                if (isPanningRef.current) {
+                  const { x, y } = getMousePosition(opt.e);
+                  const deltaX = x - lastPanPositionRef.current.x;
+                  const deltaY = y - lastPanPositionRef.current.y;
+                  if (newCanvas.viewportTransform) {
+                    newCanvas.viewportTransform[4] += deltaX;
+                    newCanvas.viewportTransform[5] += deltaY;
+                  }
+                  newCanvas.requestRenderAll();
+                  lastPanPositionRef.current = { x, y };
+
+                  setSyncedTransform({
+                    zoom: newCanvas.getZoom(),
+                    x: newCanvas.viewportTransform
+                      ? newCanvas.viewportTransform[4]
+                      : 0,
+                    y: newCanvas.viewportTransform
+                      ? newCanvas.viewportTransform[5]
+                      : 0
+                  });
+                }
+              });
+
+              const handleMouseUpOrOut = () => {
+                if (isPanningRef.current) {
+                  isPanningRef.current = false;
+                  newCanvas.defaultCursor = 'grab';
+                  newCanvas.hoverCursor = 'grab';
+                  if (canvasElementRefs.current[i]) {
+                    canvasElementRefs.current[i]!.classList.remove('grabbing');
+                    canvasElementRefs.current[i]!.classList.add('grab');
+                  }
+                  newCanvas.requestRenderAll();
+                }
+              };
+              newCanvas.on('mouse:up', handleMouseUpOrOut);
+              newCanvas.on('mouse:out', handleMouseUpOrOut);
+
+              newCanvas.on('mouse:wheel', opt => {
+                opt.e.preventDefault();
+                opt.e.stopPropagation();
+                const delta = opt.e.deltaY;
+                let zoom = newCanvas.getZoom();
+                zoom *= 0.999 ** delta;
+                zoom = Math.max(0.05, Math.min(zoom, 10)); // Min/max zoom
+
+                // fabric.Point expects coordinates relative to the canvas
+                const pointer = newCanvas.getPointer(opt.e);
+                newCanvas.zoomToPoint(
+                  new fabric.Point(pointer.x, pointer.y),
+                  zoom
+                );
+
+                setSyncedTransform({
+                  zoom: newCanvas.getZoom(),
+                  x: newCanvas.viewportTransform
+                    ? newCanvas.viewportTransform[4]
+                    : 0,
+                  y: newCanvas.viewportTransform
+                    ? newCanvas.viewportTransform[5]
+                    : 0
+                });
+              });
+            };
           } else {
-            newCanvas.clear();
-            newCanvas.renderAll();
+            newCanvas.clear(); // Clear if no image
+            newCanvas.requestRenderAll();
           }
         } catch (error) {
           console.error(
@@ -393,14 +405,14 @@ export function GridImageGallery({
     [
       calculateCellSize,
       canvasKeys,
+      cleanupExistingCanvases,
+      createCanvas,
+      currentPage,
       gridDimensions.cols,
       gridDimensions.rows,
       gridDimensions.total,
-      loadImages,
-      images,
-      currentPage,
-      createCanvas,
-      cleanupExistingCanvases
+      images
+      // syncedTransformRef is stable, setSyncedTransform is stable
     ]
   );
 
@@ -622,7 +634,7 @@ export function GridImageGallery({
       cellHeight <= 0 ||
       !hasInitializedOnce.current
     ) {
-      return; // Only run if canvases exist, height is valid, and initial setup is done
+      return;
     }
     const updateCanvasSizesAndScaling = () => {
       canvasRefs.current.forEach(canvas => {
@@ -633,36 +645,45 @@ export function GridImageGallery({
           if (canvas.wrapperEl) {
             canvas.wrapperEl.style.height = `${cellHeight}px`;
           }
-          const fabricObject = canvas.getObjects()[0] as fabric.Image;
-          if (fabricObject instanceof fabric.Image) {
-            const { width: originalWidth = 100, height: originalHeight = 100 } =
-              fabricObject;
-            if (
-              originalWidth > 0 &&
-              originalHeight > 0 &&
-              parentWidth > 0 &&
-              cellHeight > 0
-            ) {
+
+          // This part correctly handles backgroundImage
+          if (
+            canvas.backgroundImage &&
+            typeof canvas.backgroundImage !== 'string'
+          ) {
+            const fabricImg = canvas.backgroundImage as fabric.Image; // or fabric.FabricImage
+            const imgWidth = fabricImg.width || 1;
+            const imgHeight = fabricImg.height || 1;
+
+            if (syncedTransformRef.current) {
+              // Check if syncedTransformRef is not null
+              canvas.setZoom(syncedTransformRef.current.zoom);
+              if (canvas.viewportTransform) {
+                canvas.viewportTransform[4] = syncedTransformRef.current.x;
+                canvas.viewportTransform[5] = syncedTransformRef.current.y;
+              }
+            } else {
+              // Re-fit if no sync transform
               const scale = Math.min(
-                parentWidth / originalWidth,
-                cellHeight / originalHeight
+                parentWidth / imgWidth,
+                cellHeight / imgHeight
               );
-              fabricObject.set({
-                scaleX: scale,
-                scaleY: scale,
-                left: parentWidth / 2,
-                top: cellHeight / 2
-              });
+              canvas.setZoom(scale);
+              if (canvas.viewportTransform) {
+                canvas.viewportTransform[4] =
+                  (parentWidth - imgWidth * scale) / 2;
+                canvas.viewportTransform[5] =
+                  (cellHeight - imgHeight * scale) / 2;
+              }
             }
           }
           canvas.renderAll();
         }
       });
     };
-    // Debounce this potentially expensive operation slightly
     const debounceTimeout = setTimeout(updateCanvasSizesAndScaling, 50);
     return () => clearTimeout(debounceTimeout);
-  }, [cellHeight]);
+  }, [cellHeight]); // This effect correctly re-evaluates transforms when cellHeight changes
 
   // Effect for when layout state changes (to recalculate cell size)
   useEffect(() => {
@@ -739,6 +760,60 @@ export function GridImageGallery({
       setSelectedImageIndex(null); // This will trigger the effect above to inform parent
     }
   }, [images, selectedImageIndex]);
+
+  // Effect to apply syncedTransform to all canvases
+  useEffect(() => {
+    if (syncedTransform && canvasRefs.current) {
+      canvasRefs.current.forEach((canvasInstance, idx) => {
+        if (
+          canvasInstance &&
+          !canvasInstance.isDisposed &&
+          canvasInstance.backgroundImage
+        ) {
+          const currentZoom = canvasInstance.getZoom();
+          const currentX = canvasInstance.viewportTransform
+            ? canvasInstance.viewportTransform[4]
+            : 0;
+          const currentY = canvasInstance.viewportTransform
+            ? canvasInstance.viewportTransform[5]
+            : 0;
+
+          // Only update if different to avoid redundant rendering and potential loops
+          if (
+            Math.abs(currentZoom - syncedTransform.zoom) > 1e-6 || // Use epsilon for float comparison
+            Math.abs(currentX - syncedTransform.x) > 1e-6 ||
+            Math.abs(currentY - syncedTransform.y) > 1e-6
+          ) {
+            canvasInstance.setZoom(syncedTransform.zoom);
+            if (canvasInstance.viewportTransform) {
+              canvasInstance.viewportTransform[4] = syncedTransform.x;
+              canvasInstance.viewportTransform[5] = syncedTransform.y;
+            }
+            canvasInstance.requestRenderAll();
+          }
+        }
+      });
+    }
+  }, [syncedTransform]); // This effect primarily depends on syncedTransform.
+
+  // Effect to update cursor style on all relevant canvas elements when isPanningRef changes
+  useEffect(() => {
+    const cursorClass = isPanningRef.current ? 'grabbing' : 'grab';
+    const antiCursorClass = isPanningRef.current ? 'grab' : 'grabbing';
+    canvasElementRefs.current.forEach(canvasDOMEl => {
+      if (canvasDOMEl) {
+        canvasDOMEl.classList.add(cursorClass);
+        canvasDOMEl.classList.remove(antiCursorClass);
+      }
+    });
+    // Also update fabric default/hover cursors for canvases that might be recreated
+    canvasRefs.current.forEach(canvasInstance => {
+      if (canvasInstance && !canvasInstance.isDisposed) {
+        canvasInstance.defaultCursor = cursorClass;
+        canvasInstance.hoverCursor = cursorClass;
+      }
+    });
+  }, [isPanningRef.current]); // Run when isPanningRef.current changes
 
   return (
     <div
@@ -885,9 +960,6 @@ export function GridImageGallery({
             );
           })}
       </div>
-
-      {loading && <div className="gallery-loading">Loading images...</div>}
-      {error && <div className="gallery-error">{error}</div>}
     </div>
   );
 }
