@@ -34,29 +34,21 @@ interface IParameter {
 
 // Function to open the matrix dialog from anywhere in the application
 export function openMatrixDialog(editorContext: any): void {
-  // Verify that the editor has a graph
   if (!editorContext || !editorContext.graph) {
-    // Show a warning message if no graph exists
     alert('No workflow exists. Please create a workflow first.');
     return;
   }
 
-  // Create a container element
   const container = document.createElement('div');
   container.id = 'matrix-dialog-container';
   document.body.appendChild(container);
-
-  // Create a root
   const root = ReactDOM.createRoot(container);
-
-  // Create an identifier
   const identifier = {
     nodeID: 'matrix',
     id: `matrix_${Date.now()}`,
     type: 'matrix'
   };
 
-  // Function to close the dialog and clean up
   const handleClose = () => {
     root.unmount();
     if (document.body.contains(container)) {
@@ -64,7 +56,6 @@ export function openMatrixDialog(editorContext: any): void {
     }
   };
 
-  // Render the MatrixDialog directly into the container
   root.render(
     <MatrixDialog
       forWhom={identifier}
@@ -111,7 +102,6 @@ function NumericParameterInput({
   // Validate and constrain value when min/max change
   useEffect(() => {
     let newValue = value;
-
     // Apply constraints if they exist
     if (min !== undefined && newValue < min) {
       newValue = min;
@@ -119,7 +109,6 @@ function NumericParameterInput({
     if (max !== undefined && newValue > max) {
       newValue = max;
     }
-
     // Update if constraints changed the value
     if (newValue !== value) {
       setValue(newValue);
@@ -144,7 +133,6 @@ function NumericParameterInput({
     if (max !== undefined && constrainedValue > max) {
       constrainedValue = max;
     }
-
     setValue(constrainedValue);
     onChange(constrainedValue);
   };
@@ -315,7 +303,6 @@ function EnumParameterInput({
         return;
       }
     } else {
-      // If not selected, add it
       newSelectedValues = [...selectedValues, option];
     }
 
@@ -345,7 +332,6 @@ function EnumParameterInput({
   );
 }
 
-// Component for read-only value display
 function ReadOnlyInput({ param }: { param: IParameter }) {
   return (
     <div className="readonly-input-container">
@@ -381,7 +367,7 @@ const MatrixDialogPortal = ({
 };
 
 export default function MatrixDialog({
-  setValue,
+  setValue, // This is for applying the whole matrix, not for gallery selection
   forWhom,
   onClose,
   editorContext
@@ -396,7 +382,8 @@ export default function MatrixDialog({
 
   const [loading, setLoading] = useState(true);
   const [processingMatrix, setProcessingMatrix] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedGalleryImageParams, setSelectedGalleryImageParams] =
+    useState<Record<string, any> | null>(null);
   const [matrixResults, setMatrixResults] = useState<
     Array<{
       imageUrl: string;
@@ -662,7 +649,6 @@ export default function MatrixDialog({
     }
 
     try {
-      // Use the graph directly
       const graph = editorContext.graph ? { ...editorContext.graph } : null;
 
       if (graph) {
@@ -675,7 +661,6 @@ export default function MatrixDialog({
           // Also set the parameter matrix directly on the editorContext for direct access
           (editorContext as any).parameterMatrix = parameterMatrix;
 
-          // Let the code generator do its job through the normal execution path
           setTimeout(() => {
             editorContext.onLiveExecution!();
           }, 100);
@@ -706,47 +691,62 @@ export default function MatrixDialog({
     setValue?.(forWhom, newParameterMatrix);
   }, [setValue, forWhom, buildParameterMatrix]);
 
-  // Handle selection of images
-  const handleImageSelection = useCallback(
-    (_: any, selected: string[] | any) => {
-      setSelectedImages(Array.isArray(selected) ? selected : []);
+  // This is GridImageGallery's setValue callback
+  const handleGalleryImageSelection = useCallback(
+    (
+      _galleryForWhom: any,
+      selectedData: { filename: string; params: Record<string, any> } | string[]
+    ) => {
+      if (
+        typeof selectedData === 'object' &&
+        !Array.isArray(selectedData) &&
+        selectedData.params
+      ) {
+        const selectedParams = selectedData.params;
+        setSelectedGalleryImageParams(selectedParams); // Store the params of the selected image
 
-      // Check if this is a parameter selection from GridImageGallery
-      if (selected && !Array.isArray(selected) && selected.params) {
-        const selectedParams = selected.params;
-
+        // Update nodeParameters' displayValue based on selected image's params
         setNodeParameters(prevNodeParameters =>
           prevNodeParameters.map(node => {
-            if (selectedParams[node.nodeId]) {
-              const nodeParamsFromSelection = selectedParams[node.nodeId];
-              return {
-                ...node,
-                parameters: node.parameters.map(param => {
-                  const paramId = param.id.split('_').pop() || param.id;
-                  let newDisplayValue: string | undefined = undefined;
-
-                  if (nodeParamsFromSelection[paramId] !== undefined) {
-                    const valueFromSelection = nodeParamsFromSelection[paramId];
-                    if (param.type === 'number') {
-                      newDisplayValue =
-                        typeof valueFromSelection === 'number'
-                          ? valueFromSelection.toString()
-                          : String(valueFromSelection);
-                    } else if (param.type === 'enum') {
-                      newDisplayValue = String(valueFromSelection);
-                    } else {
-                      newDisplayValue = String(valueFromSelection);
-                    }
-                  }
-                  // Return a new param object with updated displayValue or existing if no change
-                  return newDisplayValue !== param.displayValue
-                    ? { ...param, displayValue: newDisplayValue }
-                    : param;
-                })
-              };
+            const nodeParamsFromSelection = selectedParams[node.nodeId];
+            if (nodeParamsFromSelection) {
+              let nodeChanged = false;
+              const newParameters = node.parameters.map(param => {
+                const paramId = param.id.split('_').pop() || param.id;
+                let newDisplayValue: string | undefined = undefined;
+                if (nodeParamsFromSelection[paramId] !== undefined) {
+                  newDisplayValue = String(nodeParamsFromSelection[paramId]);
+                }
+                if (newDisplayValue !== param.displayValue) {
+                  nodeChanged = true;
+                  return { ...param, displayValue: newDisplayValue };
+                }
+                return param;
+              });
+              return nodeChanged
+                ? { ...node, parameters: newParameters }
+                : node;
+            } else {
+              // Node not in selection, clear its displayValues if any
+              let nodeChanged = false;
+              const newParameters = node.parameters.map(param => {
+                if (param.displayValue !== undefined) {
+                  nodeChanged = true;
+                  return { ...param, displayValue: undefined };
+                }
+                return param;
+              });
+              return nodeChanged
+                ? { ...node, parameters: newParameters }
+                : node;
             }
-            // If node not in selected params, ensure displayValues are cleared if they were previously set for this node
-            // This handles deselecting or selecting an image that doesn't affect this node.
+          })
+        );
+      } else {
+        // Fallback for simple selection or deselection, clear all display values
+        setSelectedGalleryImageParams(null);
+        setNodeParameters(prevNodeParameters =>
+          prevNodeParameters.map(node => {
             let nodeChanged = false;
             const newParameters = node.parameters.map(param => {
               if (param.displayValue !== undefined) {
@@ -760,10 +760,53 @@ export default function MatrixDialog({
         );
       }
     },
-    []
+    [] // setNodeParameters and setSelectedGalleryImageParams are stable
   );
 
-  // Simplify the processing UI display
+  const handleDeleteImage = useCallback(
+    (imageIndexToDelete: number) => {
+      setMatrixResults(prevResults => {
+        if (
+          imageIndexToDelete < 0 ||
+          imageIndexToDelete >= prevResults.length
+        ) {
+          return prevResults;
+        }
+        const updatedResults = prevResults.filter(
+          (_, index) => index !== imageIndexToDelete
+        );
+
+        // If the deleted image's params were being displayed, clear them
+        const deletedImage = prevResults[imageIndexToDelete];
+        if (
+          deletedImage &&
+          selectedGalleryImageParams &&
+          JSON.stringify(deletedImage.params) ===
+            JSON.stringify(selectedGalleryImageParams)
+        ) {
+          setSelectedGalleryImageParams(null);
+          setNodeParameters(prevNodeParams =>
+            prevNodeParams.map(node => {
+              let nodeChanged = false;
+              const newParameters = node.parameters.map(param => {
+                if (param.displayValue !== undefined) {
+                  nodeChanged = true;
+                  return { ...param, displayValue: undefined };
+                }
+                return param;
+              });
+              return nodeChanged
+                ? { ...node, parameters: newParameters }
+                : node;
+            })
+          );
+        }
+        return updatedResults;
+      });
+    },
+    [selectedGalleryImageParams]
+  );
+
   const processingContent = useMemo(() => {
     if (processingMatrix) {
       return (
@@ -900,8 +943,8 @@ export default function MatrixDialog({
                       nodeID: 'matrix'
                     }}
                     images={matrixResultsAsGalleryImages}
-                    setValue={handleImageSelection}
-                    value={selectedImages}
+                    setValue={handleGalleryImageSelection}
+                    onDeleteImage={handleDeleteImage}
                   />
                 ) : null}
               </div>

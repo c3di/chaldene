@@ -16,8 +16,8 @@ declare module 'fabric' {
 export interface IGalleryImage {
   filename: string;
   base64: string;
-  imageUrl?: string;
   fabricObject?: GalleryImage;
+  params?: Record<string, any>;
 }
 
 interface IImageGalleryProps extends WidgetProps {
@@ -244,7 +244,7 @@ export function ImageGallery({
 
             const fabricImg = await new Promise<GalleryImage>(
               (resolve, reject) => {
-                fabric.FabricImage.fromURL(img.base64 || img.imageUrl!)
+                fabric.FabricImage.fromURL(img.base64)
                   .then(imgElement => {
                     const galleryImage = new GalleryImage(
                       imgElement.getElement(),
