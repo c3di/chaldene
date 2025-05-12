@@ -33,26 +33,34 @@ function fitToViewport({
   };
 }
 
-export default function ContextMenu({
-  forWhom,
-  items,
-  clientPosition,
-  editorContext
-}: IContextMenuProps): JSX.Element | null {
+export default function ContextMenu(
+  props: IContextMenuProps
+): JSX.Element | null {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState(clientPosition);
+
+  // Destructure props at the beginning
+  const {
+    forWhom: propsForWhom, // Use a distinct name for the prop
+    items: propsItems,
+    clientPosition: propsClientPosition,
+    editorContext: propsEditorContext
+  } = props;
+
+  const [position, setPosition] = useState(propsClientPosition);
 
   useEffect(() => {
     if (!menuRef.current) {
       return;
     }
-    editorContext.contextMenuRef = menuRef;
+    propsEditorContext.contextMenuRef = menuRef; // Use prop
     const { width, height } = menuRef.current.getBoundingClientRect();
-    setPosition(fitToViewport({ ...clientPosition, width, height }));
+    setPosition(fitToViewport({ ...propsClientPosition, width, height })); // Use prop
     return (): void => {
-      editorContext.contextMenuRef = null;
+      if (propsEditorContext) {
+        propsEditorContext.contextMenuRef = null; // Use prop
+      }
     };
-  }, [clientPosition]);
+  }, [propsClientPosition, propsEditorContext]);
 
   return ReactDOM.createPortal(
     <div
@@ -68,16 +76,31 @@ export default function ContextMenu({
       }}
     >
       <ul className="ContextMenu-content" role="menu">
-        {items.map((item, index) => {
-          const handleClick = (event: React.MouseEvent): void => {
-            item.onClick?.(event, forWhom);
-            editorContext.action('menu').close();
+        {propsItems.map((item, index) => {
+          // Use prop
+          // This handleClick is specific to each item in the map
+          const handleClick = (eventArgument: React.MouseEvent): void => {
+            console.log(
+              '[ContextMenu.tsx] handleClick wrapper. Event received by wrapper:',
+              eventArgument
+            );
+            console.log(
+              '[ContextMenu.tsx] handleClick wrapper. "forWhom" from ContextMenu props (propsForWhom):',
+              propsForWhom
+            );
+
+            // CRITICAL: Ensure propsForWhom is passed as the second argument
+            if (item.onClick) {
+              item.onClick(eventArgument, propsForWhom);
+            }
+
+            propsEditorContext.action('menu').close(); // Use prop
           };
           return (
             <MenuItem
               key={index}
               {...item}
-              forWhom={forWhom}
+              forWhom={propsForWhom}
               onClick={handleClick}
             />
           );

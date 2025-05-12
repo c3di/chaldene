@@ -20,6 +20,120 @@
     border-radius: 4px;
 }
 
+/* Added styles for control sections */
+.gallery-controls .left-section {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 150px;
+    /* Adjust as needed */
+}
+
+.gallery-controls .center-section {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.gallery-controls .right-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 220px;
+    /* Adjust as needed */
+    justify-content: flex-end;
+}
+
+/* Improved Tab Styles */
+.gallery-tabs {
+    display: flex;
+    gap: 4px;
+    /* Slightly reduced gap */
+    padding: 3px;
+    /* Padding around the tabs */
+    background-color: var(--vpl-blue-gray-4, #cbd5e0);
+    /* Subtle background for the tab container */
+    border-radius: 6px;
+    /* Rounded corners for the container */
+}
+
+.gallery-tabs .tab-button {
+    padding: 8px 16px;
+    /* More padding */
+    cursor: pointer;
+    border: none;
+    /* Remove default border */
+    background-color: transparent;
+    /* Start transparent */
+    border-radius: 4px;
+    /* Rounded corners for tabs */
+    color: var(--vpl-ui-font-color2, #4a5568);
+    /* Default text color */
+    font-weight: 500;
+    /* Slightly bolder */
+    transition: all 0.2s ease;
+    /* Smooth transitions */
+    white-space: nowrap;
+}
+
+.gallery-tabs .tab-button:hover {
+    background-color: var(--vpl-blue-gray-3, #e2e8f0);
+    /* Light background on hover */
+    color: var(--vpl-ui-font-color1, #2d3748);
+    /* Darker text on hover */
+}
+
+.gallery-tabs .tab-button.active {
+    background-color: white;
+    /* White background for active tab */
+    color: var(--vpl-blue-1, #4299e1);
+    /* Highlight color for text */
+    font-weight: 600;
+    /* Bolder text for active tab */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    /* Subtle shadow for depth */
+}
+
+/* Added cursor styles */
+.gallery-cell canvas.grab {
+    cursor: grab;
+}
+
+.gallery-cell canvas.grabbing {
+    cursor: grabbing;
+}
+
+/* Added delete button styles */
+.delete-image-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(255, 0, 0, 0.7);
+    color: white;
+    border: 1px solid rgba(200, 0, 0, 0.9);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    line-height: 22px;
+    text-align: center;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background-color 0.2s, transform 0.2s;
+    /* Added transition */
+}
+
+.delete-image-button:hover {
+    background-color: rgba(200, 0, 0, 0.9);
+    /* Darker red on hover */
+    transform: scale(1.1);
+    /* Slightly enlarge on hover */
+}
+
 .custom-layout-controls {
     width: 100%;
 }
@@ -264,6 +378,29 @@
 
     .layout-separator {
         margin: 0;
+    }
+
+    /* Adjust gallery controls for smaller screens */
+    .gallery-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .gallery-controls .left-section,
+    .gallery-controls .center-section,
+    .gallery-controls .right-section {
+        width: 100%;
+        justify-content: center;
+        min-width: unset;
+    }
+
+    .gallery-tabs {
+        width: 100%;
+    }
+
+    .gallery-tabs .tab-button {
+        flex: 1;
+        text-align: center;
     }
 }
 

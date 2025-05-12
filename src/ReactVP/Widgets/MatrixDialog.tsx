@@ -945,6 +945,7 @@ export default function MatrixDialog({
                     images={matrixResultsAsGalleryImages}
                     setValue={handleGalleryImageSelection}
                     onDeleteImage={handleDeleteImage}
+                    editorContext={editorContext}
                   />
                 ) : null}
               </div>

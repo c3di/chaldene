@@ -11,6 +11,7 @@ import NodeContextMenu from './ContextMenu/NodeContextMenu';
 import PanelContextMenu from './ContextMenu/PanelContextMenu';
 import ConnectionTooltips from './ContextMenu/ConnectionTooltips';
 import NotReadyNodePanel from './Panel/NotReadyNodePanel';
+import GridGalleryItemContextMenu from './ContextMenu/GridGalleryItemContextMenu';
 
 export type { GUIElementType } from './GUIElement';
 export type { default as GUIElement } from './GUIElement';
@@ -23,7 +24,8 @@ export const MenuComponents: Record<string, React.ComponentType<any>> = {
   node: NodeContextMenu,
   edge: EdgeContextMenu,
   panel: PanelContextMenu,
-  connection: ConnectionTooltips
+  connection: ConnectionTooltips,
+  gridImageMenu: GridGalleryItemContextMenu
 };
 
 export const PanelComponents: Record<string, React.ComponentType<any>> = {

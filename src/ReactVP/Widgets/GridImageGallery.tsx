@@ -10,7 +10,8 @@ import { WidgetProps } from './Widget';
 import { IGalleryImage } from './ImageGallery';
 import { LeftArrowIcon, RightArrowIcon } from '../Style';
 
-// Copied from ImageViewerN.tsx for consistent mouse position handling
+import type EditorContext from '../EditorContext';
+
 const getMousePosition = (e: Event): { x: number; y: number } => {
   if (e instanceof MouseEvent) {
     return { x: e.clientX, y: e.clientY };
@@ -25,6 +26,7 @@ interface IGridImageGalleryProps extends WidgetProps {
   value?: string[];
   initialLayout?: GridLayout;
   onDeleteImage?: (imageIndex: number) => void;
+  editorContext?: EditorContext;
 }
 
 type GridLayout = string;
@@ -38,9 +40,10 @@ interface ITransform {
 export function GridImageGallery({
   forWhom,
   setValue,
-  images,
+  images = [],
   initialLayout,
-  onDeleteImage
+  onDeleteImage,
+  editorContext
 }: IGridImageGalleryProps): JSX.Element {
   const [layout, setLayout] = useState<[number, number]>([1, 1]);
   const [layoutInput, setLayoutInput] = useState<[string, string]>(['1', '1']);
@@ -49,39 +52,72 @@ export function GridImageGallery({
     col?: string;
   }>({});
   const [cellHeight, setCellHeight] = useState<number>(300);
+
+  const [activeTab, setActiveTab] = useState<'gallery' | 'compare'>('gallery');
+
   const [currentPage, setCurrentPage] = useState<number>(0);
-  const [compareMode, setCompareMode] = useState<boolean>(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null
   );
+  const [gallerySyncedTransform, setGallerySyncedTransform] =
+    useState<ITransform | null>(null);
+  const gallerySyncedTransformRef = useRef(gallerySyncedTransform);
 
-  // States and Refs for Pan and Zoom Synchronization
-  const [syncedTransform, setSyncedTransform] = useState<ITransform | null>(
-    null
-  );
+  const [compareImages, setCompareImages] = useState<IGalleryImage[]>([]);
+  const [compareCurrentPage, setCompareCurrentPage] = useState<number>(0);
+  const [selectedCompareImageIndex, setSelectedCompareImageIndex] = useState<
+    number | null
+  >(null);
+  const [compareSyncedTransform, setCompareSyncedTransform] =
+    useState<ITransform | null>(null);
+  const compareSyncedTransformRef = useRef(compareSyncedTransform);
+
   const isPanningRef = useRef(false);
   const lastPanPositionRef = useRef({ x: 0, y: 0 });
-  const syncedTransformRef = useRef(syncedTransform); // Ref to hold current syncedTransform for callbacks
 
   useEffect(() => {
-    syncedTransformRef.current = syncedTransform;
-  }, [syncedTransform]);
+    gallerySyncedTransformRef.current = gallerySyncedTransform;
+  }, [gallerySyncedTransform]);
+
+  useEffect(() => {
+    compareSyncedTransformRef.current = compareSyncedTransform;
+  }, [compareSyncedTransform]);
 
   const canvasRefs = useRef<(fabric.Canvas | null)[]>([]);
   const canvasElementRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const isInitializing = useRef<boolean>(false);
   const hasInitializedOnce = useRef<boolean>(false);
-
   const navigationEffectFirstRun = useRef<boolean>(true);
   const prevCurrentPageForNavEffectRef = useRef<number>(currentPage);
-
   const lastReportedSelectionToParentRef = useRef<string | null>(null);
+
+  const imagesForCurrentView = useMemo(
+    () => (activeTab === 'gallery' ? images : compareImages),
+    [activeTab, images, compareImages]
+  );
+  const currentPageForCurrentView =
+    activeTab === 'gallery' ? currentPage : compareCurrentPage;
+  const setCurrentPageForCurrentView =
+    activeTab === 'gallery' ? setCurrentPage : setCompareCurrentPage;
+  const selectedImageIndexForCurrentView =
+    activeTab === 'gallery' ? selectedImageIndex : selectedCompareImageIndex;
+  const setSelectedImageIndexForCurrentView =
+    activeTab === 'gallery'
+      ? setSelectedImageIndex
+      : setSelectedCompareImageIndex;
+  const syncedTransformForCurrentViewRef =
+    activeTab === 'gallery'
+      ? gallerySyncedTransformRef
+      : compareSyncedTransformRef;
+  const setSyncedTransformForCurrentView =
+    activeTab === 'gallery'
+      ? setGallerySyncedTransform
+      : setCompareSyncedTransform;
 
   const getCurrentLayout = useCallback(
     () => `${layout[0]}x${layout[1]}`,
     [layout]
   );
-
   const gridDimensions = useMemo(
     () => ({
       rows: layout[0],
@@ -91,16 +127,16 @@ export function GridImageGallery({
     [layout]
   );
 
-  const totalPages = useMemo(() => {
-    if (!images || gridDimensions.total <= 0) {
+  const totalPagesForCurrentView = useMemo(() => {
+    if (!imagesForCurrentView || gridDimensions.total <= 0) {
       return 1;
     }
-    return Math.ceil(images.length / gridDimensions.total);
-  }, [images, gridDimensions.total]);
+    return Math.ceil(imagesForCurrentView.length / gridDimensions.total);
+  }, [imagesForCurrentView, gridDimensions.total]);
 
-  const pageStartIndex = useMemo(
-    () => currentPage * gridDimensions.total,
-    [currentPage, gridDimensions.total]
+  const pageStartIndexForCurrentView = useMemo(
+    () => currentPageForCurrentView * gridDimensions.total,
+    [currentPageForCurrentView, gridDimensions.total]
   );
 
   const canvasKeys = useMemo(() => {
@@ -116,23 +152,18 @@ export function GridImageGallery({
   const isNavButtonDisabled = useCallback(
     (direction: 'prev' | 'next') => {
       if (direction === 'prev') {
-        return currentPage === 0;
+        return currentPageForCurrentView === 0;
       }
-      return currentPage >= totalPages - 1;
+      return currentPageForCurrentView >= totalPagesForCurrentView - 1;
     },
-    [currentPage, totalPages]
+    [currentPageForCurrentView, totalPagesForCurrentView]
   );
 
   const cleanupExistingCanvases = useCallback(() => {
     canvasRefs.current.forEach((canvas, index) => {
       if (canvas) {
         try {
-          canvas.off({
-            'mouse:down': () => {},
-            'mouse:move': () => {},
-            'mouse:up': () => {},
-            'mouse:wheel': () => {}
-          });
+          canvas.off();
           canvas.clear();
           canvas.dispose();
           canvasRefs.current[index] = null;
@@ -147,9 +178,10 @@ export function GridImageGallery({
         }
       }
     });
-    canvasRefs.current = Array(16).fill(null);
-    canvasElementRefs.current = Array(16).fill(null);
-  }, []);
+    const size = gridDimensions.total > 0 ? gridDimensions.total : 16;
+    canvasRefs.current = Array(size).fill(null);
+    canvasElementRefs.current = Array(size).fill(null);
+  }, [gridDimensions.total]);
 
   const calculateCellSize = useCallback(
     (containerWidth: number, columns: number, rows: number) => {
@@ -163,23 +195,22 @@ export function GridImageGallery({
         '.gallery-grid'
       ) as HTMLElement;
       const gridClientHeight = galleryGrid ? galleryGrid.clientHeight : 0;
-
       if (columns === 1 && gridClientHeight > 0) {
         const totalGapSpaceVertical = (rows - 1) * gap;
         if (gridClientHeight > totalGapSpaceVertical) {
-          const availableHeightForCells =
-            gridClientHeight - totalGapSpaceVertical;
-          newCellHeight = availableHeightForCells / rows;
+          newCellHeight = (gridClientHeight - totalGapSpaceVertical) / rows;
         }
       } else if (rows > columns && !(rows === 1 && columns === 1)) {
-        const heightRatio = Math.max(0.4, 1 - (rows - columns) * 0.2);
-        newCellHeight = Math.min(cellWidth * heightRatio, 300);
+        newCellHeight = Math.min(
+          cellWidth * Math.max(0.4, 1 - (rows - columns) * 0.2),
+          300
+        );
       } else {
         newCellHeight = Math.min(cellWidth, 400);
       }
-      newCellHeight = Math.max(50, newCellHeight);
-      setCellHeight(newCellHeight);
-      return newCellHeight;
+      const finalHeight = Math.max(50, newCellHeight);
+      setCellHeight(finalHeight);
+      return finalHeight;
     },
     []
   );
@@ -192,11 +223,10 @@ export function GridImageGallery({
       const parentWidth =
         fabricCanvasDOMElement.parentElement?.clientWidth || 300;
       const newCanvas = new fabric.Canvas(fabricCanvasDOMElement, {
-        // Pass the actual canvas element
         width: parentWidth,
         height: height,
-        selection: false, // Important for pan/zoom behavior
-        renderOnAddRemove: true, // Default is true
+        selection: false,
+        renderOnAddRemove: true,
         backgroundColor: '#f9f9f9',
         imageSmoothingEnabled: true,
         enableRetinaScaling: true,
@@ -205,7 +235,6 @@ export function GridImageGallery({
         hoverCursor: 'grab',
         preserveObjectStacking: true
       });
-      // Ensure parent wrapper dimensions are set correctly by fabric
       if (newCanvas.wrapperEl) {
         newCanvas.wrapperEl.style.width = '100%';
         newCanvas.wrapperEl.style.height = `${height}px`;
@@ -216,14 +245,11 @@ export function GridImageGallery({
   );
 
   const initializeCanvases = useCallback(
-    (totalCanvases: number) => {
-      // The Main Setup Effect (caller) is responsible for deciding if this function should run.
-
+    (totalCanvasesToInit: number) => {
       const gridContainer = document.querySelector('.gallery-grid');
       const containerWidth = gridContainer
         ? gridContainer.clientWidth
         : window.innerWidth * 0.9;
-
       if (
         containerWidth <= 0 ||
         gridDimensions.cols <= 0 ||
@@ -231,41 +257,29 @@ export function GridImageGallery({
       ) {
         return;
       }
-
       const currentDynamicCellHeight = calculateCellSize(
         containerWidth,
         gridDimensions.cols,
         gridDimensions.rows
       );
-      const currentPageStartIndex = currentPage * gridDimensions.total;
-
-      // Ensure all old canvases are cleaned before creating new ones.
       cleanupExistingCanvases();
 
-      for (let i = 0; i < totalCanvases; i++) {
+      for (let i = 0; i < totalCanvasesToInit; i++) {
         const canvasDOMElement = document.getElementById(
           canvasKeys[i]
         ) as HTMLCanvasElement | null;
         if (!canvasDOMElement) {
-          console.warn(
-            `[DEBUG] Canvas element ${canvasKeys[i]} not found for index ${i}`
-          );
           continue;
         }
-        canvasElementRefs.current[i] = canvasDOMElement; // Store ref to actual canvas element
-
+        canvasElementRefs.current[i] = canvasDOMElement;
         try {
           const newCanvas = createCanvas(
             canvasDOMElement,
             currentDynamicCellHeight
           );
           canvasRefs.current[i] = newCanvas;
-
-          const imageIndexOnPage = currentPageStartIndex + i;
-          const imageToLoad =
-            images && imageIndexOnPage < images.length
-              ? images[imageIndexOnPage]
-              : null;
+          const imageIndexOnPage = pageStartIndexForCurrentView + i;
+          const imageToLoad = imagesForCurrentView[imageIndexOnPage];
 
           if (imageToLoad && imageToLoad.base64) {
             const imgElement = new Image();
@@ -276,26 +290,24 @@ export function GridImageGallery({
               if (newCanvas.isDisposed || !img) {
                 return;
               }
-
               newCanvas.backgroundImage = img;
               const canvasWidth = newCanvas.getWidth();
               const canvasHeight = newCanvas.getHeight();
               const imgWidth = img.width || 1;
               const imgHeight = img.height || 1;
-
-              // Initial fit
               const initialZoom = Math.min(
                 canvasWidth / imgWidth,
                 canvasHeight / imgHeight
               );
               const initialX = (canvasWidth - imgWidth * initialZoom) / 2;
               const initialY = (canvasHeight - imgHeight * initialZoom) / 2;
-
-              if (syncedTransformRef.current) {
-                newCanvas.setZoom(syncedTransformRef.current.zoom);
+              const currentSyncTransform =
+                syncedTransformForCurrentViewRef.current;
+              if (currentSyncTransform) {
+                newCanvas.setZoom(currentSyncTransform.zoom);
                 if (newCanvas.viewportTransform) {
-                  newCanvas.viewportTransform[4] = syncedTransformRef.current.x;
-                  newCanvas.viewportTransform[5] = syncedTransformRef.current.y;
+                  newCanvas.viewportTransform[4] = currentSyncTransform.x;
+                  newCanvas.viewportTransform[5] = currentSyncTransform.y;
                 }
               } else {
                 newCanvas.setZoom(initialZoom);
@@ -305,15 +317,13 @@ export function GridImageGallery({
                 }
               }
               newCanvas.requestRenderAll();
-
-              // Add Event Listeners
               newCanvas.on('mouse:down', opt => {
                 if (opt.e instanceof MouseEvent && opt.e.button !== 0) {
                   return;
-                } // Only main button
+                }
                 isPanningRef.current = true;
-                const { x, y } = getMousePosition(opt.e);
-                lastPanPositionRef.current = { x, y };
+                const pos = getMousePosition(opt.e);
+                lastPanPositionRef.current = pos;
                 newCanvas.defaultCursor = 'grabbing';
                 newCanvas.hoverCursor = 'grabbing';
                 if (canvasElementRefs.current[i]) {
@@ -323,20 +333,18 @@ export function GridImageGallery({
                 newCanvas.requestRenderAll();
                 opt.e.preventDefault();
               });
-
               newCanvas.on('mouse:move', opt => {
                 if (isPanningRef.current) {
-                  const { x, y } = getMousePosition(opt.e);
-                  const deltaX = x - lastPanPositionRef.current.x;
-                  const deltaY = y - lastPanPositionRef.current.y;
+                  const pos = getMousePosition(opt.e);
+                  const deltaX = pos.x - lastPanPositionRef.current.x;
+                  const deltaY = pos.y - lastPanPositionRef.current.y;
                   if (newCanvas.viewportTransform) {
                     newCanvas.viewportTransform[4] += deltaX;
                     newCanvas.viewportTransform[5] += deltaY;
                   }
                   newCanvas.requestRenderAll();
-                  lastPanPositionRef.current = { x, y };
-
-                  setSyncedTransform({
+                  lastPanPositionRef.current = pos;
+                  setSyncedTransformForCurrentView({
                     zoom: newCanvas.getZoom(),
                     x: newCanvas.viewportTransform
                       ? newCanvas.viewportTransform[4]
@@ -347,7 +355,6 @@ export function GridImageGallery({
                   });
                 }
               });
-
               const handleMouseUpOrOut = () => {
                 if (isPanningRef.current) {
                   isPanningRef.current = false;
@@ -362,23 +369,19 @@ export function GridImageGallery({
               };
               newCanvas.on('mouse:up', handleMouseUpOrOut);
               newCanvas.on('mouse:out', handleMouseUpOrOut);
-
               newCanvas.on('mouse:wheel', opt => {
                 opt.e.preventDefault();
                 opt.e.stopPropagation();
                 const delta = opt.e.deltaY;
                 let zoom = newCanvas.getZoom();
                 zoom *= 0.999 ** delta;
-                zoom = Math.max(0.05, Math.min(zoom, 10)); // Min/max zoom
-
-                // fabric.Point expects coordinates relative to the canvas
+                zoom = Math.max(0.05, Math.min(zoom, 10));
                 const pointer = newCanvas.getPointer(opt.e);
                 newCanvas.zoomToPoint(
                   new fabric.Point(pointer.x, pointer.y),
                   zoom
                 );
-
-                setSyncedTransform({
+                setSyncedTransformForCurrentView({
                   zoom: newCanvas.getZoom(),
                   x: newCanvas.viewportTransform
                     ? newCanvas.viewportTransform[4]
@@ -390,7 +393,7 @@ export function GridImageGallery({
               });
             };
           } else {
-            newCanvas.clear(); // Clear if no image
+            newCanvas.clear();
             newCanvas.requestRenderAll();
           }
         } catch (error) {
@@ -403,61 +406,93 @@ export function GridImageGallery({
       }
     },
     [
-      calculateCellSize,
-      canvasKeys,
-      cleanupExistingCanvases,
-      createCanvas,
-      currentPage,
       gridDimensions.cols,
       gridDimensions.rows,
       gridDimensions.total,
-      images
-      // syncedTransformRef is stable, setSyncedTransform is stable
+      calculateCellSize,
+      cleanupExistingCanvases,
+      createCanvas,
+      canvasKeys,
+      imagesForCurrentView,
+      pageStartIndexForCurrentView,
+      syncedTransformForCurrentViewRef,
+      setSyncedTransformForCurrentView,
+      activeTab
     ]
   );
 
-  const selectImage = useCallback(
-    (imageIndex: number) => {
-      setSelectedImageIndex(imageIndex);
-      const itemsPerPage = gridDimensions.total;
-      if (itemsPerPage > 0) {
-        const targetPage = Math.floor(imageIndex / itemsPerPage);
-        if (targetPage !== currentPage) {
-          setCurrentPage(targetPage);
-        }
-      }
+  const handleSelectImageForCurrentView = useCallback(
+    (imageIndexInFullList: number) => {
+      setSelectedImageIndexForCurrentView(imageIndexInFullList);
     },
-    [currentPage, gridDimensions.total]
+    [setSelectedImageIndexForCurrentView]
   );
 
-  const handleCellClick = useCallback(
-    (imageIndex: number) => {
-      if (!images || imageIndex >= images.length) {
+  const handleCellClickForCurrentView = useCallback(
+    (imageIndexOnPage: number) => {
+      const actualImageIndex = pageStartIndexForCurrentView + imageIndexOnPage;
+      if (
+        !imagesForCurrentView ||
+        actualImageIndex >= imagesForCurrentView.length
+      ) {
         return;
       }
-      selectImage(imageIndex);
-      const selectedImageData = images[imageIndex];
-      if (selectedImageData) {
-        if ('params' in selectedImageData && selectedImageData.params) {
-          setValue?.(forWhom, {
-            filename: selectedImageData.filename,
-            params: selectedImageData.params
-          });
-        } else {
-          setValue?.(forWhom, [selectedImageData.filename]);
-        }
+      const targetPage = Math.floor(actualImageIndex / gridDimensions.total);
+      if (targetPage !== currentPageForCurrentView) {
+        setCurrentPageForCurrentView(targetPage);
       }
+      handleSelectImageForCurrentView(actualImageIndex);
     },
-    [selectImage, setValue, forWhom, images]
+    [
+      imagesForCurrentView,
+      pageStartIndexForCurrentView,
+      gridDimensions.total,
+      currentPageForCurrentView,
+      setCurrentPageForCurrentView,
+      handleSelectImageForCurrentView
+    ]
   );
 
-  const handleDeleteClick = useCallback(
-    (event: React.MouseEvent, imageIndex: number) => {
-      event.stopPropagation(); // Important: Prevent cell click (selection)
+  const handleDeleteFromGallery = useCallback(
+    (imageIndex: number) => {
       onDeleteImage?.(imageIndex);
     },
     [onDeleteImage]
   );
+
+  const handleDeleteFromCompareList = useCallback(
+    (indexInCompareList: number) => {
+      setCompareImages(prev =>
+        prev.filter((_, idx) => idx !== indexInCompareList)
+      );
+      if (selectedCompareImageIndex === indexInCompareList) {
+        setSelectedCompareImageIndex(null);
+      } else if (
+        selectedCompareImageIndex &&
+        selectedCompareImageIndex > indexInCompareList
+      ) {
+        setSelectedCompareImageIndex(prev => (prev ? prev - 1 : null));
+      }
+    },
+    [selectedCompareImageIndex]
+  );
+
+  const handleAddToCompare = useCallback((imageToAdd: IGalleryImage) => {
+    setCompareImages(prevCompareImages => {
+      if (
+        !prevCompareImages.find(
+          img =>
+            img.filename === imageToAdd.filename &&
+            img.base64 === imageToAdd.base64
+        )
+      ) {
+        const newCompareImages = [...prevCompareImages, imageToAdd];
+        return newCompareImages;
+      }
+
+      return prevCompareImages;
+    });
+  }, []);
 
   const handleLayoutChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -473,6 +508,7 @@ export function GridImageGallery({
       const newLayout = [...layout] as [number, number];
       newLayout[index] = parsed;
       setCurrentPage(0);
+      setCompareCurrentPage(0);
       setLayout(newLayout);
       setValidationError(prev => ({ ...prev, [dimension]: undefined }));
     } else if (!isNaN(parsed)) {
@@ -497,39 +533,36 @@ export function GridImageGallery({
     }
   };
 
-  const handleNavigation = useCallback(
+  const handleNavigationForCurrentView = useCallback(
     (direction: 'prev' | 'next') => {
-      let newPage = currentPage;
-      if (direction === 'prev' && currentPage > 0) {
+      let newPage = currentPageForCurrentView;
+      if (direction === 'prev' && currentPageForCurrentView > 0) {
         newPage--;
-      } else if (direction === 'next' && currentPage < totalPages - 1) {
+      } else if (
+        direction === 'next' &&
+        currentPageForCurrentView < totalPagesForCurrentView - 1
+      ) {
         newPage++;
       } else {
         return;
       }
-      setCurrentPage(newPage);
+      setCurrentPageForCurrentView(newPage);
     },
-    [currentPage, totalPages]
+    [
+      currentPageForCurrentView,
+      totalPagesForCurrentView,
+      setCurrentPageForCurrentView
+    ]
   );
 
-  const toggleCompareMode = useCallback(() => {
-    setCompareMode(prev => !prev);
-  }, []);
-
-  // Initial setup for layout from prop
   useEffect(() => {
     if (initialLayout && !hasInitializedOnce.current) {
-      // Only on first mount if initialLayout is present
       const [rowsStr, colsStr] = initialLayout.split('x');
-      const initialRows = parseInt(rowsStr, 10) || 1;
-      const initialCols = parseInt(colsStr, 10) || 1;
-      setLayout([initialRows, initialCols]);
-      setLayoutInput([initialRows.toString(), initialCols.toString()]);
-      // Main setup effect will be triggered by layout change
+      setLayout([parseInt(rowsStr, 10) || 1, parseInt(colsStr, 10) || 1]);
+      setLayoutInput([rowsStr || '1', colsStr || '1']);
     }
-  }, [initialLayout]); // Runs if initialLayout prop changes (or on mount)
+  }, [initialLayout]);
 
-  // Update layout if prop changes dynamically AFTER initial setup
   useEffect(() => {
     if (
       initialLayout &&
@@ -541,72 +574,64 @@ export function GridImageGallery({
       const newCols = parseInt(colsStr, 10) || layout[1];
       if (newRows !== layout[0] || newCols !== layout[1]) {
         setLayout([newRows, newCols]);
-        setCurrentPage(0); // Optionally reset page
+        setCurrentPage(0);
+        setCompareCurrentPage(0);
       }
     }
   }, [initialLayout, getCurrentLayout, layout]);
 
-  // Main Canvas Setup/Re-initialization Effect
   useEffect(() => {
     if (isInitializing.current) {
       return;
     }
-
-    const totalCanvases = gridDimensions.total;
-    if (totalCanvases <= 0) {
+    const totalCanvasesInGrid = gridDimensions.total;
+    if (totalCanvasesInGrid <= 0) {
       if (canvasRefs.current.some(c => c !== null)) {
-        // Only cleanup if there's something to clean
         cleanupExistingCanvases();
       }
       return;
     }
-
     isInitializing.current = true;
-
     const initTimeout = setTimeout(() => {
       try {
-        initializeCanvases(totalCanvases); // This function now calls cleanupExistingCanvases internally first
+        initializeCanvases(totalCanvasesInGrid);
         if (!hasInitializedOnce.current) {
           hasInitializedOnce.current = true;
         }
       } catch (e) {
         console.error('[DEBUG] Error during initializeCanvases execution:', e);
       } finally {
-        // IMPORTANT: Reset the flag after initializeCanvases has effectively run
         isInitializing.current = false;
       }
     }, 75);
-
     return () => {
       clearTimeout(initTimeout);
       if (isInitializing.current) {
-        // Only reset if it was set to true by this instance of the effect
         isInitializing.current = false;
       }
     };
   }, [
-    layout,
-    currentPage,
-    images, // Reference change to images triggers this
-    initializeCanvases, // Callback reference
-    cleanupExistingCanvases, // Callback reference
-    gridDimensions.total // Derived from layout
-    // canvasKeys is stable if forWhom is stable; initializeCanvases depends on it.
+    gridDimensions.total,
+    imagesForCurrentView,
+    pageStartIndexForCurrentView,
+    initializeCanvases,
+    cleanupExistingCanvases
   ]);
 
-  // Page Navigation Logic
+  useEffect(() => {
+    navigationEffectFirstRun.current = true;
+  }, [activeTab]);
   useEffect(() => {
     if (navigationEffectFirstRun.current) {
       navigationEffectFirstRun.current = false;
-      prevCurrentPageForNavEffectRef.current = currentPage;
+      prevCurrentPageForNavEffectRef.current = currentPageForCurrentView;
       return;
     }
-    if (prevCurrentPageForNavEffectRef.current !== currentPage) {
-      prevCurrentPageForNavEffectRef.current = currentPage;
+    if (prevCurrentPageForNavEffectRef.current !== currentPageForCurrentView) {
+      prevCurrentPageForNavEffectRef.current = currentPageForCurrentView;
     }
-  }, [currentPage]);
+  }, [currentPageForCurrentView, activeTab]);
 
-  // Window Resize Handler
   useEffect(() => {
     const handleResize = () => {
       const gridContainer = document.querySelector('.gallery-grid');
@@ -619,7 +644,6 @@ export function GridImageGallery({
       }
     };
     window.addEventListener('resize', handleResize);
-    // Calculate initial size after a brief delay for layout to settle
     const initialResizeTimeout = setTimeout(handleResize, 100);
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -627,7 +651,6 @@ export function GridImageGallery({
     };
   }, [calculateCellSize, gridDimensions.cols, gridDimensions.rows]);
 
-  // Effect to resize canvases and rescale images when cellHeight actually changes
   useEffect(() => {
     if (
       canvasRefs.current.every(ref => ref === null) ||
@@ -645,25 +668,22 @@ export function GridImageGallery({
           if (canvas.wrapperEl) {
             canvas.wrapperEl.style.height = `${cellHeight}px`;
           }
-
-          // This part correctly handles backgroundImage
           if (
             canvas.backgroundImage &&
             typeof canvas.backgroundImage !== 'string'
           ) {
-            const fabricImg = canvas.backgroundImage as fabric.Image; // or fabric.FabricImage
+            const fabricImg = canvas.backgroundImage as fabric.Image;
             const imgWidth = fabricImg.width || 1;
             const imgHeight = fabricImg.height || 1;
-
-            if (syncedTransformRef.current) {
-              // Check if syncedTransformRef is not null
-              canvas.setZoom(syncedTransformRef.current.zoom);
+            const currentSyncTransform =
+              syncedTransformForCurrentViewRef.current;
+            if (currentSyncTransform) {
+              canvas.setZoom(currentSyncTransform.zoom);
               if (canvas.viewportTransform) {
-                canvas.viewportTransform[4] = syncedTransformRef.current.x;
-                canvas.viewportTransform[5] = syncedTransformRef.current.y;
+                canvas.viewportTransform[4] = currentSyncTransform.x;
+                canvas.viewportTransform[5] = currentSyncTransform.y;
               }
             } else {
-              // Re-fit if no sync transform
               const scale = Math.min(
                 parentWidth / imgWidth,
                 cellHeight / imgHeight
@@ -683,13 +703,12 @@ export function GridImageGallery({
     };
     const debounceTimeout = setTimeout(updateCanvasSizesAndScaling, 50);
     return () => clearTimeout(debounceTimeout);
-  }, [cellHeight]); // This effect correctly re-evaluates transforms when cellHeight changes
+  }, [cellHeight, activeTab, syncedTransformForCurrentViewRef]);
 
-  // Effect for when layout state changes (to recalculate cell size)
   useEffect(() => {
     if (!hasInitializedOnce.current && !initialLayout) {
       return;
-    } // Don't run initially if no initialLayout and not yet initialized
+    }
     const gridContainer = document.querySelector('.gallery-grid');
     if (gridContainer && gridDimensions.cols > 0) {
       calculateCellSize(
@@ -706,65 +725,85 @@ export function GridImageGallery({
     initialLayout
   ]);
 
-  // Effect to update parent with selected image params OR clear them
   useEffect(() => {
-    let currentReportKey: string | null = null;
-    let valueToReportToParent: any = []; // Default to "deselected"
-
-    if (images === undefined && !hasInitializedOnce.current) {
-      // Still loading initial images, or images prop is not yet ready.
-      // Don't report anything yet to avoid premature deselection signal.
-      return;
-    }
-
+    let imageToReport: IGalleryImage | null = null;
+    let reportKeySource: string = activeTab;
     if (
+      activeTab === 'gallery' &&
       selectedImageIndex !== null &&
       images &&
       selectedImageIndex < images.length
     ) {
-      const currentSelectedImage = images[selectedImageIndex];
-      if (currentSelectedImage) {
-        // Create a unique key for the selected image's state
-        currentReportKey = `image-${currentSelectedImage.filename}-${JSON.stringify(currentSelectedImage.params || {})}`;
-        if ('params' in currentSelectedImage && currentSelectedImage.params) {
-          valueToReportToParent = {
-            filename: currentSelectedImage.filename,
-            params: currentSelectedImage.params
-          };
-        } else {
-          valueToReportToParent = [currentSelectedImage.filename];
-        }
+      imageToReport = images[selectedImageIndex];
+    } else if (
+      activeTab === 'compare' &&
+      selectedCompareImageIndex !== null &&
+      compareImages &&
+      selectedCompareImageIndex < compareImages.length
+    ) {
+      imageToReport = compareImages[selectedCompareImageIndex];
+      reportKeySource = `compare-${selectedCompareImageIndex}`;
+    }
+    let currentReportKey: string | null = null;
+    let valueToReportToParent: any = [];
+    if (imageToReport) {
+      currentReportKey = `${reportKeySource}-image-${imageToReport.filename}-${JSON.stringify(imageToReport.params || {})}`;
+      if ('params' in imageToReport && imageToReport.params) {
+        valueToReportToParent = {
+          filename: imageToReport.filename,
+          params: imageToReport.params
+        };
       } else {
-        // Should be rare if index is in bounds but image is null
-        currentReportKey = 'deselected-stale-index';
+        valueToReportToParent = [imageToReport.filename];
       }
     } else {
-      // No image selected (selectedImageIndex is null or out of bounds)
-      currentReportKey = 'deselected-no-selection';
+      currentReportKey = `${reportKeySource}-deselected`;
     }
 
-    // Only call setValue if the effective selection state to report has changed
     if (lastReportedSelectionToParentRef.current !== currentReportKey) {
       setValue?.(forWhom, valueToReportToParent);
       lastReportedSelectionToParentRef.current = currentReportKey;
     }
-  }, [selectedImageIndex, images, setValue, forWhom]);
+  }, [
+    activeTab,
+    images,
+    selectedImageIndex,
+    compareImages,
+    selectedCompareImageIndex,
+    setValue,
+    forWhom
+  ]);
 
-  // Effect to handle selectedImageIndex becoming invalid after images array changes (e.g. deletion)
   useEffect(() => {
     if (
+      activeTab === 'gallery' &&
       selectedImageIndex !== null &&
       images &&
       selectedImageIndex >= images.length
     ) {
-      setSelectedImageIndex(null); // This will trigger the effect above to inform parent
+      setSelectedImageIndex(null);
     }
-  }, [images, selectedImageIndex]);
+    if (
+      activeTab === 'compare' &&
+      selectedCompareImageIndex !== null &&
+      compareImages &&
+      selectedCompareImageIndex >= compareImages.length
+    ) {
+      setSelectedCompareImageIndex(null);
+    }
+  }, [
+    images,
+    compareImages,
+    selectedImageIndex,
+    selectedCompareImageIndex,
+    activeTab
+  ]);
 
-  // Effect to apply syncedTransform to all canvases
   useEffect(() => {
-    if (syncedTransform && canvasRefs.current) {
-      canvasRefs.current.forEach((canvasInstance, idx) => {
+    const transformToApply =
+      activeTab === 'gallery' ? gallerySyncedTransform : compareSyncedTransform;
+    if (transformToApply && canvasRefs.current) {
+      canvasRefs.current.forEach(canvasInstance => {
         if (
           canvasInstance &&
           !canvasInstance.isDisposed &&
@@ -777,26 +816,23 @@ export function GridImageGallery({
           const currentY = canvasInstance.viewportTransform
             ? canvasInstance.viewportTransform[5]
             : 0;
-
-          // Only update if different to avoid redundant rendering and potential loops
           if (
-            Math.abs(currentZoom - syncedTransform.zoom) > 1e-6 || // Use epsilon for float comparison
-            Math.abs(currentX - syncedTransform.x) > 1e-6 ||
-            Math.abs(currentY - syncedTransform.y) > 1e-6
+            Math.abs(currentZoom - transformToApply.zoom) > 1e-6 ||
+            Math.abs(currentX - transformToApply.x) > 1e-6 ||
+            Math.abs(currentY - transformToApply.y) > 1e-6
           ) {
-            canvasInstance.setZoom(syncedTransform.zoom);
+            canvasInstance.setZoom(transformToApply.zoom);
             if (canvasInstance.viewportTransform) {
-              canvasInstance.viewportTransform[4] = syncedTransform.x;
-              canvasInstance.viewportTransform[5] = syncedTransform.y;
+              canvasInstance.viewportTransform[4] = transformToApply.x;
+              canvasInstance.viewportTransform[5] = transformToApply.y;
             }
             canvasInstance.requestRenderAll();
           }
         }
       });
     }
-  }, [syncedTransform]); // This effect primarily depends on syncedTransform.
+  }, [gallerySyncedTransform, compareSyncedTransform, activeTab]);
 
-  // Effect to update cursor style on all relevant canvas elements when isPanningRef changes
   useEffect(() => {
     const cursorClass = isPanningRef.current ? 'grabbing' : 'grab';
     const antiCursorClass = isPanningRef.current ? 'grab' : 'grabbing';
@@ -806,86 +842,102 @@ export function GridImageGallery({
         canvasDOMEl.classList.remove(antiCursorClass);
       }
     });
-    // Also update fabric default/hover cursors for canvases that might be recreated
     canvasRefs.current.forEach(canvasInstance => {
       if (canvasInstance && !canvasInstance.isDisposed) {
         canvasInstance.defaultCursor = cursorClass;
         canvasInstance.hoverCursor = cursorClass;
       }
     });
-  }, [isPanningRef.current]); // Run when isPanningRef.current changes
+  }, [isPanningRef.current]);
 
   return (
     <div
       className={`grid-image-gallery-widget widget layout-${getCurrentLayout()}`}
     >
       <div className="gallery-controls">
-        {images && images.length > gridDimensions.total && (
-          <div className="gallery-nav-buttons">
-            <span className="gallery-page-indicator">
-              {currentPage + 1}/{totalPages}
-            </span>
-            <button
-              className="gallery-nav-button"
-              onClick={() => handleNavigation('prev')}
-              disabled={isNavButtonDisabled('prev')}
-              title="Previous page"
-            >
-              <LeftArrowIcon />
-            </button>
-            <button
-              className="gallery-nav-button"
-              onClick={() => handleNavigation('next')}
-              disabled={isNavButtonDisabled('next')}
-              title="Next page"
-            >
-              <RightArrowIcon />
-            </button>
-          </div>
-        )}
-        <div className="layout-inputs">
-          <div className="input-group">
-            <input
-              id="grid-rows"
-              type="number"
-              min="1"
-              max="4"
-              value={layoutInput[0]}
-              onChange={e => handleLayoutChange(e, 'row')}
-              onBlur={e => handleBlur(e, 'row')}
-              aria-label="Grid rows"
-              className={`layout-input ${validationError.row ? 'input-error' : ''}`}
-            />
-            {validationError.row && (
-              <div className="validation-error">{validationError.row}</div>
-            )}
-          </div>
-          <span className="layout-separator">×</span>
-          <div className="input-group">
-            <input
-              id="grid-cols"
-              type="number"
-              min="1"
-              max="4"
-              value={layoutInput[1]}
-              onChange={e => handleLayoutChange(e, 'col')}
-              onBlur={e => handleBlur(e, 'col')}
-              aria-label="Grid columns"
-              className={`layout-input ${validationError.col ? 'input-error' : ''}`}
-            />
-            {validationError.col && (
-              <div className="validation-error">{validationError.col}</div>
-            )}
+        <div className="left-section">
+          {imagesForCurrentView.length > gridDimensions.total && (
+            <div className="gallery-nav-buttons">
+              <span className="gallery-page-indicator">
+                {currentPageForCurrentView + 1}/{totalPagesForCurrentView}
+              </span>
+              <button
+                className="gallery-nav-button"
+                onClick={() => handleNavigationForCurrentView('prev')}
+                disabled={isNavButtonDisabled('prev')}
+                title="Previous page"
+              >
+                <LeftArrowIcon />
+              </button>
+              <button
+                className="gallery-nav-button"
+                onClick={() => handleNavigationForCurrentView('next')}
+                disabled={isNavButtonDisabled('next')}
+                title="Next page"
+              >
+                <RightArrowIcon />
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="center-section">
+          <div className="layout-inputs">
+            <div className="input-group">
+              <input
+                id="grid-rows"
+                type="number"
+                min="1"
+                max="4"
+                value={layoutInput[0]}
+                onChange={e => handleLayoutChange(e, 'row')}
+                onBlur={e => handleBlur(e, 'row')}
+                aria-label="Grid rows"
+                className={`layout-input ${validationError.row ? 'input-error' : ''}`}
+              />
+              {validationError.row && (
+                <div className="validation-error">{validationError.row}</div>
+              )}
+            </div>
+            <span className="layout-separator">×</span>
+            <div className="input-group">
+              <input
+                id="grid-cols"
+                type="number"
+                min="1"
+                max="4"
+                value={layoutInput[1]}
+                onChange={e => handleLayoutChange(e, 'col')}
+                onBlur={e => handleBlur(e, 'col')}
+                aria-label="Grid columns"
+                className={`layout-input ${validationError.col ? 'input-error' : ''}`}
+              />
+              {validationError.col && (
+                <div className="validation-error">{validationError.col}</div>
+              )}
+            </div>
           </div>
         </div>
-        <div className="gallery-action-buttons">
-          <button
-            className={`gallery-action-button ${compareMode ? 'active' : ''}`}
-            onClick={toggleCompareMode}
-            title="Compare images"
-          >
-            Compare
-          </button>
+        <div className="right-section">
+          <div className="gallery-tabs">
+            <button
+              className={`tab-button ${activeTab === 'gallery' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('gallery');
+                editorContext?.action('menu').close();
+              }}
+            >
+              Gallery
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'compare' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('compare');
+                editorContext?.action('menu').close();
+              }}
+            >
+              Compare ({compareImages.length})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -899,66 +951,90 @@ export function GridImageGallery({
         }}
       >
         {gridDimensions.total > 0 &&
-          canvasKeys.slice(0, gridDimensions.total).map((key, index) => {
-            const imageIndexInAllImages = pageStartIndex + index;
-            const hasImage = images && imageIndexInAllImages < images.length;
-            const imageInThisCell = hasImage
-              ? images![imageIndexInAllImages]
-              : null;
-            const isSelected = selectedImageIndex === imageIndexInAllImages;
-            const cellKey = `${key}-${imageInThisCell ? imageInThisCell.filename : 'empty'}-${currentPage}-${imageIndexInAllImages}`;
+          imagesForCurrentView &&
+          canvasKeys
+            .slice(0, gridDimensions.total)
+            .map((canvasDomId, indexInGrid) => {
+              const imageIndexInViewArray =
+                pageStartIndexForCurrentView + indexInGrid;
+              const hasImage =
+                imageIndexInViewArray < imagesForCurrentView.length;
+              const imageInThisCell = hasImage
+                ? imagesForCurrentView[imageIndexInViewArray]
+                : null;
+              const isSelected =
+                selectedImageIndexForCurrentView === imageIndexInViewArray;
+              const cellKey = `${activeTab}-${canvasDomId}-${imageInThisCell ? imageInThisCell.filename : 'empty'}-${currentPageForCurrentView}-${imageIndexInViewArray}`;
 
-            return (
-              <div
-                key={cellKey}
-                className={`gallery-cell cell-${index} ${isSelected ? 'selected' : ''} ${!hasImage ? 'empty' : ''}`}
-                style={{
-                  height: `${cellHeight}px`,
-                  minHeight: '50px',
-                  position: 'relative'
-                }} // Added position: relative
-                onClick={
-                  hasImage
-                    ? () => handleCellClick(imageIndexInAllImages)
-                    : undefined
-                }
-                title={
-                  hasImage ? `Image ${imageIndexInAllImages + 1}` : 'No image'
-                }
-              >
-                <canvas id={key} />
-                {isSelected && hasImage && onDeleteImage && (
-                  <button
-                    className="delete-image-button"
-                    onClick={e => handleDeleteClick(e, imageIndexInAllImages)}
-                    title="Remove this image"
-                    style={{
-                      position: 'absolute',
-                      top: '5px',
-                      right: '5px',
-                      background: 'rgba(255, 0, 0, 0.7)',
-                      color: 'white',
-                      border: '1px solid rgba(200,0,0,0.9)',
-                      borderRadius: '50%',
-                      width: '24px',
-                      height: '24px',
-                      fontSize: '14px',
-                      lineHeight: '22px',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      zIndex: 10,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 0
-                    }}
-                  >
-                    &times; {/* Using HTML entity for X */}
-                  </button>
-                )}
-              </div>
-            );
-          })}
+              return (
+                <div
+                  key={cellKey}
+                  className={`gallery-cell cell-${indexInGrid} ${isSelected ? 'selected' : ''} ${!hasImage ? 'empty' : ''}`}
+                  style={{
+                    height: `${cellHeight}px`,
+                    minHeight: '50px',
+                    position: 'relative'
+                  }}
+                  onClick={
+                    hasImage && !isPanningRef.current
+                      ? () => handleCellClickForCurrentView(indexInGrid)
+                      : undefined
+                  }
+                  onContextMenu={(e: React.MouseEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (
+                      activeTab === 'gallery' &&
+                      hasImage &&
+                      imageInThisCell &&
+                      editorContext?.action
+                    ) {
+                      const menuAction = editorContext.action('menu');
+
+                      if (menuAction && typeof menuAction.open === 'function') {
+                        menuAction.open('gridImageMenu', e, {
+                          forWhom: imageInThisCell,
+                          handleAddToCompare: handleAddToCompare,
+                          editorContext: editorContext
+                        });
+                      } else {
+                        console.error(
+                          '[DEBUG] menuAction.open is not available or not a function.',
+                          menuAction
+                        );
+                      }
+                    }
+                  }}
+                  title={
+                    hasImage
+                      ? `Image ${imageIndexInViewArray + 1}${activeTab === 'gallery' ? ' (Right-click for options)' : ''}`
+                      : 'No image'
+                  }
+                >
+                  <canvas
+                    id={canvasDomId}
+                    className={isPanningRef.current ? 'grabbing' : 'grab'}
+                  />
+                  {isSelected && hasImage && (
+                    <button
+                      className="delete-image-button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (activeTab === 'gallery' && onDeleteImage) {
+                          handleDeleteFromGallery(imageIndexInViewArray);
+                        } else if (activeTab === 'compare') {
+                          handleDeleteFromCompareList(imageIndexInViewArray);
+                        }
+                      }}
+                      title={`Remove this image ${activeTab === 'gallery' ? 'from gallery' : 'from compare list'}`}
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
+              );
+            })}
       </div>
     </div>
   );
