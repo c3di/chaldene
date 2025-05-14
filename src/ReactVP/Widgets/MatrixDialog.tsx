@@ -697,32 +697,17 @@ export default function MatrixDialog({
     }));
   }, [matrixResults]);
   const handleApply = useCallback(() => {
-    // console.log('[MatrixDialog] handleApply triggered.');
-    // console.log('[MatrixDialog] selectedGalleryImageParams:', selectedGalleryImageParams);
-    // console.log('[MatrixDialog] editorContext available:', !!editorContext);
-
-    // if (editorContext) {
-    //   console.log(
-    //     '[MatrixDialog] editorContext.action("graph").setValue available:',
-    //     !!editorContext.action('graph')?.setValue
-    //   );
-    //   console.log(
-    //     '[MatrixDialog] editorContext.graph available:',
-    //     !!editorContext.graph
-    //   );
-    // }
-
-    // This setValue is the prop for the dialog itself, for the whole matrix if needed by other features.
     const newParameterMatrixForDialogProp = buildParameterMatrix();
     setValue?.(forWhom, newParameterMatrixForDialogProp);
 
-    // Apply selected image's parameters to the graph nodes using GraphActions.setValue
     if (
       selectedGalleryImageParams &&
       editorContext?.action('graph')?.setValue &&
-      editorContext.graph
+      editorContext.graph &&
+      editorContext.focus &&
+      editorContext.triggerLiveExecution
     ) {
-      // console.log('[MatrixDialog] Conditions met to apply selected image parameters via setValue.');
+      editorContext.focus(); // Still call this for its side effects (e.g., onFocus handlers)
 
       for (const [nodeId, paramsForNode] of Object.entries(
         selectedGalleryImageParams
@@ -731,9 +716,6 @@ export default function MatrixDialog({
           for (const [originalParamId, valueToApply] of Object.entries(
             paramsForNode
           )) {
-            // console.log(
-            //   `[MatrixDialog] Preparing to call setValue: Node ID: ${nodeId}, Input ID: ${originalParamId}, Value: ${valueToApply}`
-            // );
             if (valueToApply !== undefined) {
               try {
                 editorContext
@@ -743,59 +725,49 @@ export default function MatrixDialog({
                     { nodeID: nodeId, id: originalParamId },
                     valueToApply
                   );
-                // console.log(
-                //   `[MatrixDialog] setValue called for Node ID: ${nodeId}, Input ID: ${originalParamId}`
-                // );
               } catch (e) {
                 console.error(
                   `[MatrixDialog] Error calling setValue for Node ID: ${nodeId}, Input ID: ${originalParamId}:`,
                   e
                 );
               }
-            } else {
-              // console.log(
-              //   `[MatrixDialog] Skipped setValue for Node ID: ${nodeId}, Input ID: ${originalParamId} because value is undefined.`
-              // );
             }
           }
         }
       }
 
-      // CRUCIAL STEP: Clear matrix mode from editorContext to allow normal execution after applying individual params
-      // console.log('[MatrixDialog] Clearing parameterMatrix from editorContext after applying single image params.');
+      // Clear any existing parameterMatrix from editorContext and graph.editorContext
+      // to ensure a single run, not a matrix run.
       if (editorContext) {
-        (editorContext as any).parameterMatrix = undefined;
-        if ((editorContext.graph as any)?.editorContext) {
-          (editorContext.graph as any).editorContext = undefined;
+        if (
+          typeof (editorContext as any).parameterMatrix === 'object' &&
+          (editorContext as any).parameterMatrix !== null
+        ) {
+          (editorContext as any).parameterMatrix = undefined;
+        }
+
+        if (editorContext.graph) {
+          const graphWithEditorCtx = editorContext.graph as any;
+          if (
+            graphWithEditorCtx.editorContext &&
+            typeof graphWithEditorCtx.editorContext.parameterMatrix ===
+              'object' &&
+            graphWithEditorCtx.editorContext.parameterMatrix !== null
+          ) {
+            graphWithEditorCtx.editorContext.parameterMatrix = undefined;
+            if (Object.keys(graphWithEditorCtx.editorContext).length === 0) {
+              graphWithEditorCtx.editorContext = undefined;
+            }
+          }
         }
       }
-    } else {
-      // console.log('[MatrixDialog] Conditions NOT met to apply selected image parameters via setValue, or no image selected.');
-      if (!selectedGalleryImageParams) {
-        console.log(
-          '[MatrixDialog] Reason: No selected gallery image parameters.'
-        );
-      }
-      if (!editorContext) {
-        console.log('[MatrixDialog] Reason: editorContext is not available.');
-      } else {
-        if (!editorContext.action('graph')?.setValue) {
-          console.log(
-            '[MatrixDialog] Reason: editorContext.action("graph").setValue is not available.'
-          );
-        }
-        if (!editorContext.graph) {
-          console.log(
-            '[MatrixDialog] Reason: editorContext.graph is not available.'
-          );
-        }
-      }
+
+      editorContext.triggerLiveExecution({ bypassFocusCheck: true });
     }
 
-    // console.log('[MatrixDialog] handleApply finished. Closing dialog.');
-    onClose(); // Call to close the dialog
+    onClose();
   }, [
-    setValue, // This is the prop callback
+    setValue,
     forWhom,
     buildParameterMatrix,
     selectedGalleryImageParams,

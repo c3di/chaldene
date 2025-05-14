@@ -34,6 +34,7 @@ export default class EditorContext {
   private nextEdgeId: number = 0;
   private runningInProcessCount: number = 0;
   public isAsyncImageViewTransform: boolean = true;
+  private _isBypassFocusForNextInspectionChain: boolean = false;
   private imageViewTransforms: {
     ungrouped: { x?: number; y?: number; zoom?: number };
     grouped: { [key: number]: { x?: number; y?: number; zoom?: number } };
@@ -119,7 +120,9 @@ export default class EditorContext {
     this.graphChangeListeners.forEach(listener => {
       listener(graphWithoutEditorContext(graph));
     });
-    this.triggerLiveExecution();
+    this.triggerLiveExecution({
+      bypassFocusCheck: this._isBypassFocusForNextInspectionChain
+    });
   };
 
   public registAction = (name: string, action: any): void => {
@@ -158,12 +161,18 @@ export default class EditorContext {
    */
   public updateInspection = (handleID: string, value: any): void => {
     this.action('graph').updateInspection(handleID, value);
-    // Trigger code generation after inspection update
-    this.triggerLiveExecution();
+    this.triggerLiveExecution({
+      bypassFocusCheck: this._isBypassFocusForNextInspectionChain
+    });
+    if (this._isBypassFocusForNextInspectionChain) {
+      this._isBypassFocusForNextInspectionChain = false;
+    }
   };
 
-  public getGraphToBeExecuted = (increment: boolean = true): Graph | null => {
-    // Check if we have matrix parameters (either in graph.editorContext or directly on this context)
+  public getGraphToBeExecuted = (
+    increment: boolean = true,
+    options?: { bypassFocusCheck?: boolean }
+  ): Graph | null => {
     const hasMatrixParams =
       ((this.graph as any)?.editorContext?.parameterMatrix &&
         Object.keys((this.graph as any).editorContext.parameterMatrix).length >
@@ -171,23 +180,53 @@ export default class EditorContext {
       ((this as any).parameterMatrix &&
         Object.keys((this as any).parameterMatrix).length > 0);
 
-    // For matrix mode, bypass the readiness check
     if (hasMatrixParams) {
+      // For matrix mode, always use the current graph and bypass other checks.
       return this.graph || null;
     }
 
-    // Regular path for non-matrix mode
+    // If bypassFocusCheck is true, this is a special call (e.g. from MatrixDialog Apply).
+    // In this case, we want to execute on the current graph, not an increment,
+    // and we bypass the readiness check.
+    if (options?.bypassFocusCheck) {
+      if (!this.graph) {
+        return null;
+      }
+      // Return the full graph, do not use incremental logic.
+      return this.graph;
+    }
+
+    // Standard path (not matrix, not bypassFocusCheck)
     if (!this.graph || !this.checkExecutionReadiness()) {
       return null;
     }
 
-    return increment
+    // Standard path uses the 'increment' parameter passed to the function
+    const resultGraph = increment
       ? findCodeChangedGraph(this.prevExecGraph, this.graph)
       : this.graph;
+    return resultGraph;
   };
 
-  public triggerLiveExecution = (): void => {
-    if (this.focused && this.isLiveExecution && this.getGraphToBeExecuted()) {
+  public triggerLiveExecution = (options?: {
+    bypassFocusCheck?: boolean;
+  }): void => {
+    // Manage the _isBypassFocusForNextInspectionChain flag
+    if (options?.bypassFocusCheck) {
+      // If this execution is starting with a bypass, ensure the flag is set.
+      this._isBypassFocusForNextInspectionChain = true;
+    }
+    // No change to the flag here if options.bypassFocusCheck is not true.
+
+    // Pass options down to getGraphToBeExecuted
+    const graphToBeExecuted = this.getGraphToBeExecuted(true, options);
+
+    const canExecute =
+      (options?.bypassFocusCheck || this.focused) &&
+      this.isLiveExecution &&
+      graphToBeExecuted;
+
+    if (canExecute) {
       this.onLiveExecution?.();
     }
   };

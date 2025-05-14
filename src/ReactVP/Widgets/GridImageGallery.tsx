@@ -56,21 +56,20 @@ export function GridImageGallery({
   const [activeTab, setActiveTab] = useState<'gallery' | 'compare'>('gallery');
 
   const [currentPage, setCurrentPage] = useState<number>(0);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
-    null
-  );
   const [gallerySyncedTransform, setGallerySyncedTransform] =
     useState<ITransform | null>(null);
   const gallerySyncedTransformRef = useRef(gallerySyncedTransform);
 
   const [compareImages, setCompareImages] = useState<IGalleryImage[]>([]);
   const [compareCurrentPage, setCompareCurrentPage] = useState<number>(0);
-  const [selectedCompareImageIndex, setSelectedCompareImageIndex] = useState<
-    number | null
-  >(null);
   const [compareSyncedTransform, setCompareSyncedTransform] =
     useState<ITransform | null>(null);
   const compareSyncedTransformRef = useRef(compareSyncedTransform);
+
+  const [unifiedSelectedImage, setUnifiedSelectedImage] = useState<{
+    tab: 'gallery' | 'compare';
+    indexInFullArray: number;
+  } | null>(null);
 
   const isPanningRef = useRef(false);
   const lastPanPositionRef = useRef({ x: 0, y: 0 });
@@ -90,6 +89,7 @@ export function GridImageGallery({
   const navigationEffectFirstRun = useRef<boolean>(true);
   const prevCurrentPageForNavEffectRef = useRef<number>(currentPage);
   const lastReportedSelectionToParentRef = useRef<string | null>(null);
+  const prevActiveTabRef = useRef<'gallery' | 'compare'>(activeTab);
 
   const imagesForCurrentView = useMemo(
     () => (activeTab === 'gallery' ? images : compareImages),
@@ -99,12 +99,6 @@ export function GridImageGallery({
     activeTab === 'gallery' ? currentPage : compareCurrentPage;
   const setCurrentPageForCurrentView =
     activeTab === 'gallery' ? setCurrentPage : setCompareCurrentPage;
-  const selectedImageIndexForCurrentView =
-    activeTab === 'gallery' ? selectedImageIndex : selectedCompareImageIndex;
-  const setSelectedImageIndexForCurrentView =
-    activeTab === 'gallery'
-      ? setSelectedImageIndex
-      : setSelectedCompareImageIndex;
   const syncedTransformForCurrentViewRef =
     activeTab === 'gallery'
       ? gallerySyncedTransformRef
@@ -425,9 +419,12 @@ export function GridImageGallery({
 
   const handleSelectImageForCurrentView = useCallback(
     (imageIndexInFullList: number) => {
-      setSelectedImageIndexForCurrentView(imageIndexInFullList);
+      setUnifiedSelectedImage({
+        tab: activeTab,
+        indexInFullArray: imageIndexInFullList
+      });
     },
-    [setSelectedImageIndexForCurrentView]
+    [activeTab]
   );
 
   const handleCellClickForCurrentView = useCallback(
@@ -458,8 +455,16 @@ export function GridImageGallery({
   const handleDeleteFromGallery = useCallback(
     (imageIndex: number) => {
       onDeleteImage?.(imageIndex);
+      if (
+        unifiedSelectedImage?.tab === 'gallery' &&
+        unifiedSelectedImage?.indexInFullArray > imageIndex
+      ) {
+        setUnifiedSelectedImage(prev =>
+          prev ? { ...prev, indexInFullArray: prev.indexInFullArray - 1 } : null
+        );
+      }
     },
-    [onDeleteImage]
+    [onDeleteImage, unifiedSelectedImage]
   );
 
   const handleDeleteFromCompareList = useCallback(
@@ -467,16 +472,16 @@ export function GridImageGallery({
       setCompareImages(prev =>
         prev.filter((_, idx) => idx !== indexInCompareList)
       );
-      if (selectedCompareImageIndex === indexInCompareList) {
-        setSelectedCompareImageIndex(null);
-      } else if (
-        selectedCompareImageIndex &&
-        selectedCompareImageIndex > indexInCompareList
+      if (
+        unifiedSelectedImage?.tab === 'compare' &&
+        unifiedSelectedImage?.indexInFullArray > indexInCompareList
       ) {
-        setSelectedCompareImageIndex(prev => (prev ? prev - 1 : null));
+        setUnifiedSelectedImage(prev =>
+          prev ? { ...prev, indexInFullArray: prev.indexInFullArray - 1 } : null
+        );
       }
     },
-    [selectedCompareImageIndex]
+    [unifiedSelectedImage]
   );
 
   const handleAddToCompare = useCallback((imageToAdd: IGalleryImage) => {
@@ -760,61 +765,76 @@ export function GridImageGallery({
     initialLayout // Also consider initialLayout for the first run
   ]);
 
-  // MODIFICATION: Automatically select the image in 1x1 layout
+  // Automatically select the image in 1x1 layout
   useEffect(() => {
-    if (
-      gridDimensions.rows === 1 &&
-      gridDimensions.cols === 1 &&
-      imagesForCurrentView.length > 0
-    ) {
+    const is1x1 = gridDimensions.rows === 1 && gridDimensions.cols === 1;
+    const hasImages = imagesForCurrentView.length > 0;
+
+    if (is1x1 && hasImages) {
       const imageIndexToSelect = pageStartIndexForCurrentView; // The first image on the current page
-      if (
-        imageIndexToSelect < imagesForCurrentView.length &&
-        selectedImageIndexForCurrentView !== imageIndexToSelect
-      ) {
-        setSelectedImageIndexForCurrentView(imageIndexToSelect);
+
+      const isValidIndex = imageIndexToSelect < imagesForCurrentView.length;
+      const isAlreadySelected =
+        unifiedSelectedImage?.tab === activeTab &&
+        unifiedSelectedImage?.indexInFullArray === imageIndexToSelect;
+
+      if (isValidIndex && !isAlreadySelected) {
+        setUnifiedSelectedImage({
+          tab: activeTab,
+          indexInFullArray: imageIndexToSelect
+        });
       }
-    } else if (
-      gridDimensions.total > 1 &&
-      selectedImageIndexForCurrentView !== null
-    ) {
-      // Optional: If you want to deselect when moving away from 1x1, uncomment below
-      // setSelectedImageIndexForCurrentView(null);
     }
   }, [
     gridDimensions.rows,
     gridDimensions.cols,
-    gridDimensions.total,
     imagesForCurrentView,
     pageStartIndexForCurrentView,
-    selectedImageIndexForCurrentView,
-    setSelectedImageIndexForCurrentView
+    unifiedSelectedImage,
+    activeTab
   ]);
+
+  // Effect to reset last reported selection when active tab changes
+  useEffect(() => {
+    if (prevActiveTabRef.current !== activeTab) {
+      lastReportedSelectionToParentRef.current = null;
+
+      // When the active tab changes, we invalidate the last reported selection.
+      // This ensures that the next selection event in the new tab WILL be reported.
+      lastReportedSelectionToParentRef.current = null;
+      isPanningRef.current = false;
+      setUnifiedSelectedImage(null);
+    }
+
+    // Update the ref to the current tab for the next run
+    prevActiveTabRef.current = activeTab;
+  }, [activeTab]);
 
   // Effect for reporting selected image value to parent
   useEffect(() => {
     let imageToReport: IGalleryImage | null = null;
-    let reportKeySource: string = activeTab; // Base key on active tab
+    let reportKeySource: string = 'deselected'; // Default to deselected
 
-    if (
-      activeTab === 'gallery' &&
-      selectedImageIndex !== null &&
-      images &&
-      selectedImageIndex < images.length
-    ) {
-      imageToReport = images[selectedImageIndex];
-    } else if (
-      activeTab === 'compare' &&
-      selectedCompareImageIndex !== null &&
-      compareImages &&
-      selectedCompareImageIndex < compareImages.length
-    ) {
-      imageToReport = compareImages[selectedCompareImageIndex];
-      reportKeySource = `compare-${selectedCompareImageIndex}`; // More specific key for compare tab
+    if (unifiedSelectedImage !== null) {
+      reportKeySource = unifiedSelectedImage.tab;
+      if (
+        unifiedSelectedImage.tab === 'gallery' &&
+        images &&
+        unifiedSelectedImage.indexInFullArray < images.length
+      ) {
+        imageToReport = images[unifiedSelectedImage.indexInFullArray];
+      } else if (
+        unifiedSelectedImage.tab === 'compare' &&
+        compareImages &&
+        unifiedSelectedImage.indexInFullArray < compareImages.length
+      ) {
+        imageToReport = compareImages[unifiedSelectedImage.indexInFullArray];
+        reportKeySource = `compare-${unifiedSelectedImage.indexInFullArray}`; // Make compare key more specific if needed
+      }
     }
 
     let currentReportKey: string | null = null;
-    let valueToReportToParent: any = []; // Default to empty array
+    let valueToReportToParent: any = [];
 
     if (imageToReport) {
       currentReportKey = `${reportKeySource}-image-${
@@ -840,38 +860,32 @@ export function GridImageGallery({
   }, [
     activeTab,
     images,
-    selectedImageIndex,
     compareImages,
-    selectedCompareImageIndex,
+    unifiedSelectedImage,
     setValue,
     forWhom
   ]);
 
   // Effect to deselect if selected image index becomes out of bounds
   useEffect(() => {
-    if (
-      activeTab === 'gallery' &&
-      selectedImageIndex !== null &&
-      images &&
-      selectedImageIndex >= images.length
-    ) {
-      setSelectedImageIndex(null);
+    if (unifiedSelectedImage) {
+      let shouldDeselect = false;
+      if (
+        unifiedSelectedImage.tab === 'gallery' &&
+        unifiedSelectedImage.indexInFullArray >= images.length
+      ) {
+        shouldDeselect = true;
+      } else if (
+        unifiedSelectedImage.tab === 'compare' &&
+        unifiedSelectedImage.indexInFullArray >= compareImages.length
+      ) {
+        shouldDeselect = true;
+      }
+      if (shouldDeselect) {
+        setUnifiedSelectedImage(null);
+      }
     }
-    if (
-      activeTab === 'compare' &&
-      selectedCompareImageIndex !== null &&
-      compareImages &&
-      selectedCompareImageIndex >= compareImages.length
-    ) {
-      setSelectedCompareImageIndex(null);
-    }
-  }, [
-    images,
-    compareImages,
-    selectedImageIndex,
-    selectedCompareImageIndex,
-    activeTab
-  ]);
+  }, [images, compareImages, unifiedSelectedImage]);
 
   // Effect to synchronize zoom/pan across all visible canvases for the current tab
   useEffect(() => {
@@ -1051,7 +1065,9 @@ export function GridImageGallery({
                 ? imagesForCurrentView[imageIndexInViewArray]
                 : null;
               const isSelected =
-                selectedImageIndexForCurrentView === imageIndexInViewArray;
+                unifiedSelectedImage?.tab === activeTab &&
+                unifiedSelectedImage?.indexInFullArray ===
+                  imageIndexInViewArray;
 
               // Construct a more robust key
               const cellKey = `${activeTab}-${canvasDomId}-${
