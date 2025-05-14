@@ -217,10 +217,6 @@ export default class CodeGenerator {
     // Check if editorContext has a parameterMatrix that was set by MatrixDialog
     if (!parameterMatrix && (graph as any).editorContext?.parameterMatrix) {
       parameterMatrix = (graph as any).editorContext.parameterMatrix;
-      console.log(
-        '[CodeGenerator] Using parameter matrix from graph context:',
-        parameterMatrix
-      );
     }
 
     const nodes = topologicalSortDAG(graph);

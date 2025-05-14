@@ -47,54 +47,83 @@
 /* Improved Tab Styles */
 .gallery-tabs {
     display: flex;
-    gap: 4px;
-    /* Slightly reduced gap */
-    padding: 3px;
-    /* Padding around the tabs */
-    background-color: var(--vpl-blue-gray-4, #cbd5e0);
-    /* Subtle background for the tab container */
-    border-radius: 6px;
-    /* Rounded corners for the container */
+    /* gap: 4px; */
+    /* Remove gap for connected tabs */
+    /* padding: 3px; */
+    /* Remove padding for connected tabs */
+    /* background-color: var(--vpl-blue-gray-4, #cbd5e0); */
+    /* Remove background */
+    /* border-radius: 6px; */
+    /* Remove border-radius */
+    border-bottom: 1px solid var(--vpl-border-color3, #aaa);
+    /* Add bottom border like react-tabs__tab-list */
+    margin: 0 0 10px;
+    /* Add margin like react-tabs__tab-list */
+    padding: 0;
+    /* Reset padding */
+    -webkit-tap-highlight-color: transparent;
+    /* From react-tabs */
 }
 
 .gallery-tabs .tab-button {
-    padding: 8px 16px;
-    /* More padding */
+    /* padding: 8px 22px; */
+    /* Will be overridden by new padding */
+    padding: 6px 12px;
+    /* From react-tabs__tab */
     cursor: pointer;
-    border: none;
-    /* Remove default border */
+    border: 1px solid transparent;
+    /* From react-tabs__tab */
+    border-bottom: none;
+    /* From react-tabs__tab */
     background-color: transparent;
-    /* Start transparent */
-    border-radius: 4px;
-    /* Rounded corners for tabs */
+    /* border-radius: 4px; */
+    /* Remove general border-radius */
     color: var(--vpl-ui-font-color2, #4a5568);
-    /* Default text color */
     font-weight: 500;
-    /* Slightly bolder */
     transition: all 0.2s ease;
-    /* Smooth transitions */
     white-space: nowrap;
+    display: inline-block;
+    /* From react-tabs__tab */
+    position: relative;
+    /* From react-tabs__tab */
+    list-style: none;
+    /* From react-tabs__tab */
+    bottom: -1px;
+    /* From react-tabs__tab, to align with border */
 }
 
 .gallery-tabs .tab-button:hover {
     background-color: var(--vpl-blue-gray-3, #e2e8f0);
-    /* Light background on hover */
     color: var(--vpl-ui-font-color1, #2d3748);
-    /* Darker text on hover */
 }
 
 .gallery-tabs .tab-button.active {
-    background-color: white;
-    /* White background for active tab */
+    background-color: transparent;
+    /* Keep background same as non-active */
     color: var(--vpl-blue-1, #4299e1);
-    /* Highlight color for text */
+    /* Change text color to match the blue line */
     font-weight: 600;
-    /* Bolder text for active tab */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    /* Subtle shadow for depth */
+    /* box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); */
+    /* Remove box-shadow for flatter tab look */
+    /* border-color: var(--vpl-border-color3, #aaa); */
+    /* Remove old border color */
+    border-top-color: transparent;
+    border-left-color: transparent;
+    border-right-color: transparent;
+    border-bottom: 2px solid var(--vpl-blue-1, #4299e1);
+    /* Add blue bottom line */
+    border-radius: 0;
+    /* Remove top corner rounding */
 }
 
-/* Added cursor styles */
+/* Focus styles (basic adaptation) */
+.gallery-tabs .tab-button:focus {
+    outline: none;
+    /* From react-tabs__tab:focus */
+    /* box-shadow: 0 0 0 2px var(--vpl-focus-ring-color, #3182ce); */
+    /* Optional: custom focus ring */
+}
+
 .gallery-cell canvas.grab {
     cursor: grab;
 }

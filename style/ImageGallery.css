@@ -50,7 +50,7 @@ canvas {
     justify-content: flex-end;
 }
 
-.gallery-controls button {
+.gallery-controls button:not(.tab-button) {
     width: 24px;
     height: 24px;
     border: none;

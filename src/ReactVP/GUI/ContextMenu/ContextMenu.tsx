@@ -80,16 +80,6 @@ export default function ContextMenu(
           // Use prop
           // This handleClick is specific to each item in the map
           const handleClick = (eventArgument: React.MouseEvent): void => {
-            console.log(
-              '[ContextMenu.tsx] handleClick wrapper. Event received by wrapper:',
-              eventArgument
-            );
-            console.log(
-              '[ContextMenu.tsx] handleClick wrapper. "forWhom" from ContextMenu props (propsForWhom):',
-              propsForWhom
-            );
-
-            // CRITICAL: Ensure propsForWhom is passed as the second argument
             if (item.onClick) {
               item.onClick(eventArgument, propsForWhom);
             }
