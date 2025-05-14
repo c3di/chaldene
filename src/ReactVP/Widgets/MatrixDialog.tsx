@@ -457,7 +457,11 @@ export default function MatrixDialog({
                 id: `${node.id}_input_${input.id}`,
                 name: input.name || input.id,
                 value:
-                  input.defaultValue !== undefined ? input.defaultValue : 0,
+                  input.widget?.value !== undefined
+                    ? input.widget.value
+                    : input.defaultValue !== undefined
+                      ? input.defaultValue
+                      : 0,
                 type: 'number',
                 config: {
                   min:
@@ -479,7 +483,11 @@ export default function MatrixDialog({
                 id: `${node.id}_input_${input.id}`,
                 name: input.name || input.id,
                 value:
-                  input.defaultValue !== undefined ? input.defaultValue : '',
+                  input.widget?.value !== undefined
+                    ? input.widget.value
+                    : input.defaultValue !== undefined
+                      ? input.defaultValue
+                      : '',
                 type: 'enum',
                 config: {
                   options: input.widget?.options || []
@@ -491,7 +499,11 @@ export default function MatrixDialog({
                 id: `${node.id}_input_${input.id}`,
                 name: input.name || input.id,
                 value:
-                  input.defaultValue !== undefined ? input.defaultValue : '',
+                  input.widget?.value !== undefined
+                    ? input.widget.value
+                    : input.defaultValue !== undefined
+                      ? input.defaultValue
+                      : '',
                 type: input.type,
                 readOnly: true,
                 config: {},
@@ -684,12 +696,112 @@ export default function MatrixDialog({
       error: result.error
     }));
   }, [matrixResults]);
-
-  // Update the existing handleApply function to include matrix execution
   const handleApply = useCallback(() => {
-    const newParameterMatrix = buildParameterMatrix();
-    setValue?.(forWhom, newParameterMatrix);
-  }, [setValue, forWhom, buildParameterMatrix]);
+    // console.log('[MatrixDialog] handleApply triggered.');
+    // console.log('[MatrixDialog] selectedGalleryImageParams:', selectedGalleryImageParams);
+    // console.log('[MatrixDialog] editorContext available:', !!editorContext);
+
+    // if (editorContext) {
+    //   console.log(
+    //     '[MatrixDialog] editorContext.action("graph").setValue available:',
+    //     !!editorContext.action('graph')?.setValue
+    //   );
+    //   console.log(
+    //     '[MatrixDialog] editorContext.graph available:',
+    //     !!editorContext.graph
+    //   );
+    // }
+
+    // This setValue is the prop for the dialog itself, for the whole matrix if needed by other features.
+    const newParameterMatrixForDialogProp = buildParameterMatrix();
+    setValue?.(forWhom, newParameterMatrixForDialogProp);
+
+    // Apply selected image's parameters to the graph nodes using GraphActions.setValue
+    if (
+      selectedGalleryImageParams &&
+      editorContext?.action('graph')?.setValue &&
+      editorContext.graph
+    ) {
+      // console.log('[MatrixDialog] Conditions met to apply selected image parameters via setValue.');
+
+      for (const [nodeId, paramsForNode] of Object.entries(
+        selectedGalleryImageParams
+      )) {
+        if (typeof paramsForNode === 'object' && paramsForNode !== null) {
+          for (const [originalParamId, valueToApply] of Object.entries(
+            paramsForNode
+          )) {
+            // console.log(
+            //   `[MatrixDialog] Preparing to call setValue: Node ID: ${nodeId}, Input ID: ${originalParamId}, Value: ${valueToApply}`
+            // );
+            if (valueToApply !== undefined) {
+              try {
+                editorContext
+                  .action('graph')
+                  .setValue(
+                    'inputs',
+                    { nodeID: nodeId, id: originalParamId },
+                    valueToApply
+                  );
+                // console.log(
+                //   `[MatrixDialog] setValue called for Node ID: ${nodeId}, Input ID: ${originalParamId}`
+                // );
+              } catch (e) {
+                console.error(
+                  `[MatrixDialog] Error calling setValue for Node ID: ${nodeId}, Input ID: ${originalParamId}:`,
+                  e
+                );
+              }
+            } else {
+              // console.log(
+              //   `[MatrixDialog] Skipped setValue for Node ID: ${nodeId}, Input ID: ${originalParamId} because value is undefined.`
+              // );
+            }
+          }
+        }
+      }
+
+      // CRUCIAL STEP: Clear matrix mode from editorContext to allow normal execution after applying individual params
+      // console.log('[MatrixDialog] Clearing parameterMatrix from editorContext after applying single image params.');
+      if (editorContext) {
+        (editorContext as any).parameterMatrix = undefined;
+        if ((editorContext.graph as any)?.editorContext) {
+          (editorContext.graph as any).editorContext = undefined;
+        }
+      }
+    } else {
+      // console.log('[MatrixDialog] Conditions NOT met to apply selected image parameters via setValue, or no image selected.');
+      if (!selectedGalleryImageParams) {
+        console.log(
+          '[MatrixDialog] Reason: No selected gallery image parameters.'
+        );
+      }
+      if (!editorContext) {
+        console.log('[MatrixDialog] Reason: editorContext is not available.');
+      } else {
+        if (!editorContext.action('graph')?.setValue) {
+          console.log(
+            '[MatrixDialog] Reason: editorContext.action("graph").setValue is not available.'
+          );
+        }
+        if (!editorContext.graph) {
+          console.log(
+            '[MatrixDialog] Reason: editorContext.graph is not available.'
+          );
+        }
+      }
+    }
+
+    // console.log('[MatrixDialog] handleApply finished. Closing dialog.');
+    onClose(); // Call to close the dialog
+  }, [
+    setValue, // This is the prop callback
+    forWhom,
+    buildParameterMatrix,
+    selectedGalleryImageParams,
+    editorContext,
+    onClose
+  ]);
 
   // This is GridImageGallery's setValue callback
   const handleGalleryImageSelection = useCallback(
