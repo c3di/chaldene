@@ -10,7 +10,8 @@ import {
   removeSmallHolesNodeSpec,
   removeSmallObjectsNodeSpec,
   splitTouchingObjectsNodeSpec,
-  autoBinarizeNodeSpec
+  autoBinarizeNodeSpec,
+  otsuThresholdNodeSpec
 } from './Binary';
 import {
   CannyNodeSpec,
@@ -19,7 +20,11 @@ import {
   cropNodeSpec,
   batchProcessNodeSpec,
   processResultNodeSpec,
-  GaussianBlurNodeSpec
+  GaussianBlurNodeSpec,
+  adjustGammaNodeSpec,
+  sobelNodeSpec,
+  unsharpMaskNodeSpec,
+  denoiseWaveletNodeSpec
 } from './IP';
 import {
   readImageNodeSpec,
@@ -55,7 +60,8 @@ export function defaultNodeSpecs(): void {
     binaryClosingNodeSpec,
     removeSmallHolesNodeSpec,
     removeSmallObjectsNodeSpec,
-    splitTouchingObjectsNodeSpec
+    splitTouchingObjectsNodeSpec,
+    otsuThresholdNodeSpec
   ]);
   registerNodeSpec([
     denoiseBilateralNodeSpec,
@@ -70,5 +76,8 @@ export function defaultNodeSpecs(): void {
   ]);
   registerNodeSpec([BinaryDifferenceNodeSpec, GrayscaleDifferenceNodeSpec]);
   registerNodeSpec([cropNodeSpec, batchProcessNodeSpec]);
+  registerNodeSpec([adjustGammaNodeSpec, sobelNodeSpec]);
   registerNodeSpec(superResolutionNodeSpec);
+  registerNodeSpec(unsharpMaskNodeSpec);
+  registerNodeSpec(denoiseWaveletNodeSpec);
 }

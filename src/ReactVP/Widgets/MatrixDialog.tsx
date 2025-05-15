@@ -178,7 +178,7 @@ function NumericParameterInput({
             type: 'config',
             nodeID: 'matrix'
           }}
-          value={max !== undefined ? max : 100}
+          value={max !== undefined ? max : 5}
           setValue={(_, val) => {
             // Ensure max ≥ min if min is defined
             let newMax = val;
@@ -618,21 +618,45 @@ export default function MatrixDialog({
 
         const paramId = param.id.split('_').pop() || param.id;
 
-        if (
-          param.type === 'number' &&
-          param.config.min !== undefined &&
-          param.config.max !== undefined
-        ) {
-          // Generate range values
-          const { min, max, step = 1 } = param.config;
+        if (param.type === 'number') {
+          const configMin = param.config.min;
+          const configMax = param.config.max;
+          // param.config.step could be undefined per interface, default to 1 if so.
+          const stepToUse =
+            param.config.step !== undefined && param.config.step > 0
+              ? param.config.step
+              : 1;
+
+          // Determine effective min, max to use for range generation.
+          // Defaults match NumericParameterInput's displayed defaults if config is undefined.
+          const effectiveMin = configMin !== undefined ? configMin : 0;
+          // Use 5 as the default max, aligning with your UI default for NumericParameterInput
+          const effectiveMax = configMax !== undefined ? configMax : 5;
+
           const values = [];
-          for (let val = min; val <= max; val += step) {
-            values.push(parseFloat(val.toFixed(5)));
+          // Only iterate if min <= max and step is valid
+          if (effectiveMin <= effectiveMax && stepToUse > 0) {
+            for (
+              let val = effectiveMin;
+              val <= effectiveMax;
+              val += stepToUse
+            ) {
+              values.push(parseFloat(val.toFixed(5)));
+            }
           }
-          parameterMatrix[node.nodeId][paramId] =
-            values.length > 1 ? values : values[0];
+
+          if (values.length > 0) {
+            // If the range generation resulted in values, use them.
+            // If only one value, send it as a single item, otherwise as an array.
+            parameterMatrix[node.nodeId][paramId] =
+              values.length > 1 ? values : values[0];
+          } else {
+            // If range generation produced no values (e.g., min > max, or step made it miss),
+            // fall back to the parameter's current single value.
+            parameterMatrix[node.nodeId][paramId] = param.value;
+          }
         } else {
-          // For other types, use the current value
+          // For non-numeric types (e.g., enum), use the current value.
           parameterMatrix[node.nodeId][paramId] = param.value;
         }
       });
@@ -912,7 +936,7 @@ export default function MatrixDialog({
     <MatrixDialogPortal onClose={onClose}>
       <div className="matrix-dialog">
         <div className="matrix-dialog-header">
-          <h2>Parameter Matrix</h2>
+          <h2>Grid Search Parameters</h2>
           <button
             className="close-icon-button"
             onClick={onClose}
@@ -1042,7 +1066,7 @@ export default function MatrixDialog({
               onClick={executeMatrixCode}
               disabled={processingMatrix || nodeParameters.length === 0}
             >
-              Run Matrix
+              Run
             </button>
             <button
               className="apply-button"

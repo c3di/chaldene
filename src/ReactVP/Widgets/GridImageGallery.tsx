@@ -136,7 +136,7 @@ export function GridImageGallery({
   const canvasKeys = useMemo(() => {
     const id = typeof forWhom === 'object' ? forWhom.id : String(forWhom);
     const keys: string[] = [];
-    const maxCells = 16; // Max 4x4 grid
+    const maxCells = 25; // Max 5x5 grid
     for (let i = 0; i < maxCells; i++) {
       keys.push(`gallery-grid-${id}-${i}`);
     }
@@ -511,7 +511,7 @@ export function GridImageGallery({
     setLayoutInput(newLayoutInput);
 
     const parsed = parseInt(inputValue, 10);
-    if (!isNaN(parsed) && parsed > 0 && parsed <= 4) {
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 5) {
       const newLayout = [...layout] as [number, number];
       newLayout[index] = parsed;
       setCurrentPage(0);
@@ -526,7 +526,7 @@ export function GridImageGallery({
         ...prev,
         [dimension]: `${
           dimension === 'row' ? 'Rows' : 'Columns'
-        } must be between 1 and 4`
+        } must be between 1 and 5`
       }));
     }
   };
@@ -538,7 +538,7 @@ export function GridImageGallery({
     const value = parseInt(e.target.value, 10);
     const index = dimension === 'row' ? 0 : 1;
     // If input is invalid, revert to the current valid layout number
-    if (isNaN(value) || value < 1 || value > 4) {
+    if (isNaN(value) || value < 1 || value > 5) {
       const newLayoutInput = [...layoutInput] as [string, string];
       newLayoutInput[index] = layout[index].toString();
       setLayoutInput(newLayoutInput);
@@ -981,7 +981,7 @@ export function GridImageGallery({
                 id="grid-rows"
                 type="number"
                 min="1"
-                max="4"
+                max="5"
                 value={layoutInput[0]}
                 onChange={e => handleLayoutChange(e, 'row')}
                 onBlur={e => handleBlur(e, 'row')}
@@ -1000,7 +1000,7 @@ export function GridImageGallery({
                 id="grid-cols"
                 type="number"
                 min="1"
-                max="4"
+                max="5"
                 value={layoutInput[1]}
                 onChange={e => handleLayoutChange(e, 'col')}
                 onBlur={e => handleBlur(e, 'col')}

@@ -89,8 +89,8 @@ export default function PanelContextMenu({
       },
       {
         icon: <GridIcon />,
-        displayLabel: 'Parameter Matrix',
-        description: 'Edit all node parameters in a matrix view',
+        displayLabel: 'Grid Search Parameters',
+        description: 'Edit all node parameters in a grid search view',
         onClick: () => {
           // Close the menu first
           editorContext.action('menu').close();

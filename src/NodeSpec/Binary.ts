@@ -146,6 +146,18 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'binary image',
       description: 'Binary input image'
+    },
+    {
+      name: 'radius',
+      type: 'number',
+      displayLabel: 'radius',
+      description: 'Radius of the disk-shaped structuring element.',
+      defaultValue: 1,
+      widget: {
+        type: 'Number',
+        min: 0,
+        step: 1
+      }
     }
   ],
   outputs: [
@@ -165,7 +177,8 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
       return `from skimage import morphology
 from im2im import Image as IM
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
-${outputs.image} = IM(morphology.binary_dilation(in_im.raw_image), in_im.metadata)`;
+footprint = morphology.disk(${inputs.radius})
+${outputs.image} = IM(morphology.binary_dilation(in_im.raw_image, footprint=footprint), in_im.metadata)`;
     }
   }
 };
@@ -176,13 +189,25 @@ export const binaryErosionNodeSpec: computeNodeSpec = {
   description:
     'Erosion sets a pixel at to the minimum over all pixels in the neighborhood centered at. Erosion shrinks bright regions and enlarges dark regions.',
   category: 'binary',
-  extraRun: 1,
+  extraRun: 0,
   inputs: [
     {
       name: 'image',
       type: 'binary image',
       displayLabel: 'binary image',
       description: 'Binary input image'
+    },
+    {
+      name: 'radius',
+      type: 'number',
+      displayLabel: 'radius',
+      description: 'Radius of the disk-shaped structuring element.',
+      defaultValue: 1,
+      widget: {
+        type: 'Number',
+        min: 0,
+        step: 1
+      }
     }
   ],
   outputs: [
@@ -190,8 +215,7 @@ export const binaryErosionNodeSpec: computeNodeSpec = {
       name: 'image',
       type: 'binary image',
       displayLabel: 'binary image',
-      description: 'The eroded output image.',
-      showDiff: true
+      description: 'The eroded output image.'
     }
   ],
   codeGenerators: {
@@ -202,7 +226,8 @@ export const binaryErosionNodeSpec: computeNodeSpec = {
       return `from skimage import morphology
 from im2im import Image as IM
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
-${outputs.image} = IM(morphology.binary_erosion(in_im.raw_image), in_im.metadata)`;
+footprint = morphology.disk(${inputs.radius})
+${outputs.image} = IM(morphology.binary_erosion(in_im.raw_image, footprint=footprint), in_im.metadata)`;
     }
   }
 };
@@ -220,6 +245,18 @@ export const binaryOpeningNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'binary image',
       description: 'Binary input image'
+    },
+    {
+      name: 'radius',
+      type: 'number',
+      displayLabel: 'radius',
+      description: 'Radius of the disk-shaped structuring element for opening.',
+      defaultValue: 1,
+      widget: {
+        type: 'Number',
+        min: 0,
+        step: 1
+      }
     }
   ],
   outputs: [
@@ -257,6 +294,18 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
       type: 'binary image',
       displayLabel: 'binary image',
       description: 'Binary input image'
+    },
+    {
+      name: 'radius',
+      type: 'number',
+      displayLabel: 'radius',
+      description: 'Radius of the disk-shaped structuring element for closing.',
+      defaultValue: 1,
+      widget: {
+        type: 'Number',
+        min: 0,
+        step: 1
+      }
     }
   ],
   outputs: [
@@ -276,7 +325,8 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
       return `from skimage import morphology
 from im2im import Image as IM
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
-${outputs.image} = IM(morphology.binary_closing(in_im.raw_image), in_im.metadata)`;
+footprint = morphology.disk(${inputs.radius})
+${outputs.image} = IM(morphology.binary_closing(in_im.raw_image, footprint=footprint), in_im.metadata)`;
     }
   }
 };
@@ -461,6 +511,59 @@ def split_touching_objects(binary, sigma: float = 3.5):
 
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.image} = IM(split_touching_objects(in_im.raw_image.astype(bool), sigma=${inputs.sigma}).astype(float64), in_im.metadata)`;
+    }
+  }
+};
+
+export const otsuThresholdNodeSpec: computeNodeSpec = {
+  name: 'threshold_otsu',
+  displayLabel: 'otsu threshold',
+  description:
+    "Return threshold value based on Otsu's method and applies it to binarize the image.",
+  category: 'binary',
+  inputs: [
+    {
+      name: 'image',
+      type: 'image',
+      displayLabel: 'image',
+      description: 'Grayscale input image.'
+    },
+    {
+      name: 'nbins',
+      type: 'number',
+      displayLabel: 'number of bins',
+      description:
+        'Number of bins used to calculate histogram. This value is ignored for integer arrays.',
+      defaultValue: 256,
+      widget: {
+        type: 'Number',
+        min: 1,
+        step: 1
+      }
+    }
+  ],
+  outputs: [
+    {
+      name: 'outputImage',
+      type: 'binary image',
+      displayLabel: 'binary image',
+      description: 'The binarized output image using Otsu threshold.',
+      showDiff: true
+    }
+  ],
+  codeGenerators: {
+    Python: (
+      inputs: Record<string, string>,
+      outputs: Record<string, string>
+    ) => {
+      return `from skimage.filters import threshold_otsu
+from im2im import Image as IM
+import numpy as np
+
+in_im = im2im(${inputs.image}, 'numpy.gray_uint8')
+threshold_value = threshold_otsu(in_im.raw_image, nbins=${inputs.nbins})
+binarized_array = (in_im.raw_image > threshold_value).astype(np.uint8) * 255
+${outputs.outputImage} = IM(binarized_array, in_im.metadata)`;
     }
   }
 };

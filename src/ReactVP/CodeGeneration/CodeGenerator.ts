@@ -614,52 +614,60 @@ ${code}
         input => input.type === 'number' || input.type === 'enum'
       ) || [];
 
-    // Fix indentation for the node-specific code
-    const nodeCode = this.generateNodeWrappedWithParams(
+    // Generate the core code for the node's operation
+    const nodeCodeFromWrapped = this.generateNodeWrappedWithParams(
       node,
-      inputVar,
+      'input_image', // Use the function's argument name for the input image
       outputVar
     );
 
-    // Look for any parameters that need special handling
-    let modifiedNodeCode = nodeCode;
-    // Regex to find patterns where variable names are quoted: mode = 'mode', sigma = 'sigma', etc.
-    const paramRegex = /(\w+)\s*=\s*['"](\1)['"]/g;
-    modifiedNodeCode = nodeCode.replace(paramRegex, '$1 = $1');
+    // Apply regex to fix parameter names like sigma = 'sigma' to sigma = sigma
+    // This regex was previously part of the main template string logic
+    const paramNameRegex = /(\w+)\s*=\s*['"](\1)['"]/g;
+    const processedNodeCode = nodeCodeFromWrapped.replace(
+      paramNameRegex,
+      '$1 = $1'
+    );
 
-    // Properly indent the node code by adding 4 spaces to each line
-    const indentedNodeCode = modifiedNodeCode
+    const indentedNodeCode = processedNodeCode
       .split('\n')
       .map(line => (line.trim() ? `    ${line}` : line))
       .join('\n');
 
-    // Create a parameter extraction block that's more robust
-    const paramExtraction =
-      paramInputs.length > 0
-        ? paramInputs
-            .map(input => {
-              const paramName = input.name;
-              const paramId = input.id;
-              // Use a more robust parameter extraction with fallback
-              return `    # Extract ${paramName} from params
-    ${paramName} = None
-    if '${paramId}' in params:
-        ${paramName} = params['${paramId}']
-    elif 'in1' in params:  # Try parameter by position
-        ${paramName} = params['in1']`;
-            })
-            .join('\n\n')
-        : '    # No parameters for this node';
+    // Prepare parameter extraction block
+    const paramExtractionBlocks = paramInputs.map(input => {
+      const paramName = input.name;
+      const paramId = input.id; // This is the original input.id like 'in1', 'in2'
+      // Ensure params are accessed safely using .get() and correct IDs
+      return `    ${paramName} = params.get('${paramId}') # Default to None if not found`;
+    });
 
-    return `
-def ${functionName}(input_image, params):
-    ${node.data.displayLabel ? `# ${node.data.displayLabel}` : ''}
-    
-    # Extract parameters from the params dictionary
-${paramExtraction}
-    
-${indentedNodeCode}
-    return ${outputVar}
-`;
+    const paramExtractionString = paramExtractionBlocks.join('\n');
+
+    // Assemble the function string parts
+    const functionParts: string[] = [];
+    functionParts.push(`def ${functionName}(input_image, params):`);
+
+    if (node.data.displayLabel) {
+      functionParts.push(`    # ${node.data.displayLabel}`);
+    }
+
+    if (paramExtractionString.trim()) {
+      functionParts.push('    # Extract parameters from the params dictionary');
+      functionParts.push(paramExtractionString);
+    }
+
+    // Add a blank line for separation if both paramExtraction and indentedNodeCode exist and are non-empty
+    if (paramExtractionString.trim() && indentedNodeCode.trim()) {
+      functionParts.push(''); // Adds a blank line, which Python ignores for indentation
+    }
+
+    if (indentedNodeCode.trim()) {
+      functionParts.push(indentedNodeCode);
+    }
+
+    functionParts.push(`    return ${outputVar}`);
+
+    return functionParts.join('\n');
   }
 }
