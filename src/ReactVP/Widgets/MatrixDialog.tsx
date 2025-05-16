@@ -146,68 +146,70 @@ function NumericParameterInput({
   const rangeConfigControls = (
     <>
       <div className="range-config-row">
-        <label>Min:</label>
-        <NumberInput
-          forWhom={{
-            id: `${param.id}_min`,
-            type: 'config',
-            nodeID: 'matrix'
-          }}
-          value={min !== undefined ? min : 0}
-          setValue={(_, val) => {
-            // Ensure min ≤ max if max is defined
-            let newMin = val;
-            if (max !== undefined && val > max) {
-              newMin = max;
-            }
-            onConfigChange('min', newMin);
+        <div className="range-config-item">
+          <label>Min:</label>
+          <NumberInput
+            forWhom={{
+              id: `${param.id}_min`,
+              type: 'config',
+              nodeID: 'matrix'
+            }}
+            value={min !== undefined ? min : 0}
+            setValue={(_, val) => {
+              // Ensure min ≤ max if max is defined
+              let newMin = val;
+              if (max !== undefined && val > max) {
+                newMin = max;
+              }
+              onConfigChange('min', newMin);
 
-            // Force re-render with updated range
-            if (newMin > value) {
-              setValue(newMin);
-              onChange(newMin);
-            }
-          }}
-        />
-      </div>
-      <div className="range-config-row">
-        <label>Max:</label>
-        <NumberInput
-          forWhom={{
-            id: `${param.id}_max`,
-            type: 'config',
-            nodeID: 'matrix'
-          }}
-          value={max !== undefined ? max : 5}
-          setValue={(_, val) => {
-            // Ensure max ≥ min if min is defined
-            let newMax = val;
-            if (min !== undefined && val < min) {
-              newMax = min;
-            }
-            onConfigChange('max', newMax);
+              // Force re-render with updated range
+              if (newMin > value) {
+                setValue(newMin);
+                onChange(newMin);
+              }
+            }}
+          />
+        </div>
+        <div className="range-config-item">
+          <label>Max:</label>
+          <NumberInput
+            forWhom={{
+              id: `${param.id}_max`,
+              type: 'config',
+              nodeID: 'matrix'
+            }}
+            value={max !== undefined ? max : 5}
+            setValue={(_, val) => {
+              // Ensure max ≥ min if min is defined
+              let newMax = val;
+              if (min !== undefined && val < min) {
+                newMax = min;
+              }
+              onConfigChange('max', newMax);
 
-            // Force re-render with updated range
-            if (newMax < value) {
-              setValue(newMax);
-              onChange(newMax);
-            }
-          }}
-        />
-      </div>
-      <div className="range-config-row">
-        <label>Step:</label>
-        <NumberInput
-          forWhom={{
-            id: `${param.id}_step`,
-            type: 'config',
-            nodeID: 'matrix'
-          }}
-          value={step}
-          setValue={(_, val) => {
-            onConfigChange('step', val > 0 ? val : 0.01);
-          }}
-        />
+              // Force re-render with updated range
+              if (newMax < value) {
+                setValue(newMax);
+                onChange(newMax);
+              }
+            }}
+          />
+        </div>
+        <div className="range-config-item">
+          <label>Step:</label>
+          <NumberInput
+            forWhom={{
+              id: `${param.id}_step`,
+              type: 'config',
+              nodeID: 'matrix'
+            }}
+            value={step}
+            setValue={(_, val) => {
+              onConfigChange('step', val > 0 ? val : 0.01);
+            }}
+          />
+        </div>
       </div>
     </>
   );

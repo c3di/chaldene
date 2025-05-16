@@ -41,7 +41,6 @@
     padding: 12px 16px 20px 16px;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
-    border-bottom: 1px solid var(--vpl-border-color3);
     text-align: center;
 }
 
@@ -78,11 +77,11 @@
 }
 
 .matrix-dialog-content h3 {
-    margin: 8px 0;
+    margin: 6px 0 16px 0;
     font-size: 1rem;
     color: var(--vpl-ui-font-color1);
     padding-bottom: 4px;
-    border-bottom: 1px solid var(--vpl-border-color3);
+    border-bottom: 1.5px solid var(--vpl-blue-1);
 }
 
 .matrix-layout {
@@ -100,7 +99,6 @@
 
 .matrix-gallery-panel {
     flex: 4;
-    border-left: 1px solid var(--vpl-border-color3);
     padding-left: 20px;
     display: flex;
     flex-direction: column;
@@ -112,7 +110,6 @@
     margin-top: 0;
     padding-bottom: 10px;
     text-align: center;
-    border-bottom: 1px solid var(--vpl-border-color3);
 }
 
 .processing-matrix {
@@ -169,22 +166,25 @@
 }
 
 .node-parameters {
-    background-color: var(--vpl-blue-gray-4);
-    border-radius: 4px;
-    padding: 12px;
+    border-radius: 6px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: white;
+    border: 1px solid var(--vpl-border-color1);
+    padding: 10px;
 }
 
 .parameters-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
 }
 
 .parameter-item {
     display: flex;
     flex-direction: column;
-    gap: 8px;
     padding-bottom: 8px;
+    gap: 2px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
@@ -293,12 +293,13 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 4px;
+    padding-left: 10px;
 }
 
 .option-button {
-    padding: 6px 12px;
+    padding: 4px 10px;
     border-radius: 4px;
-    border: 1px solid var(--vpl-border-color3);
+    border: 0.5px solid #A9A9A9;
     background-color: var(--vpl-blue-gray-5);
     cursor: pointer;
     font-size: 0.9em;
@@ -393,21 +394,30 @@
     gap: 10px;
 }
 
-.range-config.no-toggle {
-    border: 1px solid var(--vpl-border-color3);
-}
 
 .range-config-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 16px;
+    justify-content: space-between;
 }
 
 .range-config-row label {
-    width: 40px;
-    text-align: right;
+    width: auto;
+    text-align: left;
     font-size: 0.8em;
     color: var(--vpl-ui-font-color2);
+    margin-right: 4px;
+}
+
+.range-config-item {
+    display: flex;
+    align-items: flex-end;
+    flex-grow: 1;
+}
+
+.range-config-item>div {
+    flex-grow: 1;
 }
 
 .config-done-button {
@@ -431,7 +441,6 @@
 }
 
 .grid-image-input-container .grid-image-gallery-widget {
-    border: 1px solid var(--vpl-border-color3);
     border-radius: 4px;
     margin-bottom: 0;
     padding: 8px;
@@ -476,7 +485,6 @@
 .gallery-layout-controls select {
     padding: 8px 12px;
     border-radius: 4px;
-    border: 1px solid var(--vpl-border-color3);
     background-color: white;
     font-size: 0.9rem;
     width: 100%;
@@ -536,4 +544,20 @@
     overflow: hidden;
     text-overflow: ellipsis;
     vertical-align: middle;
+}
+
+/* Style input field containers within .node-parameters */
+.node-parameters .input-with-config>div:first-child {
+    background-color: var(--vpl-blue-gray-4);
+    padding: 8px;
+    border-radius: 6px;
+}
+
+
+.node-parameters .enum-input-container {
+    border-radius: 8px;
+}
+
+.node-parameters .readonly-input-container {
+    background-color: var(--vpl-blue-gray-4);
 }
