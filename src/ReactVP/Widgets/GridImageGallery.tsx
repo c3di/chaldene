@@ -58,29 +58,22 @@ export function GridImageGallery({
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [gallerySyncedTransform, setGallerySyncedTransform] =
     useState<ITransform | null>(null);
-  const gallerySyncedTransformRef = useRef(gallerySyncedTransform);
 
   const [compareImages, setCompareImages] = useState<IGalleryImage[]>([]);
   const [compareCurrentPage, setCompareCurrentPage] = useState<number>(0);
   const [compareSyncedTransform, setCompareSyncedTransform] =
     useState<ITransform | null>(null);
-  const compareSyncedTransformRef = useRef(compareSyncedTransform);
 
   const [unifiedSelectedImage, setUnifiedSelectedImage] = useState<{
     tab: 'gallery' | 'compare';
     indexInFullArray: number;
   } | null>(null);
 
-  const isPanningRef = useRef(false);
+  const [isPanning, setIsPanning] = useState(false);
   const lastPanPositionRef = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    gallerySyncedTransformRef.current = gallerySyncedTransform;
-  }, [gallerySyncedTransform]);
-
-  useEffect(() => {
-    compareSyncedTransformRef.current = compareSyncedTransform;
-  }, [compareSyncedTransform]);
+  const activePanningCanvasRef = useRef<fabric.Canvas | null>(null);
+  const panStartPositionRef = useRef({ x: 0, y: 0 }); // For distinguishing click from pan
+  const didActuallyPanRef = useRef(false); // Tracks if a pan truly occurred after mousedown
 
   const canvasRefs = useRef<(fabric.Canvas | null)[]>([]);
   const canvasElementRefs = useRef<(HTMLCanvasElement | null)[]>([]);
@@ -99,10 +92,7 @@ export function GridImageGallery({
     activeTab === 'gallery' ? currentPage : compareCurrentPage;
   const setCurrentPageForCurrentView =
     activeTab === 'gallery' ? setCurrentPage : setCompareCurrentPage;
-  const syncedTransformForCurrentViewRef =
-    activeTab === 'gallery'
-      ? gallerySyncedTransformRef
-      : compareSyncedTransformRef;
+
   const setSyncedTransformForCurrentView =
     activeTab === 'gallery'
       ? setGallerySyncedTransform
@@ -238,6 +228,74 @@ export function GridImageGallery({
     []
   );
 
+  const handleWindowMouseMove = useCallback(
+    (event: MouseEvent) => {
+      if (
+        !activePanningCanvasRef.current ||
+        activePanningCanvasRef.current.isDisposed
+      ) {
+        return;
+      }
+
+      const canvas = activePanningCanvasRef.current;
+      const currentPos = getMousePosition(event as any);
+
+      if (!didActuallyPanRef.current) {
+        const deltaX = Math.abs(currentPos.x - panStartPositionRef.current.x);
+        const deltaY = Math.abs(currentPos.y - panStartPositionRef.current.y);
+        const panThreshold = 5; // Pixels to move before it's considered a pan
+
+        if (deltaX > panThreshold || deltaY > panThreshold) {
+          didActuallyPanRef.current = true;
+          setIsPanning(true); // Set isPanning to true only when actual pan starts
+        }
+      }
+
+      if (didActuallyPanRef.current) {
+        // Pan logic (was isPanning, now using didActuallyPanRef for immediacy)
+        const deltaXPan = currentPos.x - lastPanPositionRef.current.x;
+        const deltaYPan = currentPos.y - lastPanPositionRef.current.y;
+
+        if (canvas.viewportTransform) {
+          canvas.viewportTransform[4] += deltaXPan;
+          canvas.viewportTransform[5] += deltaYPan;
+        }
+        canvas.requestRenderAll();
+        lastPanPositionRef.current = currentPos;
+
+        const currentTransformSetter =
+          activeTab === 'gallery'
+            ? setGallerySyncedTransform
+            : setCompareSyncedTransform;
+
+        currentTransformSetter({
+          zoom: canvas.getZoom(),
+          x: canvas.viewportTransform ? canvas.viewportTransform[4] : 0,
+          y: canvas.viewportTransform ? canvas.viewportTransform[5] : 0
+        });
+      }
+    },
+    [
+      activeTab,
+      setGallerySyncedTransform,
+      setCompareSyncedTransform,
+      setIsPanning
+    ]
+  );
+
+  const handleWindowMouseUp = useCallback(() => {
+    if (didActuallyPanRef.current) {
+      setIsPanning(false); // Reset isPanning state if a pan truly occurred
+    }
+    // Always reset these regardless of whether a pan occurred, to clean up mousedown state
+    didActuallyPanRef.current = false;
+    activePanningCanvasRef.current = null;
+
+    window.removeEventListener('mousemove', handleWindowMouseMove);
+    window.removeEventListener('mouseup', handleWindowMouseUp);
+    window.removeEventListener('mouseleave', handleWindowMouseUp);
+  }, [handleWindowMouseMove, setIsPanning]);
+
   const initializeCanvases = useCallback(
     (totalCanvasesToInit: number) => {
       const gridContainer = document.querySelector('.gallery-grid');
@@ -257,6 +315,12 @@ export function GridImageGallery({
         gridDimensions.rows
       );
       cleanupExistingCanvases();
+
+      // Get the correct current transform state directly
+      const currentGlobalTransformState =
+        activeTab === 'gallery'
+          ? gallerySyncedTransform
+          : compareSyncedTransform;
 
       for (let i = 0; i < totalCanvasesToInit; i++) {
         const canvasDOMElement = document.getElementById(
@@ -297,13 +361,13 @@ export function GridImageGallery({
               const initialY = (canvasHeight - imgHeight * initialZoom) / 2;
 
               // Apply synced transform if it exists, otherwise use initial fit
-              const currentSyncTransform =
-                syncedTransformForCurrentViewRef.current;
-              if (currentSyncTransform) {
-                newCanvas.setZoom(currentSyncTransform.zoom);
+              if (currentGlobalTransformState) {
+                newCanvas.setZoom(currentGlobalTransformState.zoom);
                 if (newCanvas.viewportTransform) {
-                  newCanvas.viewportTransform[4] = currentSyncTransform.x;
-                  newCanvas.viewportTransform[5] = currentSyncTransform.y;
+                  newCanvas.viewportTransform[4] =
+                    currentGlobalTransformState.x;
+                  newCanvas.viewportTransform[5] =
+                    currentGlobalTransformState.y;
                 }
               } else {
                 newCanvas.setZoom(initialZoom);
@@ -318,54 +382,28 @@ export function GridImageGallery({
                 if (opt.e instanceof MouseEvent && opt.e.button !== 0) {
                   return;
                 }
-                isPanningRef.current = true;
+                // Don't set isPanning(true) here immediately.
+                // Instead, record start position and set up for potential pan.
                 const pos = getMousePosition(opt.e);
-                lastPanPositionRef.current = pos;
-                newCanvas.defaultCursor = 'grabbing';
-                newCanvas.hoverCursor = 'grabbing';
-                if (canvasElementRefs.current[i]) {
-                  canvasElementRefs.current[i]!.classList.add('grabbing');
-                  canvasElementRefs.current[i]!.classList.remove('grab');
-                }
-                newCanvas.requestRenderAll();
+                panStartPositionRef.current = pos;
+                lastPanPositionRef.current = pos; // Initialize for delta calculations
+                didActuallyPanRef.current = false; // Reset for this new interaction
+                activePanningCanvasRef.current = newCanvas;
+
                 opt.e.preventDefault();
+                opt.e.stopPropagation();
+
+                window.addEventListener('mousemove', handleWindowMouseMove);
+                window.addEventListener('mouseup', handleWindowMouseUp);
+                window.addEventListener('mouseleave', handleWindowMouseUp);
               });
-              newCanvas.on('mouse:move', opt => {
-                if (isPanningRef.current) {
-                  const pos = getMousePosition(opt.e);
-                  const deltaX = pos.x - lastPanPositionRef.current.x;
-                  const deltaY = pos.y - lastPanPositionRef.current.y;
-                  if (newCanvas.viewportTransform) {
-                    newCanvas.viewportTransform[4] += deltaX;
-                    newCanvas.viewportTransform[5] += deltaY;
-                  }
-                  newCanvas.requestRenderAll();
-                  lastPanPositionRef.current = pos;
-                  setSyncedTransformForCurrentView({
-                    zoom: newCanvas.getZoom(),
-                    x: newCanvas.viewportTransform
-                      ? newCanvas.viewportTransform[4]
-                      : 0,
-                    y: newCanvas.viewportTransform
-                      ? newCanvas.viewportTransform[5]
-                      : 0
-                  });
-                }
-              });
-              const handleMouseUpOrOut = () => {
-                if (isPanningRef.current) {
-                  isPanningRef.current = false;
-                  newCanvas.defaultCursor = 'grab';
-                  newCanvas.hoverCursor = 'grab';
-                  if (canvasElementRefs.current[i]) {
-                    canvasElementRefs.current[i]!.classList.remove('grabbing');
-                    canvasElementRefs.current[i]!.classList.add('grab');
-                  }
-                  newCanvas.requestRenderAll();
-                }
-              };
-              newCanvas.on('mouse:up', handleMouseUpOrOut);
-              newCanvas.on('mouse:out', handleMouseUpOrOut);
+
+              // Remove old Fabric-based pan handlers, keep wheel for zoom
+              // The new global handlers (handleWindowMouseMove, handleWindowMouseUp) manage panning.
+              newCanvas.off('mouse:move');
+              newCanvas.off('mouse:up');
+              newCanvas.off('mouse:out');
+
               newCanvas.on('mouse:wheel', opt => {
                 opt.e.preventDefault();
                 opt.e.stopPropagation();
@@ -411,7 +449,8 @@ export function GridImageGallery({
       canvasKeys,
       imagesForCurrentView,
       pageStartIndexForCurrentView,
-      syncedTransformForCurrentViewRef,
+      gallerySyncedTransform,
+      compareSyncedTransform,
       setSyncedTransformForCurrentView,
       activeTab
     ]
@@ -692,6 +731,12 @@ export function GridImageGallery({
     }
 
     const updateCanvasSizesAndScaling = () => {
+      // Get the correct current transform state directly
+      const currentGlobalTransformState =
+        activeTab === 'gallery'
+          ? gallerySyncedTransform
+          : compareSyncedTransform;
+
       canvasRefs.current.forEach(canvas => {
         if (canvas && !canvas.isDisposed) {
           const parentWidth =
@@ -709,14 +754,11 @@ export function GridImageGallery({
             const imgWidth = fabricImg.width || 1;
             const imgHeight = fabricImg.height || 1;
 
-            const currentSyncTransform =
-              syncedTransformForCurrentViewRef.current;
-
-            if (currentSyncTransform) {
-              canvas.setZoom(currentSyncTransform.zoom);
+            if (currentGlobalTransformState) {
+              canvas.setZoom(currentGlobalTransformState.zoom);
               if (canvas.viewportTransform) {
-                canvas.viewportTransform[4] = currentSyncTransform.x;
-                canvas.viewportTransform[5] = currentSyncTransform.y;
+                canvas.viewportTransform[4] = currentGlobalTransformState.x;
+                canvas.viewportTransform[5] = currentGlobalTransformState.y;
               }
             } else {
               // Fallback to fit if no synced transform
@@ -741,7 +783,7 @@ export function GridImageGallery({
     // Debounce the update slightly
     const debounceTimeout = setTimeout(updateCanvasSizesAndScaling, 50);
     return () => clearTimeout(debounceTimeout);
-  }, [cellHeight, activeTab, syncedTransformForCurrentViewRef]);
+  }, [cellHeight, activeTab, gallerySyncedTransform, compareSyncedTransform]);
 
   // Effect to recalculate cell size when layout or related dimensions change
   useEffect(() => {
@@ -798,17 +840,12 @@ export function GridImageGallery({
   useEffect(() => {
     if (prevActiveTabRef.current !== activeTab) {
       lastReportedSelectionToParentRef.current = null;
-
-      // When the active tab changes, we invalidate the last reported selection.
-      // This ensures that the next selection event in the new tab WILL be reported.
-      lastReportedSelectionToParentRef.current = null;
-      isPanningRef.current = false;
+      setIsPanning(false);
       setUnifiedSelectedImage(null);
     }
 
-    // Update the ref to the current tab for the next run
     prevActiveTabRef.current = activeTab;
-  }, [activeTab]);
+  }, [activeTab, setIsPanning]);
 
   // Effect for reporting selected image value to parent
   useEffect(() => {
@@ -927,8 +964,8 @@ export function GridImageGallery({
 
   // Effect to update cursor style on canvas elements based on panning state
   useEffect(() => {
-    const cursorClass = isPanningRef.current ? 'grabbing' : 'grab';
-    const antiCursorClass = isPanningRef.current ? 'grab' : 'grabbing';
+    const cursorClass = isPanning ? 'grabbing' : 'grab';
+    const antiCursorClass = isPanning ? 'grab' : 'grabbing';
 
     canvasElementRefs.current.forEach(canvasDOMEl => {
       if (canvasDOMEl) {
@@ -942,7 +979,7 @@ export function GridImageGallery({
         canvasInstance.hoverCursor = cursorClass;
       }
     });
-  }, [isPanningRef.current]); // Only depends on the panning state
+  }, [isPanning]); // Only depends on the panning state
 
   return (
     <div
@@ -1086,7 +1123,7 @@ export function GridImageGallery({
                     position: 'relative' // For positioning delete button
                   }}
                   onClick={
-                    hasImage && !isPanningRef.current // Only clickable if has image and not panning
+                    hasImage && !isPanning // Only clickable if has image and not panning
                       ? () => handleCellClickForCurrentView(indexInGrid)
                       : undefined
                   }
@@ -1129,7 +1166,7 @@ export function GridImageGallery({
                 >
                   <canvas
                     id={canvasDomId}
-                    className={isPanningRef.current ? 'grabbing' : 'grab'}
+                    className={isPanning ? 'grabbing' : 'grab'}
                   />
                   {isSelected &&
                     hasImage && ( // Show delete button only if selected and has image
