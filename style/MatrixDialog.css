@@ -246,7 +246,7 @@
 .matrix-dialog-buttons {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 80px;
     padding-top: 8px;
 }
 
