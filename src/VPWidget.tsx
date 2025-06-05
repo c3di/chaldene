@@ -7,7 +7,13 @@
 import { Widget } from '@lumino/widgets';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { CodeEditor } from '@jupyterlab/codeeditor';
-import { VPEditor, type Graph, type EditorContext } from './ReactVP';
+import {
+  VPEditor,
+  type Graph,
+  type EditorContext,
+  deserializeGraph,
+  serializeGraph
+} from './ReactVP';
 import { NotebookActions } from '@jupyterlab/notebook';
 import { PathExt } from '@jupyterlab/coreutils';
 
@@ -73,7 +79,7 @@ export class VPWidget extends ReactWidget {
   get content(): Graph {
     let source = undefined;
     try {
-      source = JSON.parse(this.sharedModel.getSource());
+      source = deserializeGraph(JSON.parse(this.sharedModel.getSource()));
     } catch (e) {
       source = { nodes: [], edges: [] };
     }
@@ -99,7 +105,7 @@ export class VPWidget extends ReactWidget {
     this._context = context;
 
     this._context.addGraphChangeListener(new_graph => {
-      this.setContent(JSON.stringify(new_graph));
+      this.setContent(JSON.stringify(serializeGraph(new_graph)));
     });
 
     this._context.onLiveExecution = this.run.bind(this);

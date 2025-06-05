@@ -20,6 +20,7 @@ export {
   isInputViaConnection
 } from './Handle';
 export type { Node, INodeData as BasicNodeData, ValueCategory } from './Node';
+export { deserializeGraph, serializeGraph } from './serialization';
 
 export interface IPosition {
   x: number;
