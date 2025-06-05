@@ -79,7 +79,7 @@ export class VPWidget extends ReactWidget {
   get content(): Graph {
     let source = undefined;
     try {
-      source = deserializeGraph(JSON.parse(this.sharedModel.getSource()));
+      source = deserializeGraph(this.sharedModel.getSource());
     } catch (e) {
       source = { nodes: [], edges: [] };
     }
@@ -105,7 +105,7 @@ export class VPWidget extends ReactWidget {
     this._context = context;
 
     this._context.addGraphChangeListener(new_graph => {
-      this.setContent(JSON.stringify(serializeGraph(new_graph)));
+      this.setContent(serializeGraph(new_graph));
     });
 
     this._context.onLiveExecution = this.run.bind(this);
