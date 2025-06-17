@@ -74,7 +74,8 @@ export class GalleryImage extends fabric.FabricImage {
 export function ImageGallery({
   forWhom,
   setValue,
-  images
+  images,
+  value
 }: IImageGalleryProps): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +100,9 @@ export function ImageGallery({
     return sortedObjects.filter(obj => obj.selected);
   }, [getSortedGalleryObjects]);
 
+  // Track selection state to trigger re-renders
+  const [selectionUpdateTrigger, setSelectionUpdateTrigger] = useState(0);
+
   // Derive isAllSelected from selection state
   const isAllSelected = useMemo(() => {
     const sortedObjects = getSortedGalleryObjects();
@@ -107,24 +111,40 @@ export function ImageGallery({
       sortedObjects.length > 0 &&
       selectedObjects.length === sortedObjects.length
     );
-  }, [getSortedGalleryObjects, getSelectedObjects]);
+  }, [getSortedGalleryObjects, getSelectedObjects, selectionUpdateTrigger]);
 
   const canvasKey = useMemo(() => {
     const id = typeof forWhom === 'object' ? forWhom.id : String(forWhom);
     return `gallery-${id}`;
   }, [forWhom]);
 
-  const stableImages = useMemo(
-    () => images,
-    [
-      JSON.stringify(
-        images?.map(img => ({
-          filename: img.filename,
-          hash: img.base64?.slice(-20)
-        }))
-      )
-    ]
-  );
+  const stableImages = useMemo(() => {
+    // If images prop is provided, use it directly
+    if (images && images.length > 0) {
+      return images;
+    }
+
+    // Otherwise, try to extract images from value prop (for folder images)
+    if (
+      value &&
+      typeof value === 'object' &&
+      'images' in value &&
+      Array.isArray(value.images)
+    ) {
+      return value.images as IGalleryImage[];
+    }
+
+    return [];
+  }, [
+    images,
+    value,
+    JSON.stringify(
+      images?.map(img => ({
+        filename: img.filename,
+        hash: img.base64?.slice(-20)
+      }))
+    )
+  ]);
 
   const calculateScale = useCallback(
     (img: GalleryImage, finalThumbSize: number) => {
@@ -329,8 +349,11 @@ export function ImageGallery({
       setValue?.(forWhom, filenames);
 
       canvas.requestRenderAll();
+
+      // Trigger re-render to update isAllSelected state
+      setSelectionUpdateTrigger(prev => prev + 1);
     },
-    [setValue, forWhom]
+    [setValue, forWhom, setSelectionUpdateTrigger]
   );
 
   // Memoized button disabled state function

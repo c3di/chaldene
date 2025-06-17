@@ -1,0 +1,3 @@
+Image: image.png
+Source: Diffusion-based deep learning method for augmenting ultrastructural imaging and volume electron microscopy, Nature Communications, 2024. DOI: 10.1038/s41467-024-49125-z
+Description: A noisy patch of a mouse brain cortex image.

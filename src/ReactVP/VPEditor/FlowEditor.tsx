@@ -1,7 +1,7 @@
 import {
   ReactFlow,
-  Background,
-  BackgroundVariant,
+  //Background,
+  //BackgroundVariant,
   ConnectionMode,
   ReactFlowProvider
 } from '@xyflow/react';
@@ -85,7 +85,7 @@ export default function FlowEditor({
         proOptions={{ hideAttribution: true }}
       >
         {focused && <ControlPanel editorContext={editorContext} />}
-        <Background variant={BackgroundVariant.Dots} />
+        {/* <Background variant={BackgroundVariant.Dots} /> */}
       </ReactFlow>
     </ReactFlowProvider>
   );

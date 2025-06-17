@@ -48,9 +48,9 @@ def ${captureFolderImagesFunctionName}(folder_path, handleIdentifier):
                     image_base64 = base64.b64encode(buf.read()).decode("utf-8")
                     buf.close()
                     
-                    # Add to results
+                    # Add to results - format for ImageGallery widget
                     images_data.append({
-                        "imageUrl": f"data:image/png;base64,{image_base64}",
+                        "base64": f"data:image/png;base64,{image_base64}",
                         "filename": img_path.name,
                         "dimensions": {"width": width, "height": height}
                     })

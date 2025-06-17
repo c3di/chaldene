@@ -1,0 +1,3 @@
+Image: grain.png
+Source: L.M. Rothleutner, “Influence of Reheat Temperature and Holding Time on the Interaction of V, Al, and N in Air-cooled Forging Steels,” Thesis, Colorado School of Mines, 2012.
+Description: The image shows a specimen of modified 15V41 steel that was forced-air cooled from forging temperature, held for 30 minutes at 700°C, then quenched to room temperature and etched using 2% nital.
