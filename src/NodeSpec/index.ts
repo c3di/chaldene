@@ -41,6 +41,15 @@ import {
   BinaryDifferenceNodeSpec,
   GrayscaleDifferenceNodeSpec
 } from './Comparison';
+import {
+  footprintRectangleNodeSpec,
+  diamondNodeSpec,
+  diskNodeSpec,
+  octahedronNodeSpec,
+  ballNodeSpec,
+  octagonNodeSpec,
+  starNodeSpec
+} from './skimage_morphology';
 
 export function defaultNodeSpecs(): void {
   registerNodeSpec([
@@ -80,4 +89,13 @@ export function defaultNodeSpecs(): void {
   registerNodeSpec(superResolutionNodeSpec);
   registerNodeSpec(unsharpMaskNodeSpec);
   registerNodeSpec(denoiseWaveletNodeSpec);
+  registerNodeSpec([
+    footprintRectangleNodeSpec,
+    diamondNodeSpec,
+    diskNodeSpec,
+    octahedronNodeSpec,
+    ballNodeSpec,
+    octagonNodeSpec,
+    starNodeSpec
+  ]);
 }
