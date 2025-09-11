@@ -36,6 +36,10 @@ import {
   BinaryDifferenceNodeSpec,
   GrayscaleDifferenceNodeSpec
 } from './Comparison';
+import {
+  imageJAutoThresholdNodeSpec,
+  imageJAnalyzeParticlesNodeSpec
+} from './ImageJ';
 
 export function defaultNodeSpecs(): void {
   registerNodeSpec([
@@ -71,4 +75,5 @@ export function defaultNodeSpecs(): void {
   registerNodeSpec([BinaryDifferenceNodeSpec, GrayscaleDifferenceNodeSpec]);
   registerNodeSpec([cropNodeSpec, batchProcessNodeSpec]);
   registerNodeSpec(superResolutionNodeSpec);
+  registerNodeSpec([imageJAutoThresholdNodeSpec, imageJAnalyzeParticlesNodeSpec]);
 }

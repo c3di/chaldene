@@ -2001,20 +2001,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyter/ydoc@npm:^2.1.1":
-  version: 2.1.5
-  resolution: "@jupyter/ydoc@npm:2.1.5"
-  dependencies:
-    "@jupyterlab/nbformat": ^3.0.0 || ^4.0.0-alpha.21 || ^4.0.0
-    "@lumino/coreutils": ^1.11.0 || ^2.0.0
-    "@lumino/disposable": ^1.10.0 || ^2.0.0
-    "@lumino/signaling": ^1.10.0 || ^2.0.0
-    y-protocols: ^1.0.5
-    yjs: ^13.5.40
-  checksum: 027c96d63e34c979f0d802e90f40a642d1a8521890c3ff7820b7f11146e71f958d6b797322221c201201c70613d2aab91c685e577c793c3b1d938b31bff2fd9d
-  languageName: node
-  linkType: hard
-
 "@jupyter/ydoc@npm:^3.0.0":
   version: 3.0.3
   resolution: "@jupyter/ydoc@npm:3.0.3"
@@ -4503,7 +4489,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "chaldene@workspace:."
   dependencies:
-    "@jupyter/ydoc": ^2.1.1
+    "@jupyter/ydoc": ^3.0.0
     "@jupyterlab/application": ^4.0.0
     "@jupyterlab/apputils": ^4.3.5
     "@jupyterlab/builder": ^4.0.0
