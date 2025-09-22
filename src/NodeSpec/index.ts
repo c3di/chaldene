@@ -37,9 +37,27 @@ import {
   GrayscaleDifferenceNodeSpec
 } from './Comparison';
 import {
-  imageJAutoThresholdNodeSpec,
   imageJAnalyzeParticlesNodeSpec
 } from './ImageJ';
+import {
+  ijGaussNodeSpec,
+  ijMedianNodeSpec,
+  ijMeanNodeSpec,
+  ijSobelNodeSpec,
+  ijBilateralNodeSpec,
+  ijDoGNodeSpec,
+  ijVarianceNodeSpec,
+  ijMaxNodeSpec,
+  ijMinNodeSpec,
+  ijAddPoissonNoiseNodeSpec,
+  ijConvolveNodeSpec,
+  ijTubenessNodeSpec,
+} from './ImageJOps';
+import {
+  ijThresholdApplyNodeSpec,
+  ijThresholdPercentileNodeSpec,
+  ijThresholdCombinedNodeSpec,
+} from './ImageJThreshold';
 
 export function defaultNodeSpecs(): void {
   registerNodeSpec([
@@ -75,5 +93,24 @@ export function defaultNodeSpecs(): void {
   registerNodeSpec([BinaryDifferenceNodeSpec, GrayscaleDifferenceNodeSpec]);
   registerNodeSpec([cropNodeSpec, batchProcessNodeSpec]);
   registerNodeSpec(superResolutionNodeSpec);
-  registerNodeSpec([imageJAutoThresholdNodeSpec, imageJAnalyzeParticlesNodeSpec]);
+  registerNodeSpec([ imageJAnalyzeParticlesNodeSpec]);
+  registerNodeSpec([
+    ijGaussNodeSpec,
+    ijMedianNodeSpec,
+    ijMeanNodeSpec,
+    ijSobelNodeSpec,
+    ijBilateralNodeSpec,
+    ijDoGNodeSpec,
+    ijVarianceNodeSpec,
+    ijMaxNodeSpec,
+    ijMinNodeSpec,
+    ijAddPoissonNoiseNodeSpec,
+    ijConvolveNodeSpec,
+    ijTubenessNodeSpec,
+  ]);
+  registerNodeSpec([
+    ijThresholdApplyNodeSpec,
+    ijThresholdPercentileNodeSpec,
+    ijThresholdCombinedNodeSpec,
+  ]);
 }
