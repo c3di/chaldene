@@ -39,7 +39,16 @@ import {
 import {
   imageJAnalyzeParticlesNodeSpec,
   imageJDetectJunctionsNodeSpec,
-  imageJDetectRidgesNodeSpec
+  imageJDetectRidgesNodeSpec,
+  imageJAsciiNodeSpec,
+  imageJDistanceTransformNodeSpec,
+  imageJEquationNodeSpec,
+  imageJFillNodeSpec,
+  imageJHistogramNodeSpec,
+  imageJIntegralNodeSpec,
+  imageJInvertNodeSpec,
+  imageJWatershedNodeSpec,
+  imageJCooccurrenceMatrixNodeSpec
 } from './ImageJ';
 import {
   ijGaussNodeSpec,
@@ -127,7 +136,18 @@ export function defaultNodeSpecs(): void {
   registerNodeSpec([BinaryDifferenceNodeSpec, GrayscaleDifferenceNodeSpec]);
   registerNodeSpec([cropNodeSpec, batchProcessNodeSpec]);
   registerNodeSpec(superResolutionNodeSpec);
-  registerNodeSpec([ imageJAnalyzeParticlesNodeSpec, imageJDetectJunctionsNodeSpec, imageJDetectRidgesNodeSpec]);
+  registerNodeSpec([imageJAnalyzeParticlesNodeSpec,
+    imageJDetectJunctionsNodeSpec,
+    imageJDetectRidgesNodeSpec,
+    imageJCooccurrenceMatrixNodeSpec,
+    imageJAsciiNodeSpec,
+    imageJDistanceTransformNodeSpec,
+    imageJEquationNodeSpec,
+    imageJFillNodeSpec,
+    imageJHistogramNodeSpec,
+    imageJIntegralNodeSpec,
+    imageJInvertNodeSpec,
+    imageJWatershedNodeSpec]);
   registerNodeSpec([
     ijGaussNodeSpec,
     ijMedianNodeSpec,
