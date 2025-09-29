@@ -44,7 +44,7 @@ export const ijGaussNodeSpec: computeNodeSpec = {
   name: 'ij_gauss',
   displayLabel: 'imagej_gauss',
   description: 'Gaussian blur using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [
     { name: 'image', type: 'image', displayLabel: 'image', description: 'Input image.' },
     { name: 'sigma', displayLabel: 'sigma', description: 'Gaussian sigma.', defaultValue: 1.0, widget: { type: 'Number', min: 0, step: 0.1 } }
@@ -62,7 +62,7 @@ export const ijMedianNodeSpec: computeNodeSpec = {
   name: 'ij_median',
   displayLabel: 'imagej_median',
   description: 'Median filter using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [
     { name: 'image', type: 'image', displayLabel: 'image', description: 'Input image.' },
     { name: 'radius', displayLabel: 'radius', description: 'Neighborhood radius (pixels).', defaultValue: 1, widget: { type: 'Number', min: 1, step: 1 } }
@@ -85,7 +85,7 @@ export const ijMeanNodeSpec: computeNodeSpec = {
   name: 'ij_mean',
   displayLabel: 'imagej_mean',
   description: 'Mean filter using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [
     { name: 'image', type: 'image', displayLabel: 'image' },
     { name: 'radius', displayLabel: 'radius', description: 'Neighborhood radius (pixels).', defaultValue: 1, widget: { type: 'Number', min: 1, step: 1 } }
@@ -108,7 +108,7 @@ export const ijSobelNodeSpec: computeNodeSpec = {
   name: 'ij_sobel',
   displayLabel: 'imagej_sobel',
   description: 'Sobel edge filter using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
   outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
   codeGenerators: {
@@ -123,7 +123,7 @@ export const ijBilateralNodeSpec: computeNodeSpec = {
   name: 'ij_bilateral',
   displayLabel: 'imagej_bilateral',
   description: 'Bilateral filter using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [
     { name: 'image', type: 'image', displayLabel: 'image' },
     { name: 'spatial_sigma', displayLabel: 'spatial sigma', defaultValue: 2.0, widget: { type: 'Number', min: 0, step: 0.1 } },
@@ -145,7 +145,7 @@ export const ijDoGNodeSpec: computeNodeSpec = {
   name: 'ij_dog',
   displayLabel: 'imagej_dog',
   description: 'Difference of Gaussians using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [
     { name: 'image', type: 'image', displayLabel: 'image' },
     { name: 'sigma1', displayLabel: 'sigma1', defaultValue: 1.0, widget: { type: 'Number', min: 0, step: 0.1 } },
@@ -164,7 +164,7 @@ export const ijVarianceNodeSpec: computeNodeSpec = {
   name: 'ij_variance',
   displayLabel: 'imagej_variance',
   description: 'Local variance filter using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [
     { name: 'image', type: 'image', displayLabel: 'image' },
     { name: 'radius', displayLabel: 'radius', defaultValue: 1, widget: { type: 'Number', min: 1, step: 1 } }
@@ -187,7 +187,7 @@ export const ijMaxNodeSpec: computeNodeSpec = {
   name: 'ij_max',
   displayLabel: 'imagej_max',
   description: 'Local maximum filter using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [
     { name: 'image', type: 'image', displayLabel: 'image' },
     { name: 'radius', displayLabel: 'radius', defaultValue: 1, widget: { type: 'Number', min: 1, step: 1 } }
@@ -210,7 +210,7 @@ export const ijMinNodeSpec: computeNodeSpec = {
   name: 'ij_min',
   displayLabel: 'imagej_min',
   description: 'Local minimum filter using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [
     { name: 'image', type: 'image', displayLabel: 'image' },
     { name: 'radius', displayLabel: 'radius', defaultValue: 1, widget: { type: 'Number', min: 1, step: 1 } }
@@ -234,7 +234,7 @@ export const ijAddPoissonNoiseNodeSpec: computeNodeSpec = {
   name: 'ij_add_poisson_noise',
   displayLabel: 'imagej_add_poisson_noise',
   description: 'Add Poisson noise using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
   outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
   codeGenerators: {
@@ -250,7 +250,7 @@ export const ijConvolveNodeSpec: computeNodeSpec = {
   name: 'ij_convolve',
   displayLabel: 'imagej_convolve',
   description: 'Convolve with a box kernel using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [
     { name: 'image', type: 'image', displayLabel: 'image' },
     { name: 'kernel_size', displayLabel: 'kernel size', defaultValue: 3, widget: { type: 'Number', min: 1, step: 1 } }
@@ -274,7 +274,7 @@ export const ijTubenessNodeSpec: computeNodeSpec = {
   name: 'ij_tubeness',
   displayLabel: 'imagej_tubeness',
   description: 'Tubeness filter using ImageJ ops.',
-  category: 'imagej ops',
+  category: 'imagej filter',
   inputs: [
     { name: 'image', type: 'image', displayLabel: 'image' },
     { name: 'sigma', displayLabel: 'sigma', defaultValue: 1.0, widget: { type: 'Number', min: 0, step: 0.1 } }
@@ -288,8 +288,240 @@ ${fromJavaToIM('res', outputs.image)}`;
   }
 };
 
-// Threshold ops: apply and various global/local methods
-// Threshold nodes moved to ImageJThreshold.ts
+// Morphology operations (prefer ImageJ ops; fallback to skimage where needed)
+
+function shapeArgs(radiusExpr: string): string {
+  return `from scyjava import jimport
+HyperSphereShape = jimport('net.imglib2.algorithm.neighborhood.HyperSphereShape')
+shape = HyperSphereShape(int(${radiusExpr}))`;
+}
+
+export const ijMorphDilateNodeSpec: computeNodeSpec = {
+  name: 'ij_morph_dilate',
+  displayLabel: 'imagej_dilate',
+  description: 'Morphological dilation (binary/grayscale).',
+  category: 'imagej filter',
+  inputs: [
+    { name: 'image', type: 'image', displayLabel: 'image' },
+    { name: 'radius', displayLabel: 'radius', defaultValue: 1, widget: { type: 'Number', min: 1, step: 1 } }
+  ],
+  outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  codeGenerators: {
+    Python: (inputs, outputs) => {
+      const shape = shapeArgs(`${inputs.radius}`);
+      return `${header()}${toJavaImage(inputs.image)}out = ij.op().run('create.img', jimg)
+${shape}
+ij.op().run('morphology.dilate', out, jimg, shape)
+${fromJavaToIM('out', outputs.image)}`;
+    }
+  }
+};
+
+export const ijMorphErodeNodeSpec: computeNodeSpec = {
+  name: 'ij_morph_erode',
+  displayLabel: 'imagej_erode',
+  description: 'Morphological erosion (binary/grayscale).',
+  category: 'imagej filter',
+  inputs: [
+    { name: 'image', type: 'image', displayLabel: 'image' },
+    { name: 'radius', displayLabel: 'radius', defaultValue: 1, widget: { type: 'Number', min: 1, step: 1 } }
+  ],
+  outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  codeGenerators: {
+    Python: (inputs, outputs) => {
+      const shape = shapeArgs(`${inputs.radius}`);
+      return `${header()}${toJavaImage(inputs.image)}out = ij.op().run('create.img', jimg)
+${shape}
+ij.op().run('morphology.erode', out, jimg, shape)
+${fromJavaToIM('out', outputs.image)}`;
+    }
+  }
+};
+
+export const ijMorphOpenNodeSpec: computeNodeSpec = {
+  name: 'ij_morph_open',
+  displayLabel: 'imagej_open',
+  description: 'Morphological opening.',
+  category: 'imagej filter',
+  inputs: [
+    { name: 'image', type: 'image', displayLabel: 'image' },
+    { name: 'radius', displayLabel: 'radius', defaultValue: 1, widget: { type: 'Number', min: 1, step: 1 } }
+  ],
+  outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  codeGenerators: {
+    Python: (inputs, outputs) => {
+      const shape = shapeArgs(`${inputs.radius}`);
+      return `${header()}${toJavaImage(inputs.image)}out = ij.op().run('create.img', jimg)
+${shape}
+ij.op().run('morphology.open', out, jimg, shape)
+${fromJavaToIM('out', outputs.image)}`;
+    }
+  }
+};
+
+export const ijMorphCloseNodeSpec: computeNodeSpec = {
+  name: 'ij_morph_close',
+  displayLabel: 'imagej_close',
+  description: 'Morphological closing.',
+  category: 'imagej filter',
+  inputs: [
+    { name: 'image', type: 'image', displayLabel: 'image' },
+    { name: 'radius', displayLabel: 'radius', defaultValue: 1, widget: { type: 'Number', min: 1, step: 1 } }
+  ],
+  outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  codeGenerators: {
+    Python: (inputs, outputs) => {
+      const shape = shapeArgs(`${inputs.radius}`);
+      return `${header()}${toJavaImage(inputs.image)}out = ij.op().run('create.img', jimg)
+${shape}
+ij.op().run('morphology.close', out, jimg, shape)
+${fromJavaToIM('out', outputs.image)}`;
+    }
+  }
+};
+
+export const ijMorphTopHatNodeSpec: computeNodeSpec = {
+  name: 'ij_morph_tophat',
+  displayLabel: 'imagej_tophat',
+  description: 'Top-hat filter (white).',
+  category: 'imagej filter',
+  inputs: [
+    { name: 'image', type: 'image', displayLabel: 'image' },
+    { name: 'radius', displayLabel: 'radius', defaultValue: 10, widget: { type: 'Number', min: 1, step: 1 } }
+  ],
+  outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  codeGenerators: {
+    Python: (inputs, outputs) => {
+      const shape = shapeArgs(`${inputs.radius}`);
+      return `${header()}${toJavaImage(inputs.image)}out = ij.op().run('create.img', jimg)
+${shape}
+ij.op().run('morphology.topHat', out, jimg, shape)
+${fromJavaToIM('out', outputs.image)}`;
+    }
+  }
+};
+
+export const ijMorphBlackTopHatNodeSpec: computeNodeSpec = {
+  name: 'ij_morph_blacktophat',
+  displayLabel: 'imagej_black_tophat',
+  description: 'Black top-hat filter.',
+  category: 'imagej filter',
+  inputs: [
+    { name: 'image', type: 'image', displayLabel: 'image' },
+    { name: 'radius', displayLabel: 'radius', defaultValue: 1, widget: { type: 'Number', min: 1, step: 1 } }
+  ],
+  outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  codeGenerators: {
+    Python: (inputs, outputs) => {
+      const shape = shapeArgs(`${inputs.radius}`);
+      return `${header()}${toJavaImage(inputs.image)}out = ij.op().run('create.img', jimg)
+${shape}
+ij.op().run('morphology.blackTopHat', out, jimg, shape)
+${fromJavaToIM('out', outputs.image)}`;
+    }
+  }
+};
+
+export const ijMorphOutlineNodeSpec: computeNodeSpec = {
+  name: 'ij_morph_outline',
+  displayLabel: 'imagej_outline',
+  description: 'Outline of binary regions.',
+  category: 'imagej filter',
+  inputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  codeGenerators: {
+    Python: (inputs, outputs) => {
+      return `${header()}${toJavaImage(inputs.image)}from scyjava import jimport
+BitType = jimport('net.imglib2.type.logic.BitType')
+FloatType = jimport('net.imglib2.type.numeric.real.FloatType')
+bin_in = ij.op().run('create.img', jimg, BitType())
+ij.op().run('threshold.apply', bin_in, jimg, FloatType(0.5))
+out = ij.op().run('create.img', bin_in)
+ij.op().run('morphology.outline', out, bin_in, True)
+${fromJavaToIM('out', outputs.image)}`;
+    }
+  }
+};
+
+
+export const ijMorphFillHolesNodeSpec: computeNodeSpec = {
+  name: 'ij_morph_fill_holes',
+  displayLabel: 'imagej_fill_holes',
+  description: 'Fill holes in binary regions.',
+  category: 'imagej filter',
+  inputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  codeGenerators: {
+    Python: (inputs, outputs) => {
+      return `${header()}${toJavaImage(inputs.image)}from scyjava import jimport
+BitType = jimport('net.imglib2.type.logic.BitType')
+FloatType = jimport('net.imglib2.type.numeric.real.FloatType')
+bin_in = ij.op().run('create.img', jimg, BitType())
+ij.op().run('threshold.apply', bin_in, jimg, FloatType(0.5))
+out = ij.op().run('create.img', bin_in)
+ij.op().run('morphology.fillHoles', out, bin_in)
+${fromJavaToIM('out', outputs.image)}`;
+    }
+  }
+};
+
+export const ijMorphExtractHolesNodeSpec: computeNodeSpec = {
+  name: 'ij_morph_extract_holes',
+  displayLabel: 'imagej_extract_holes',
+  description: 'Extract holes from binary regions.',
+  category: 'imagej filter',
+  inputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  codeGenerators: {
+    Python: (inputs, outputs) => {
+      return `${header()}${toJavaImage(inputs.image)}from scyjava import jimport
+BitType = jimport('net.imglib2.type.logic.BitType')
+FloatType = jimport('net.imglib2.type.numeric.real.FloatType')
+bin_in = ij.op().run('create.img', jimg, BitType())
+ij.op().run('threshold.apply', bin_in, jimg, FloatType(0.5))
+out = ij.op().run('create.img', bin_in)
+ij.op().run('morphology.extractHoles', out, bin_in)
+${fromJavaToIM('out', outputs.image)}`;
+    }
+  }
+};
+
+export const ijMorphFloodFillNodeSpec: computeNodeSpec = {
+  name: 'ij_morph_flood_fill',
+  displayLabel: 'imagej_flood_fill',
+  description: 'Flood fill from a seed point (binary).',
+  category: 'imagej filter',
+  inputs: [
+    { name: 'image', type: 'image', displayLabel: 'image' },
+    { name: 'seed_x', displayLabel: 'seed x', defaultValue: 100, widget: { type: 'Number', min: 0, step: 1 } },
+    { name: 'seed_y', displayLabel: 'seed y', defaultValue: 200, widget: { type: 'Number', min: 0, step: 1 } }
+  ],
+  outputs: [ { name: 'image', type: 'image', displayLabel: 'image' } ],
+  codeGenerators: {
+    Python: (inputs, outputs) => {
+      return `${header()}${toJavaImage(inputs.image)}from scyjava import jimport
+BitType = jimport('net.imglib2.type.logic.BitType')
+FloatType = jimport('net.imglib2.type.numeric.real.FloatType')
+Point = jimport('net.imglib2.Point')
+HyperSphereShape = jimport('net.imglib2.algorithm.neighborhood.HyperSphereShape')
+
+# Binarize input
+bin_in = ij.op().run('create.img', jimg, BitType())
+ij.op().run('threshold.apply', bin_in, jimg, FloatType(0.5))
+
+# Prepare seed (as Point with set positions) and structuring element
+seed = Point(2)
+seed.setPosition(int(${inputs.seed_x}), 0)
+seed.setPosition(int(${inputs.seed_y}), 1)
+shape = HyperSphereShape(1)
+
+# Run flood fill
+out = ij.op().run('create.img', bin_in)
+ij.op().run('morphology.floodFill', out, bin_in, seed, shape)
+${fromJavaToIM('out', outputs.image)}`;
+    }
+  }
+};
 
 
 

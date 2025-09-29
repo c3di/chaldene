@@ -49,7 +49,7 @@ export const ijThresholdApplyNodeSpec: computeNodeSpec = {
     { name: 'image', type: 'image', displayLabel: 'image' },
     { name: 'threshold', displayLabel: 'threshold (0-1)', defaultValue: 0.5, widget: { type: 'Number', min: 0, max: 1, step: 0.01 } }
   ],
-  outputs: [ { name: 'image', type: 'image', displayLabel: 'mask' } ],
+  outputs: [ { name: 'image', type: 'binary image', displayLabel: 'mask' } ],
   codeGenerators: {
     Python: (inputs, outputs) => {
       return `${header()}${toJavaImage(inputs.image)}# Create BitType output for binary threshold result
@@ -66,30 +66,6 @@ ${fromJavaToIM('out', outputs.image)}`;
 };
 
 
-export const ijThresholdPercentileNodeSpec: computeNodeSpec = {
-  name: 'ij_threshold_percentile',
-  displayLabel: 'imagej_threshold_percentile',
-  description: 'Percentile global threshold (fraction 0..1).',
-  category: 'imagej threshold',
-  inputs: [
-    { name: 'image', type: 'image', displayLabel: 'image' },
-    { name: 'fraction', displayLabel: 'fraction (0-1)', defaultValue: 0.5, widget: { type: 'Number', min: 0, max: 1, step: 0.01 } }
-  ],
-  outputs: [ { name: 'image', type: 'image', displayLabel: 'mask' } ],
-  codeGenerators: {
-    Python: (inputs, outputs) => {
-      return `${header()}${toJavaImage(inputs.image)}# Create BitType output for binary threshold result
-from scyjava import jimport
-BitType = jimport('net.imglib2.type.logic.BitType')
-FloatType = jimport('net.imglib2.type.numeric.real.FloatType')
-out = ij.op().run('create.img', jimg, BitType())
-frac = FloatType(float(${inputs.fraction}))
-ij.op().run('threshold.percentile', out, jimg, frac)
-${fromJavaToIM('out', outputs.image)}`;
-    }
-  }
-};
-
 export const ijThresholdCombinedNodeSpec: computeNodeSpec = {
   name: 'ij_threshold_combined',
   displayLabel: 'imagej_threshold',
@@ -101,12 +77,12 @@ export const ijThresholdCombinedNodeSpec: computeNodeSpec = {
       name: 'method',
       displayLabel: 'method',
       widget: { type: 'Dropdown', options: [
-        'huang','intermodes','isoData','li','maxEntropy','maxLikelihood','mean','minError','minimum','moments','otsu','renyiEntropy','rosin','shanbhag','triangle','yen'
+        'percentile','huang','intermodes','isoData','li','maxEntropy','maxLikelihood','mean','minError','minimum','moments','otsu','renyiEntropy','rosin','shanbhag','triangle','yen'
       ] },
       defaultValue: 'otsu'
     },
   ],
-  outputs: [ { name: 'image', type: 'image', displayLabel: 'mask' } ],
+  outputs: [ { name: 'image', type: 'binary image', displayLabel: 'mask' } ],
   codeGenerators: {
     Python: (inputs, outputs) => {
       return `${header()}${toJavaImage(inputs.image)}# Create BitType output for binary threshold result

@@ -37,7 +37,9 @@ import {
   GrayscaleDifferenceNodeSpec
 } from './Comparison';
 import {
-  imageJAnalyzeParticlesNodeSpec
+  imageJAnalyzeParticlesNodeSpec,
+  imageJDetectJunctionsNodeSpec,
+  imageJDetectRidgesNodeSpec
 } from './ImageJ';
 import {
   ijGaussNodeSpec,
@@ -52,12 +54,44 @@ import {
   ijAddPoissonNoiseNodeSpec,
   ijConvolveNodeSpec,
   ijTubenessNodeSpec,
-} from './ImageJOps';
+  ijMorphOpenNodeSpec,
+  ijMorphCloseNodeSpec,
+  ijMorphTopHatNodeSpec,
+  ijMorphBlackTopHatNodeSpec,
+  ijMorphDilateNodeSpec,
+  ijMorphErodeNodeSpec,
+  ijMorphFloodFillNodeSpec,
+  ijMorphExtractHolesNodeSpec,
+  ijMorphOutlineNodeSpec,
+  ijMorphFillHolesNodeSpec,
+} from './ImageJFilter';
 import {
   ijThresholdApplyNodeSpec,
-  ijThresholdPercentileNodeSpec,
   ijThresholdCombinedNodeSpec,
 } from './ImageJThreshold';
+import {
+  ijTransformConcatenateViewNodeSpec,
+  ijTransformCropNodeSpec,
+  ijTransformExtendBorderViewNodeSpec,
+  ijTransformExtendMirrorDoubleViewNodeSpec,
+  ijTransformExtendMirrorSingleViewNodeSpec,
+  ijTransformExtendPeriodicViewNodeSpec,
+  ijTransformExtendRandomViewNodeSpec,
+  ijTransformExtendValueViewNodeSpec,
+  ijTransformExtendViewNodeSpec,
+  ijTransformExtendZeroViewNodeSpec,
+  ijTransformFlatIterableViewNodeSpec,
+  ijTransformHyperSliceViewNodeSpec,
+  ijTransformIntervalViewNodeSpec,
+  ijTransformInvertAxisViewNodeSpec,
+  ijTransformProjectNodeSpec,
+  ijTransformRotateViewNodeSpec,
+  ijTransformScaleViewNodeSpec,
+  ijTransformShearViewNodeSpec,
+  ijTransformSubsampleViewNodeSpec,
+  ijTransformTranslateViewNodeSpec,
+  ijTransformZeroMinViewNodeSpec,
+} from './ImageJTransform';
 
 export function defaultNodeSpecs(): void {
   registerNodeSpec([
@@ -93,7 +127,7 @@ export function defaultNodeSpecs(): void {
   registerNodeSpec([BinaryDifferenceNodeSpec, GrayscaleDifferenceNodeSpec]);
   registerNodeSpec([cropNodeSpec, batchProcessNodeSpec]);
   registerNodeSpec(superResolutionNodeSpec);
-  registerNodeSpec([ imageJAnalyzeParticlesNodeSpec]);
+  registerNodeSpec([ imageJAnalyzeParticlesNodeSpec, imageJDetectJunctionsNodeSpec, imageJDetectRidgesNodeSpec]);
   registerNodeSpec([
     ijGaussNodeSpec,
     ijMedianNodeSpec,
@@ -107,10 +141,42 @@ export function defaultNodeSpecs(): void {
     ijAddPoissonNoiseNodeSpec,
     ijConvolveNodeSpec,
     ijTubenessNodeSpec,
+    ijMorphOpenNodeSpec,
+    ijMorphCloseNodeSpec,
+    ijMorphTopHatNodeSpec,
+    ijMorphBlackTopHatNodeSpec,
+    ijMorphDilateNodeSpec,
+    ijMorphErodeNodeSpec,
+    ijMorphFloodFillNodeSpec,
+    ijMorphExtractHolesNodeSpec,
+    ijMorphOutlineNodeSpec,
+    ijMorphFillHolesNodeSpec,
   ]);
   registerNodeSpec([
     ijThresholdApplyNodeSpec,
-    ijThresholdPercentileNodeSpec,
     ijThresholdCombinedNodeSpec,
+  ]);
+  registerNodeSpec([
+    ijTransformConcatenateViewNodeSpec,
+    ijTransformCropNodeSpec,
+    ijTransformExtendBorderViewNodeSpec,
+    ijTransformExtendMirrorDoubleViewNodeSpec,
+    ijTransformExtendMirrorSingleViewNodeSpec,
+    ijTransformExtendPeriodicViewNodeSpec,
+    ijTransformExtendRandomViewNodeSpec,
+    ijTransformExtendValueViewNodeSpec,
+    ijTransformExtendViewNodeSpec,
+    ijTransformExtendZeroViewNodeSpec,
+    ijTransformFlatIterableViewNodeSpec,
+    ijTransformHyperSliceViewNodeSpec,
+    ijTransformIntervalViewNodeSpec,
+    ijTransformInvertAxisViewNodeSpec,
+    ijTransformProjectNodeSpec,
+    ijTransformRotateViewNodeSpec,
+    ijTransformScaleViewNodeSpec,
+    ijTransformShearViewNodeSpec,
+    ijTransformSubsampleViewNodeSpec,
+    ijTransformTranslateViewNodeSpec,
+    ijTransformZeroMinViewNodeSpec,
   ]);
 }
