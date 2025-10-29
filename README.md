@@ -1,28 +1,26 @@
-# chaldene
+# Chaldene
 
-[![Github Actions Status](https://github.com/c3di/chaldene.git/workflows/Build/badge.svg)](https://github.com/c3di/chaldene.git/actions/workflows/build.yml)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/c3di/chaldene.git/main?urlpath=lab)
+Notebook-Embedded Visual Programming for Authoring Interactive Image-Processing Workflows
 
-A Visual Programming System  in JupyterLab for Authoring Reproducible Image Processing Workflows
+Chaldene teaser https://youtu.be/CN3qY67QiXg
 
-## Requirements
+Chaldene tutorial https://youtu.be/SYRBdU8mQMw
 
-- JupyterLab >= 4.0.0
+Chaldene use case https://youtu.be/Oosamoa33cs
+
+
+**We strongly recommend using Binder to test the use cases.**
+The use cases can be accessed directly via [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/anonymizedsubmission1024/Chaldene/HEAD) in the **`use_cases`** folder.
+(If MyBinder encounters an internal server error, please refersh and try again)
+
+For the source code of use cases, please refer to `Use_Cases` folders.
+
 
 ## Install
-
-**NOTE**: For the purposes of double-blind review, we have kept the repository private and temporarily removed the package from PyPI. 
-We recommend downloading the package from the "dist" folder and installing it using the following command:
 
 ```python
 pip install /path_to/....whl
 ```
-~~To install the extension, execute:~~
-
-```bash
-pip install chaldene
-```
-Or install from graphical JupyterLab extendion manager
 
 ## Uninstall
 
@@ -35,6 +33,9 @@ pip uninstall chaldene
 ## Use Cases
 
 Please refer to `Use_Cases` folders.
+Two of the workflows created by participants in the user study
+![task1](https://github.com/user-attachments/assets/f8aedb06-f0eb-48ba-b9d3-ca70186629f8)
+![task2](https://github.com/user-attachments/assets/d790d3f8-b8c7-42a5-83b8-6c220a37fe7c)
 
 ## Contributing
 
