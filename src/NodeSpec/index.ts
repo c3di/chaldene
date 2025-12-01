@@ -36,10 +36,102 @@ import {
   BinaryDifferenceNodeSpec,
   GrayscaleDifferenceNodeSpec
 } from './Comparison';
-import {adjustGamma, adjustLog, equalizeAdaptHist, equalizeHist, blobDoG, blobLoG, cornerHarris,adjustSigmoid,farid,meijering,butterworth,frangi, sobel, hessian, prewitt,roberts,
-  sato, scharr, blackTophat, whiteTophat, radonTransform, iradonTransform, iradonSART, randomNoise, denoiseWiener, denoiseNlMeans, denoiseTvBregman, denoiseTvChambolle,
+import {
+  imageJAnalyzeParticlesNodeSpec,
+  imageJDetectJunctionsNodeSpec,
+  imageJDetectRidgesNodeSpec,
+  imageJAsciiNodeSpec,
+  imageJDistanceTransformNodeSpec,
+  imageJEquationNodeSpec,
+  imageJFillNodeSpec,
+  imageJHistogramNodeSpec,
+  imageJIntegralNodeSpec,
+  imageJInvertNodeSpec,
+  imageJWatershedNodeSpec,
+  imageJCooccurrenceMatrixNodeSpec
+} from './ImageJ';
+import {
+  ijGaussNodeSpec,
+  ijMedianNodeSpec,
+  ijMeanNodeSpec,
+  ijSobelNodeSpec,
+  ijBilateralNodeSpec,
+  ijDoGNodeSpec,
+  ijVarianceNodeSpec,
+  ijMaxNodeSpec,
+  ijMinNodeSpec,
+  ijAddPoissonNoiseNodeSpec,
+  ijConvolveNodeSpec,
+  ijTubenessNodeSpec,
+  ijMorphOpenNodeSpec,
+  ijMorphCloseNodeSpec,
+  ijMorphTopHatNodeSpec,
+  ijMorphBlackTopHatNodeSpec,
+  ijMorphDilateNodeSpec,
+  ijMorphErodeNodeSpec,
+  ijMorphFloodFillNodeSpec,
+  ijMorphExtractHolesNodeSpec,
+  ijMorphOutlineNodeSpec,
+  ijMorphFillHolesNodeSpec
+} from './ImageJFilter';
+import {
+  ijThresholdApplyNodeSpec,
+  ijThresholdCombinedNodeSpec
+} from './ImageJThreshold';
+import {
+  ijTransformConcatenateViewNodeSpec,
+  ijTransformCropNodeSpec,
+  ijTransformExtendBorderViewNodeSpec,
+  ijTransformExtendMirrorDoubleViewNodeSpec,
+  ijTransformExtendMirrorSingleViewNodeSpec,
+  ijTransformExtendPeriodicViewNodeSpec,
+  ijTransformExtendRandomViewNodeSpec,
+  ijTransformExtendValueViewNodeSpec,
+  ijTransformExtendViewNodeSpec,
+  ijTransformExtendZeroViewNodeSpec,
+  ijTransformFlatIterableViewNodeSpec,
+  ijTransformHyperSliceViewNodeSpec,
+  ijTransformIntervalViewNodeSpec,
+  ijTransformInvertAxisViewNodeSpec,
+  ijTransformProjectNodeSpec,
+  ijTransformRotateViewNodeSpec,
+  ijTransformScaleViewNodeSpec,
+  ijTransformShearViewNodeSpec,
+  ijTransformSubsampleViewNodeSpec,
+  ijTransformTranslateViewNodeSpec,
+  ijTransformZeroMinViewNodeSpec
+} from './ImageJTransform';
 
-} from './skimage'
+import {
+  adjustGamma,
+  adjustLog,
+  equalizeAdaptHist,
+  equalizeHist,
+  blobDoG,
+  blobLoG,
+  cornerHarris,
+  adjustSigmoid,
+  farid,
+  meijering,
+  butterworth,
+  frangi,
+  sobel,
+  hessian,
+  prewitt,
+  roberts,
+  sato,
+  scharr,
+  blackTophat,
+  whiteTophat,
+  radonTransform,
+  iradonTransform,
+  iradonSART,
+  randomNoise,
+  denoiseWiener,
+  denoiseNlMeans,
+  denoiseTvBregman,
+  denoiseTvChambolle
+} from './skimage';
 
 export function defaultNodeSpecs(): void {
   registerNodeSpec([
@@ -75,7 +167,96 @@ export function defaultNodeSpecs(): void {
   registerNodeSpec([BinaryDifferenceNodeSpec, GrayscaleDifferenceNodeSpec]);
   registerNodeSpec([cropNodeSpec, batchProcessNodeSpec]);
   registerNodeSpec(superResolutionNodeSpec);
-  registerNodeSpec([adjustGamma, adjustLog, equalizeHist, equalizeAdaptHist, blobDoG, blobLoG, cornerHarris, adjustSigmoid, farid, meijering, butterworth, frangi, sobel, hessian, prewitt, roberts,
-    sato, scharr, blackTophat, whiteTophat, radonTransform, iradonTransform, iradonSART, randomNoise, denoiseWiener, denoiseNlMeans, denoiseTvBregman, denoiseTvChambolle,
+  registerNodeSpec([
+    imageJAnalyzeParticlesNodeSpec,
+    imageJDetectJunctionsNodeSpec,
+    imageJDetectRidgesNodeSpec,
+    imageJCooccurrenceMatrixNodeSpec,
+    imageJAsciiNodeSpec,
+    imageJDistanceTransformNodeSpec,
+    imageJEquationNodeSpec,
+    imageJFillNodeSpec,
+    imageJHistogramNodeSpec,
+    imageJIntegralNodeSpec,
+    imageJInvertNodeSpec,
+    imageJWatershedNodeSpec
+  ]);
+  registerNodeSpec([
+    ijGaussNodeSpec,
+    ijMedianNodeSpec,
+    ijMeanNodeSpec,
+    ijSobelNodeSpec,
+    ijBilateralNodeSpec,
+    ijDoGNodeSpec,
+    ijVarianceNodeSpec,
+    ijMaxNodeSpec,
+    ijMinNodeSpec,
+    ijAddPoissonNoiseNodeSpec,
+    ijConvolveNodeSpec,
+    ijTubenessNodeSpec,
+    ijMorphOpenNodeSpec,
+    ijMorphCloseNodeSpec,
+    ijMorphTopHatNodeSpec,
+    ijMorphBlackTopHatNodeSpec,
+    ijMorphDilateNodeSpec,
+    ijMorphErodeNodeSpec,
+    ijMorphFloodFillNodeSpec,
+    ijMorphExtractHolesNodeSpec,
+    ijMorphOutlineNodeSpec,
+    ijMorphFillHolesNodeSpec
+  ]);
+  registerNodeSpec([ijThresholdApplyNodeSpec, ijThresholdCombinedNodeSpec]);
+  registerNodeSpec([
+    ijTransformConcatenateViewNodeSpec,
+    ijTransformCropNodeSpec,
+    ijTransformExtendBorderViewNodeSpec,
+    ijTransformExtendMirrorDoubleViewNodeSpec,
+    ijTransformExtendMirrorSingleViewNodeSpec,
+    ijTransformExtendPeriodicViewNodeSpec,
+    ijTransformExtendRandomViewNodeSpec,
+    ijTransformExtendValueViewNodeSpec,
+    ijTransformExtendViewNodeSpec,
+    ijTransformExtendZeroViewNodeSpec,
+    ijTransformFlatIterableViewNodeSpec,
+    ijTransformHyperSliceViewNodeSpec,
+    ijTransformIntervalViewNodeSpec,
+    ijTransformInvertAxisViewNodeSpec,
+    ijTransformProjectNodeSpec,
+    ijTransformRotateViewNodeSpec,
+    ijTransformScaleViewNodeSpec,
+    ijTransformShearViewNodeSpec,
+    ijTransformSubsampleViewNodeSpec,
+    ijTransformTranslateViewNodeSpec,
+    ijTransformZeroMinViewNodeSpec
+  ]);
+  registerNodeSpec([
+    adjustGamma,
+    adjustLog,
+    equalizeAdaptHist,
+    equalizeHist,
+    blobDoG,
+    blobLoG,
+    cornerHarris,
+    adjustSigmoid,
+    farid,
+    meijering,
+    butterworth,
+    frangi,
+    sobel,
+    hessian,
+    prewitt,
+    roberts,
+    sato,
+    scharr,
+    blackTophat,
+    whiteTophat,
+    radonTransform,
+    iradonTransform,
+    iradonSART,
+    randomNoise,
+    denoiseWiener,
+    denoiseNlMeans,
+    denoiseTvBregman,
+    denoiseTvChambolle
   ]);
 }
