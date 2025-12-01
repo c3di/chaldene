@@ -23,7 +23,8 @@
 - Parameter adjustment and image visualization
 
 ## Requirements
-- JupyterLab 4.0
+
+- JupyterLab >= 4.0.0
 
 ## Quick Start
 
