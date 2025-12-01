@@ -1,37 +1,10 @@
-# Chaldene
-
-A Visual Programming System  in JupyterLab for Authoring Reproducible Image Processing Workflows
+# Chaldene Development
 
 ## Requirements
 
 - JupyterLab >= 4.0.0
 
-## Install
-
-**NOTE**: For the purposes of double-blind review, we have kept the repository private and temporarily removed the package from PyPI. 
-We recommend downloading the package from the "dist" folder and installing it using the following command:
-
-```python
-pip install /path_to/....whl
-```
-~~To install the extension, execute:~~
-
-```bash
-pip install chaldene
-```
-Or install from graphical JupyterLab extendion manager
-
-## Uninstall
-
-To remove the extension, execute:
-
-```bash
-pip uninstall chaldene
-```
-
-## Contributing
-
-### Development install
+## Development install
 
 Note: You will need NodeJS to build the extension package.
 
