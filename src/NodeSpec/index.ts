@@ -101,7 +101,6 @@ import {
   ijTransformTranslateViewNodeSpec,
   ijTransformZeroMinViewNodeSpec
 } from './ImageJTransform';
-
 import {
   adjustGamma,
   adjustLog,
@@ -234,6 +233,36 @@ export function defaultNodeSpecs(): void {
     adjustLog,
     equalizeAdaptHist,
     equalizeHist,
+    blobDoG,
+    blobLoG,
+    cornerHarris,
+    adjustSigmoid,
+    farid,
+    meijering,
+    butterworth,
+    frangi,
+    sobel,
+    hessian,
+    prewitt,
+    roberts,
+    sato,
+    scharr,
+    blackTophat,
+    whiteTophat,
+    radonTransform,
+    iradonTransform,
+    iradonSART,
+    randomNoise,
+    denoiseWiener,
+    denoiseNlMeans,
+    denoiseTvBregman,
+    denoiseTvChambolle
+  ]);
+  registerNodeSpec([
+    adjustGamma,
+    adjustLog,
+    equalizeHist,
+    equalizeAdaptHist,
     blobDoG,
     blobLoG,
     cornerHarris,
