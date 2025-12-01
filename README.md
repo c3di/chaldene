@@ -40,12 +40,12 @@
 
 3. **Create a new notebook**
    - Click "+" to create a new notebook
-   - Add a VP (Visual Programming) cell from the cell toolbar
+   - Add a Visual Code cell from the cell toolbar
 
 4. **Start building workflows**
-   - Drag and drop nodes to create your image processing pipeline
+   - Drag and drop nodes to create your image processing workflows
    - Connect nodes to build workflows
-   - Adjust parameters in real-time
+   - Adjust parameters and inspect the outputs to refine the workflows
 
 **New to Chaldene?** Watch our [tutorial video](https://youtu.be/SYRBdU8mQMw).
 
