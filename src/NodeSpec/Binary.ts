@@ -82,8 +82,8 @@ export const thresholdNodeSpec: computeNodeSpec = {
       return `import numpy as np
 from im2im import Image as IM
 
-# Get input image
-in_im = ${inputs.image}
+in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')\n
+
 lower, upper = ${inputs.range}  
 
 # Apply threshold directly to raw image

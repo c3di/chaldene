@@ -36,6 +36,10 @@ import {
   BinaryDifferenceNodeSpec,
   GrayscaleDifferenceNodeSpec
 } from './Comparison';
+import {adjustGamma, adjustLog, equalizeAdaptHist, equalizeHist, blobDoG, blobLoG, cornerHarris,adjustSigmoid,farid,meijering,butterworth,frangi, sobel, hessian, prewitt,roberts,
+  sato, scharr, blackTophat, whiteTophat, radonTransform, iradonTransform, iradonSART, randomNoise, denoiseWiener, denoiseNlMeans, denoiseTvBregman, denoiseTvChambolle,
+
+} from './skimage'
 
 export function defaultNodeSpecs(): void {
   registerNodeSpec([
@@ -71,4 +75,7 @@ export function defaultNodeSpecs(): void {
   registerNodeSpec([BinaryDifferenceNodeSpec, GrayscaleDifferenceNodeSpec]);
   registerNodeSpec([cropNodeSpec, batchProcessNodeSpec]);
   registerNodeSpec(superResolutionNodeSpec);
+  registerNodeSpec([adjustGamma, adjustLog, equalizeHist, equalizeAdaptHist, blobDoG, blobLoG, cornerHarris, adjustSigmoid, farid, meijering, butterworth, frangi, sobel, hessian, prewitt, roberts,
+    sato, scharr, blackTophat, whiteTophat, radonTransform, iradonTransform, iradonSART, randomNoise, denoiseWiener, denoiseNlMeans, denoiseTvBregman, denoiseTvChambolle,
+  ]);
 }
