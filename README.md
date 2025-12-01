@@ -1,4 +1,4 @@
-# Chaldene <img src="logo_128x128.png" width="80" alt="Project icon">
+# Chaldene
 
 
 Notebook-Embedded Visual Programming for Authoring Interactive Image-Processing Workflows
