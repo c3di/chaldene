@@ -1,43 +1,100 @@
-# Chaldene
+<h1 align="center">Chaldene</h1>
+
+<p align="center">
+<a href="https://youtu.be/CN3qY67QiXg"><img src="https://img.shields.io/badge/📺_Video-Teaser-red?logo=youtube" alt="Teaser"></a>
+<a href="https://youtu.be/SYRBdU8mQMw"><img src="https://img.shields.io/badge/📺_Video-Tutorial-red?logo=youtube" alt="Tutorial"></a>
+<a href="https://youtu.be/Oosamoa33cs"><img src="https://img.shields.io/badge/📺_Video-Use_Cases-red?logo=youtube" alt="Use Cases"></a>
+<a href="https://mybinder.org/v2/gh/anonymizedsubmission1024/Chaldene/HEAD"><img src="https://mybinder.org/badge_logo.svg" alt="Binder"></a>
+<a href="./LICENSE"><img src="https://img.shields.io/badge/License-BSD%203--Clause-blue.svg" alt="License"></a>
+</p>
+
+<p align="center">
+<em>Notebook-Embedded Visual Programming for Authoring Interactive Image-Processing Workflows</em>
+</p>
+
+<p align="center">
+<img src="docs/assets/teaser.png" alt="Chaldene teaser">
+</p>
+
+## Key Features
+
+- Drag-and-drop node-based programming for image processing
+- Interactive workflow creation in JupyterLab
+- Parameter adjustment and image visualization
+
+## Requirements
+- JupyterLab 4.0
+
+## Quick Start
+
+1. **Install Chaldene**
+   ```bash
+   pip install chaldene
+   ```
+
+2. **Launch JupyterLab**
+   ```bash
+   jupyter lab
+   ```
+
+3. **Create a new notebook**
+   - Click "+" to create a new notebook
+   - Add a VP (Visual Programming) cell from the cell toolbar
+
+4. **Start building workflows**
+   - Drag and drop nodes to create your image processing pipeline
+   - Connect nodes to build workflows
+   - Adjust parameters in real-time
+
+**New to Chaldene?** Watch our [tutorial video](https://youtu.be/SYRBdU8mQMw).
+
+## Examples
+
+📂 **Examples are available in the `use_cases/` folder**
+
+Below are two representative workflows created by users, demonstrating Chaldene's capabilities for interactive image processing:
+
+<p align="center">
+<img src="docs/assets/task1.png" alt="Workflow 1: Image Analysis Pipeline" width="70%">
+</p>
+
+<p align="center">
+<img src="docs/assets/task2.png" alt="Workflow 2: Processing Chain" width="70%">
+</p>
+
+## Development
+
+- 📖 [Developer Guide](docs/README_DEVELOP.md) - Setup and development instructions
+- 🚀 [Release Guide](docs/RELEASE.md) - Package Build and Releae
 
 
-Notebook-Embedded Visual Programming for Authoring Interactive Image-Processing Workflows
+## Cite
 
-Chaldene teaser https://youtu.be/CN3qY67QiXg
+If you use this package in your research, please cite our paper:
 
-Chaldene tutorial https://youtu.be/SYRBdU8mQMw
-
-Chaldene use case https://youtu.be/Oosamoa33cs
-
-
-**We strongly recommend using Binder to test the use cases.**
-The use cases can be accessed directly via [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/anonymizedsubmission1024/Chaldene/HEAD) in the **`use_cases`** folder.
-(If MyBinder encounters an internal server error, please refersh and try again)
-
-For the source code of use cases, please refer to `Use_Cases` folders.
-
-
-## Install
-
-```python
-pip install /path_to/....whl
+**For the visual programming environment:**
+```bibtex
+@INPROCEEDINGS{9832910,
+  author={Chen, Fei and Slusallek, Philipp and Müller, Martin and Dahmen, Tim},
+  booktitle={2022 IEEE Symposium on Visual Languages and Human-Centric Computing (VL/HCC)}, 
+  title={Chaldene: Towards Visual Programming Image Processing in Jupyter Notebooks}, 
+  year={2022},
+  volume={},
+  number={},
+  pages={1-3},
+  doi={10.1109/VL/HCC53370.2022.9832910}}
 ```
-
-## Uninstall
-
-To remove the extension, execute:
-
-```bash
-pip uninstall chaldene
+**For the underlying image conversion systems:**
+```bibtex
+@article{chen2025im2im,
+  author    = {Fei Chen and Sunita Saha and Manuela Schuler and Philipp Slusallek and Tim Dahmen},
+  title     = {im2im: Automatically Converting In-Memory Image Representations using A Knowledge Graph Approach},
+  journal   = {Proc. ACM Program. Lang.},
+  volume    = {9},
+  number    = {OOPSLA2},
+  pages     = {281:1--281:26},
+  year      = {2025},
+  month     = oct,
+  doi       = {10.1145/3763059}
+}
 ```
-
-## Use Cases
-
-Please refer to `Use_Cases` folders.
-Two of the workflows created by participants in the user study
-![task1](https://github.com/user-attachments/assets/f8aedb06-f0eb-48ba-b9d3-ca70186629f8)
-![task2](https://github.com/user-attachments/assets/d790d3f8-b8c7-42a5-83b8-6c220a37fe7c)
-
-## Contributing
-
-Please refer to `README_DEVELOP.md`.
