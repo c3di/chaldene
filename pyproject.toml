@@ -34,6 +34,7 @@ dependencies = [
      "matplotlib==3.10.1",
      "super_resolution @ git+https://github.com/Max-ChenFei/super_resolution@merge-forked-repo",
      "im2im @ https://zenodo.org/records/15072357/files/im2im-0.1.dev0+d20250323-py3-none-any.whl",
+     "pyimagej==1.7.0",
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 
