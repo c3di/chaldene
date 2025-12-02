@@ -2100,21 +2100,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupyter/ydoc@npm:^2.1.1":
-  version: 2.1.5
-  resolution: "@jupyter/ydoc@npm:2.1.5"
-  dependencies:
-    "@jupyterlab/nbformat": ^3.0.0 || ^4.0.0-alpha.21 || ^4.0.0
-    "@lumino/coreutils": ^1.11.0 || ^2.0.0
-    "@lumino/disposable": ^1.10.0 || ^2.0.0
-    "@lumino/signaling": ^1.10.0 || ^2.0.0
-    y-protocols: ^1.0.5
-    yjs: ^13.5.40
-  checksum: 027c96d63e34c979f0d802e90f40a642d1a8521890c3ff7820b7f11146e71f958d6b797322221c201201c70613d2aab91c685e577c793c3b1d938b31bff2fd9d
-  languageName: node
-  linkType: hard
-
-"@jupyter/ydoc@npm:^3.1.0":
+"@jupyter/ydoc@npm:^3.0.0, @jupyter/ydoc@npm:^3.1.0":
   version: 3.3.2
   resolution: "@jupyter/ydoc@npm:3.3.2"
   dependencies:
@@ -6100,9 +6086,9 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.5.249":
-  version: 1.5.262
-  resolution: "electron-to-chromium@npm:1.5.262"
-  checksum: 1dd8d5890316972c204ca24d93653c06c6f0e428dffdfb9ab844afce6d0e3beb7cae7944ee81b2136f080e1a52e10f28e7486a33321c976772b45cd12825fa9c
+  version: 1.5.263
+  resolution: "electron-to-chromium@npm:1.5.263"
+  checksum: 0ebdb43b8c94bdbf5ef285dd2ae0bacc9e8c37173f20e053f4172118f4e6e26fb3967899d286e0f2a22e89a45b8a5a6c39598ac5439abdc3666dc46d4b0bc02b
   languageName: node
   linkType: hard
 
@@ -11489,8 +11475,8 @@ __metadata:
   linkType: hard
 
 "ts-jest@npm:^29.1.0, ts-jest@npm:^29.2.5":
-  version: 29.4.5
-  resolution: "ts-jest@npm:29.4.5"
+  version: 29.4.6
+  resolution: "ts-jest@npm:29.4.6"
   dependencies:
     bs-logger: ^0.2.6
     fast-json-stable-stringify: ^2.1.0
@@ -11524,7 +11510,7 @@ __metadata:
       optional: true
   bin:
     ts-jest: cli.js
-  checksum: b2ba677d32bd0024356ab8d43a1b88cb81ecad94be277b111975e626fd37a9ed17fd446a2e3a399a3c8534dcf89ea7c28a4bf4f094b153a4a9972c67b680ad0d
+  checksum: 07ae4102569565ab57036f095152ea75c85032edf15379043ffc8da2dd0e6e93e84d0c50a24e10a5cddacb5ab773df0f3170f02db6c178edd22a5e485bc57dc7
   languageName: node
   linkType: hard
 
