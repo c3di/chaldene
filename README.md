@@ -24,7 +24,14 @@
 
 ## Requirements
 
-- JupyterLab >= 4.0.0
+- **JupyterLab** ≥ 4.0.0  
+- **Java**: OpenJDK 11 (required for PyImageJ)
+
+For example, with Conda:
+
+```bash
+conda install -c conda-forge "openjdk=11"
+```
 
 ## Quick Start
 
