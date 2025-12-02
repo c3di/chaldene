@@ -75,7 +75,7 @@ If you use this package in your research, please cite our paper:
 
 **For the visual programming environment:**
 ```bibtex
-@INPROCEEDINGS{9832910,
+@INPROCEEDINGS{chen2022Chaldene,
   author={Chen, Fei and Slusallek, Philipp and Müller, Martin and Dahmen, Tim},
   booktitle={2022 IEEE Symposium on Visual Languages and Human-Centric Computing (VL/HCC)}, 
   title={Chaldene: Towards Visual Programming Image Processing in Jupyter Notebooks}, 
