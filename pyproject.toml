@@ -32,8 +32,8 @@ dependencies = [
      "comm==0.2.2",
      "opencv-python-headless==4.11.0.86",
      "matplotlib==3.10.1",
-     "super_resolution @ git+https://github.com/Max-ChenFei/super_resolution@merge-forked-repo",
-     "im2im @ https://zenodo.org/records/15072357/files/im2im-0.1.dev0+d20250323-py3-none-any.whl",
+     "chaldene-super-resolution",
+     "im2im",
      "pyimagej==1.7.0",
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
@@ -49,7 +49,7 @@ fields = ["description", "authors", "urls", "keywords"]
 
 [tool.hatch.build.targets.sdist]
 artifacts = ["chaldene/labextension"]
-exclude = [".github", "binder"]
+exclude = [".github", "binder", "use_cases"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "chaldene/labextension" = "share/jupyter/labextensions/chaldene"
