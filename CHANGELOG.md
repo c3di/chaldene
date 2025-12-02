@@ -1,7 +1,5 @@
 # Changelog
 
-## Fixed
-- Various bug fixes and stability improvements
+<!-- <START NEW CHANGELOG ENTRY> -->
 
-## Added
-- more image processing operations
+<!-- <END NEW CHANGELOG ENTRY> -->
