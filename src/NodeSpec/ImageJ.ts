@@ -24,21 +24,21 @@ export const imageJAnalyzeParticlesNodeSpec: computeNodeSpec = {
       name: 'max_size',
       displayLabel: 'max size (pixels^2)',
       description: 'Maximum particle size in pixels.',
-      defaultValue: 1e12,
+      defaultValue: 500,
       widget: { type: 'Number', min: 0, step: 1 }
     },
     {
       name: 'min_circularity',
       displayLabel: 'min circularity',
       description: 'Minimum circularity (0.0 - 1.0).',
-      defaultValue: 0.0,
+      defaultValue: 0.42,
       widget: { type: 'Number', min: 0, max: 1, step: 0.01 }
     },
     {
       name: 'max_circularity',
       displayLabel: 'max circularity',
       description: 'Maximum circularity (0.0 - 1.0).',
-      defaultValue: 1.0,
+      defaultValue: 0.61,
       widget: { type: 'Number', min: 0, max: 1, step: 0.01 }
     }
   ],
@@ -89,7 +89,7 @@ size_max = float(${inputs.max_size})
 circ_min = float(${inputs.min_circularity})
 circ_max = float(${inputs.max_circularity})
 size_max_str = 'Infinity' if size_max <= 0 or size_max > 1e9 else str(int(size_max))
-opts = f"size={int(size_min)}-{size_max_str} circularity={circ_min:.2f}-{circ_max:.2f} show=Overlay display clear"
+opts = f"size={int(size_min)}-{size_max_str} circularity={circ_min:.2f}-{circ_max:.2f} show=Overlay clear"
 
 # Run Analyze Particles with explicit size and circularity constraints
 ij.IJ.run(imp, 'Analyze Particles...', opts)
@@ -107,16 +107,17 @@ for h in headings:
             # Prefer string value when present (e.g., Label)
             sval = rt.getStringValue(h, r)
             if sval is not None and sval != '':
-                col.append(sval)
+                col.append(str(sval))
             else:
-                col.append(rt.getValue(h, r))
+                col.append(float(rt.getValue(h, r)))
         except Exception:
             try:
-                col.append(rt.getValue(h, r))
+                col.append(float(rt.getValue(h, r)))
             except Exception:
                 col.append(None)
-    data[h] = col
+    data[str(h)] = col
 ${outputs.results} = pd.DataFrame(data)
+display(${outputs.results})
 
 # Flatten overlay to pixels and output as image
 ij.IJ.run(imp, 'Flatten', '')
