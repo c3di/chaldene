@@ -3,9 +3,9 @@
 <p align="center">
 <a href="https://pypi.org/project/chaldene/"><img src="https://img.shields.io/pypi/v/chaldene.svg" alt="PyPI Package"></a>
 <a href="https://mybinder.org/v2/gh/anonymizedsubmission1024/Chaldene/HEAD"><img src="https://mybinder.org/badge_logo.svg" alt="Binder"></a>
-<a href="https://youtu.be/CN3qY67QiXg"><img src="https://img.shields.io/badge/📺_Video-Teaser-red?logo=youtube" alt="Teaser"></a>
+<!-- <a href="https://youtu.be/CN3qY67QiXg"><img src="https://img.shields.io/badge/📺_Video-Teaser-red?logo=youtube" alt="Teaser"></a>
 <a href="https://youtu.be/SYRBdU8mQMw"><img src="https://img.shields.io/badge/📺_Video-Tutorial-red?logo=youtube" alt="Tutorial"></a>
-<a href="https://youtu.be/Oosamoa33cs"><img src="https://img.shields.io/badge/📺_Video-Use_Cases-red?logo=youtube" alt="Use Cases"></a>
+<a href="https://youtu.be/Oosamoa33cs"><img src="https://img.shields.io/badge/📺_Video-Use_Cases-red?logo=youtube" alt="Use Cases"></a> -->
 <a href="./LICENSE"><img src="https://img.shields.io/badge/License-BSD%203--Clause-blue.svg" alt="License"></a>
 </p>
 
