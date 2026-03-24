@@ -93,17 +93,3 @@ If you use this package in your research, please cite our paper:
   pages={1-3},
   doi={10.1109/VL/HCC53370.2022.9832910}}
 ```
-**For the underlying image conversion systems:**
-```bibtex
-@article{chen2025im2im,
-  author    = {Fei Chen and Sunita Saha and Manuela Schuler and Philipp Slusallek and Tim Dahmen},
-  title     = {im2im: Automatically Converting In-Memory Image Representations using A Knowledge Graph Approach},
-  journal   = {Proc. ACM Program. Lang.},
-  volume    = {9},
-  number    = {OOPSLA2},
-  pages     = {281:1--281:26},
-  year      = {2025},
-  month     = oct,
-  doi       = {10.1145/3763059}
-}
-```
