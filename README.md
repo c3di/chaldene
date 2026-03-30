@@ -20,8 +20,8 @@
 ## Key Features
 
 - Drag-and-drop node-based programming for image processing
-- Interactive workflow creation in JupyterLab
-- Parameter adjustment and image visualization
+- Image-specific inspection and comparison support, including branching, stepwise views, synchronized viewing, cursor linking, and difference overlays
+- Co-locates workflow structure, parameter settings, outputs, and narrative context within a single notebook artifact during authoring
 
 ## Requirements
 
