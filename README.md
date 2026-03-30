@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-<em>Notebook-Embedded Visual Programming for Authoring Interactive Image-Processing Workflows</em>
+<em>Notebook-Embedded Visual Workflow Authoring for Scientific Image Processing</em>
 </p>
 
 <p align="center">
@@ -76,7 +76,7 @@ Below are two representative workflows created by users, demonstrating Chaldene'
 - 📖 [Developer Guide](docs/README_DEVELOP.md) - Setup and development instructions
 - 🚀 [Release Guide](docs/RELEASE.md) - Package Build and Releae
 
-
+<!--
 ## Cite
 
 If you use this package in your research, please cite our paper:
@@ -93,3 +93,4 @@ If you use this package in your research, please cite our paper:
   pages={1-3},
   doi={10.1109/VL/HCC53370.2022.9832910}}
 ```
+-->
