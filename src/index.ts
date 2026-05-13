@@ -79,7 +79,63 @@ function activateChaldeneVPCell(
 
   defaultNodeSpecs();
 
+  // Register a comm target so Python code can call the service directly
+  // via ChaldeneClient without display(Javascript).
+  const attachComm = (kernel: any) => registerCommTarget(kernel, service);
+  notebookTracker.widgetAdded.connect((_, panel) => {
+    panel.sessionContext.kernelChanged.connect((_: any, args: any) => {
+      if (args.newValue) {
+        attachComm(args.newValue);
+      }
+    });
+    const kernel = (panel.sessionContext.session as any)?.kernel;
+    if (kernel) {
+      attachComm(kernel);
+    }
+  });
+  notebookTracker.forEach(panel => {
+    const kernel = (panel.sessionContext.session as any)?.kernel;
+    if (kernel) {
+      attachComm(kernel);
+    }
+  });
+
   return service;
+}
+
+function registerCommTarget(kernel: any, service: ChaldeneService): void {
+  kernel.registerCommTarget('chaldene:api', (comm: any, _openMsg: any) => {
+    comm.send({ type: 'init', cellIds: service.getReadyCellIds() });
+
+    const onCellReady = (_: any, cellId: string) => {
+      comm.send({ type: 'cell_ready', cellId });
+    };
+    const onCellDisposed = (_: any, cellId: string) => {
+      comm.send({ type: 'cell_disposed', cellId });
+    };
+    service.cellReady.connect(onCellReady);
+    service.cellDisposed.connect(onCellDisposed);
+
+    comm.onMsg = (msg: any) => {
+      const d = msg.content.data;
+      switch (d.action) {
+        case 'run':
+          service.run(d.cellId);
+          break;
+        case 'setInputValue':
+          service.setInputValue(d.cellId, d.nodeId, d.handleId, d.value);
+          break;
+        case 'setGraph':
+          service.setGraph(d.cellId, d.graph);
+          break;
+      }
+    };
+
+    comm.onClose = () => {
+      service.cellReady.disconnect(onCellReady);
+      service.cellDisposed.disconnect(onCellDisposed);
+    };
+  });
 }
 
 const plugins: Array<JupyterFrontEndPlugin<any>> = [chaldeneVPCell];

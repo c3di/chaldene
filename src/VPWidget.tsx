@@ -11,6 +11,7 @@ import { VPEditor, type Graph, type EditorContext } from './ReactVP';
 import { NotebookActions } from '@jupyterlab/notebook';
 import { PathExt } from '@jupyterlab/coreutils';
 import { getChaldeneService } from './serviceRegistry';
+import type { ISharedBaseCell } from '@jupyter/ydoc';
 
 type ISharedText = any;
 
@@ -112,7 +113,7 @@ export class VPWidget extends ReactWidget {
 
     this._context.onLiveExecution = this.run.bind(this);
 
-    const cellId = this._model.sharedModel.getId();
+    const cellId = (this._model.sharedModel as ISharedBaseCell).getId();
     this._cellId = cellId;
     getChaldeneService()?.register(cellId, context, this.run.bind(this));
 

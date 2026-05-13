@@ -121,6 +121,12 @@ dmypy.json
 # OSX files
 .DS_Store
 
+# Claude Code local settings (user-specific)
+.claude/
+
+# Generated demo assets
+sample.png
+
 # Yarn cache
 .yarn/
 

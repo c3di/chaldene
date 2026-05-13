@@ -1,6 +1,6 @@
 """
 Build token_api_tutorial.ipynb — a live demonstration notebook.
-Run with: python build_tutorial_notebook.py
+Run with: python api_tutorials/build_tutorial_notebook.py  (from repo root)
 """
 import json, uuid
 

@@ -8,6 +8,10 @@ except ImportError:
     warnings.warn("Importing 'chaldene' outside a proper installation.")
     __version__ = "dev"
 
+from .client import ChaldeneClient
+
+__all__ = ['ChaldeneClient']
+
 
 def _jupyter_labextension_paths():
     return [{
