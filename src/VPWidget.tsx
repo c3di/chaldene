@@ -10,6 +10,7 @@ import { CodeEditor } from '@jupyterlab/codeeditor';
 import { VPEditor, type Graph, type EditorContext } from './ReactVP';
 import { NotebookActions } from '@jupyterlab/notebook';
 import { PathExt } from '@jupyterlab/coreutils';
+import { getChaldeneService } from './serviceRegistry';
 
 type ISharedText = any;
 
@@ -95,6 +96,13 @@ export class VPWidget extends ReactWidget {
     return this._context?.code() ?? '';
   }
 
+  dispose(): void {
+    if (this._cellId) {
+      getChaldeneService()?.deregister(this._cellId);
+    }
+    super.dispose();
+  }
+
   setContext(context: EditorContext): void {
     this._context = context;
 
@@ -103,6 +111,10 @@ export class VPWidget extends ReactWidget {
     });
 
     this._context.onLiveExecution = this.run.bind(this);
+
+    const cellId = this._model.sharedModel.getId();
+    this._cellId = cellId;
+    getChaldeneService()?.register(cellId, context, this.run.bind(this));
 
     // Update the focus state from the inner editor
     this._context.onFocus = () => {
@@ -196,6 +208,7 @@ export class VPWidget extends ReactWidget {
   }
   private _fileBrowser: any;
   private _focused = false;
+  private _cellId: string | undefined = undefined;
   private _model: CodeEditor.IModel;
   private _context: EditorContext | null = null;
   private _hostNotebookPanel: any;

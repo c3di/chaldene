@@ -17,11 +17,15 @@ import createCellTypeItem from './CreateCellTypeItem';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { defaultNodeSpecs } from './NodeSpec';
 import { insertAbove, insertBelow } from './Action';
+import { IChaldeneService } from './tokens';
+import { ChaldeneService } from './ChaldeneService';
+import { initChaldeneService } from './serviceRegistry';
 
-const chaldeneVPCell: JupyterFrontEndPlugin<void> = {
+const chaldeneVPCell: JupyterFrontEndPlugin<IChaldeneService> = {
   id: 'Chaldene: Add VP Cell',
   description: 'Visual Programming in JupyterLab for Image Processing',
   autoStart: true,
+  provides: IChaldeneService,
   requires: [
     IToolbarWidgetRegistry,
     IEditorServices,
@@ -39,7 +43,9 @@ function activateChaldeneVPCell(
   notebookWidgetFactory: any,
   notebookTracker: INotebookTracker,
   fileBrowserFactory: IFileBrowserFactory
-) {
+): IChaldeneService {
+  const service = new ChaldeneService();
+  initChaldeneService(service);
   // Add a new cell type to the toolbar
   const FACTORY = 'Notebook';
   toolbarRegistry.addFactory<NotebookPanel>(FACTORY, 'cellType', panel =>
@@ -70,6 +76,8 @@ function activateChaldeneVPCell(
   };
 
   defaultNodeSpecs();
+
+  return service;
 }
 
 const plugins: Array<JupyterFrontEndPlugin<any>> = [chaldeneVPCell];
