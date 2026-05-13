@@ -46,6 +46,8 @@ function activateChaldeneVPCell(
 ): IChaldeneService {
   const service = new ChaldeneService();
   initChaldeneService(service);
+  // Expose for notebook %%javascript cells and browser console debugging.
+  (window as any).__chaldene = service;
   // Add a new cell type to the toolbar
   const FACTORY = 'Notebook';
   toolbarRegistry.addFactory<NotebookPanel>(FACTORY, 'cellType', panel =>
