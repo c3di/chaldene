@@ -80,8 +80,10 @@ export class ChaldeneService implements IChaldeneService {
     return true;
   }
 
-  run(cellId: string): void {
-    this._cells.get(cellId)?.run();
+  run(cellId: string): boolean {
+    const entry = this._cells.get(cellId);
+    entry?.run();
+    return entry !== undefined;
   }
 
   get cellReady(): Signal<this, string> {

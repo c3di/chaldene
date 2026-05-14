@@ -111,11 +111,12 @@ export class VPWidget extends ReactWidget {
       this.setContent(JSON.stringify(new_graph));
     });
 
-    this._context.onLiveExecution = this.run.bind(this);
+    const run = this.run.bind(this);
+    this._context.onLiveExecution = run;
 
     const cellId = (this._model.sharedModel as ISharedBaseCell).getId();
     this._cellId = cellId;
-    getChaldeneService()?.register(cellId, context, this.run.bind(this));
+    getChaldeneService()?.register(cellId, context, run);
 
     // Update the focus state from the inner editor
     this._context.onFocus = () => {

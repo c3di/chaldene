@@ -47,7 +47,7 @@ export interface IChaldeneService {
     value: unknown
   ): boolean;
 
-  run(cellId: string): void;
+  run(cellId: string): boolean;
 
   readonly cellReady: ISignal<IChaldeneService, string>;
   readonly cellDisposed: ISignal<IChaldeneService, string>;

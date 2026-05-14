@@ -11,22 +11,17 @@ function makeMockKernel() {
     openComm(target = 'chaldene:api') {
       const handler = handlers[target];
       if (!handler) throw new Error(`No handler registered for target '${target}'`);
-      const comm = makeMockComm();
+      const comm = {
+        send: jest.fn(),
+        onMsg: null as ((msg: any) => void) | null,
+        onClose: null as (() => void) | null,
+        receive(data: any) { comm.onMsg?.({ content: { data } }); },
+        close() { comm.onClose?.(); }
+      };
       handler(comm, {});
       return comm;
     }
   };
-}
-
-function makeMockComm() {
-  const comm = {
-    send: jest.fn(),
-    onMsg: null as ((msg: any) => void) | null,
-    onClose: null as (() => void) | null,
-    receive(data: any) { comm.onMsg?.({ content: { data } }); },
-    close() { comm.onClose?.(); }
-  };
-  return comm;
 }
 
 describe('serviceRegistry', () => {
@@ -129,40 +124,32 @@ describe('serviceRegistry', () => {
   });
 
   describe('incoming actions', () => {
-    it('run action calls service.run with the cell ID', () => {
-      const runner = jest.fn();
-      service.register('cell-1', makeMockContext(), runner);
+    let ctx: ReturnType<typeof makeMockContext>;
+    let runner: jest.Mock;
+    let comm: ReturnType<ReturnType<typeof makeMockKernel>['openComm']>;
+
+    beforeEach(() => {
+      ctx = makeMockContext();
+      runner = jest.fn();
+      service.register('cell-1', ctx, runner);
       const kernel = makeMockKernel();
       registerCommTargetOnKernel(kernel);
-      const comm = kernel.openComm();
+      comm = kernel.openComm();
+    });
 
+    it('run action calls service.run with the cell ID', () => {
       comm.receive({ action: 'run', cellId: 'cell-1' });
-
       expect(runner).toHaveBeenCalledTimes(1);
     });
 
     it('setInputValue action calls service.setInputValue with correct arguments', () => {
-      const ctx = makeMockContext();
-      service.register('cell-1', ctx, jest.fn());
-      const kernel = makeMockKernel();
-      registerCommTargetOnKernel(kernel);
-      const comm = kernel.openComm();
-
       comm.receive({ action: 'setInputValue', cellId: 'cell-1', nodeId: 'n0', handleId: 'in0', value: 42 });
-
       expect(ctx._mockSetValue).toHaveBeenCalledWith('inputs', { nodeID: 'n0', id: 'in0' }, 42);
     });
 
     it('setGraph action calls service.setGraph with the provided graph', () => {
-      const ctx = makeMockContext();
-      service.register('cell-1', ctx, jest.fn());
-      const kernel = makeMockKernel();
-      registerCommTargetOnKernel(kernel);
-      const comm = kernel.openComm();
-
       const graph = { nodes: [], edges: [] };
       comm.receive({ action: 'setGraph', cellId: 'cell-1', graph });
-
       expect(ctx.newGraphInput).toHaveBeenCalledWith(graph);
     });
   });

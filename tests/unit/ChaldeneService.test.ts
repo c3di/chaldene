@@ -206,17 +206,16 @@ describe('ChaldeneService', () => {
   });
 
   describe('run', () => {
-    it('calls the registered runner for a known cell', () => {
+    it('calls the registered runner and returns true for a known cell', () => {
       const runner = jest.fn();
       service.register('cell-1', makeMockContext(), runner);
 
-      service.run('cell-1');
-
+      expect(service.run('cell-1')).toBe(true);
       expect(runner).toHaveBeenCalledTimes(1);
     });
 
-    it('does not throw for an unknown cell', () => {
-      expect(() => service.run('unknown')).not.toThrow();
+    it('returns false for an unknown cell', () => {
+      expect(service.run('unknown')).toBe(false);
     });
 
     it('calls only the correct runner when multiple cells are registered', () => {
