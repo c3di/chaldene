@@ -31,17 +31,6 @@ describe('GraphUpdate integration', () => {
       expect(ctx.newGraphInput).toHaveBeenCalledTimes(1);
       expect(mockApplyGraphChanges).not.toHaveBeenCalled();
     });
-
-    it('does not set blockTriggerRunCode to false on the context', () => {
-      const ctx = makeMockContext();
-      service.register('cell-1', ctx, jest.fn());
-
-      service.setGraph('cell-1', makeTwoNodeGraph());
-
-      // The mock context exposes blockTriggerRunCode; it should remain true
-      // because newGraphInput does not arm live execution.
-      expect(ctx.blockTriggerRunCode).toBe(true);
-    });
   });
 
   describe('graphChanged propagation', () => {

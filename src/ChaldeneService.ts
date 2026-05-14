@@ -21,6 +21,9 @@ export class ChaldeneService implements IChaldeneService {
   // ── Internal registration (called by VPWidget) ──────────────────────────────
 
   register(cellId: string, context: any, run: () => void): void {
+    const existing = this._cells.get(cellId);
+    if (existing) existing.context.removeGraphChangeListener(existing.graphListener);
+
     const graphListener = (graph: any) => {
       this._graphChanged.emit({
         cellId,
@@ -34,10 +37,9 @@ export class ChaldeneService implements IChaldeneService {
 
   deregister(cellId: string): void {
     const entry = this._cells.get(cellId);
-    if (entry) {
-      entry.context.removeGraphChangeListener(entry.graphListener);
-      this._cells.delete(cellId);
-    }
+    if (!entry) return;
+    entry.context.removeGraphChangeListener(entry.graphListener);
+    this._cells.delete(cellId);
     this._cellDisposed.emit(cellId);
   }
 

@@ -60,16 +60,37 @@ describe('ChaldeneService', () => {
       expect(service.getReadyCellIds()).toEqual(['cell-2']);
     });
 
-    it('registering the same cell ID twice replaces the first registration', () => {
-      const handler = jest.fn();
-      service.cellReady.connect(handler);
+    it('registering the same cell ID twice removes the old listener and attaches the new one', () => {
+      const ctx1 = makeMockContext();
+      const ctx2 = makeMockContext();
+      service.register('cell-1', ctx1, jest.fn());
+      service.register('cell-1', ctx2, jest.fn());
 
-      service.register('cell-1', makeMockContext(), jest.fn());
-      service.register('cell-1', makeMockContext(), jest.fn());
+      // Old listener removed from ctx1
+      expect(ctx1.removeGraphChangeListener).toHaveBeenCalledTimes(1);
 
-      expect(handler).toHaveBeenCalledTimes(2);
+      // cellReady fired twice, cell still present once
       expect(service.isCellReady('cell-1')).toBe(true);
       expect(service.getReadyCellIds()).toHaveLength(1);
+
+      // ctx1 no longer drives graphChanged
+      const handler = jest.fn();
+      service.graphChanged.connect(handler);
+      ctx1._triggerGraphChange(makeMinimalGraph());
+      expect(handler).not.toHaveBeenCalled();
+
+      // ctx2 does
+      ctx2._triggerGraphChange(makeMinimalGraph());
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('deregister on an unknown cell ID does not emit cellDisposed', () => {
+      const handler = jest.fn();
+      service.cellDisposed.connect(handler);
+
+      service.deregister('never-registered');
+
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 

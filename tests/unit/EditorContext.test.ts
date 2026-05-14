@@ -150,6 +150,40 @@ describe('EditorContext', () => {
     });
   });
 
+  // ── removeGraphChangeListener ───────────────────────────────────────────────
+
+  describe('removeGraphChangeListener', () => {
+    it('removed listener is not called on the next updateGraph', () => {
+      const ctx = makeEditorContext();
+      const listener = jest.fn();
+      ctx.addGraphChangeListener(listener);
+      ctx.removeGraphChangeListener(listener);
+
+      ctx.updateGraph(makeMinimalGraph() as any);
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('does not affect other registered listeners', () => {
+      const ctx = makeEditorContext();
+      const kept = jest.fn();
+      const removed = jest.fn();
+      ctx.addGraphChangeListener(kept);
+      ctx.addGraphChangeListener(removed);
+      ctx.removeGraphChangeListener(removed);
+
+      ctx.updateGraph(makeMinimalGraph() as any);
+
+      expect(kept).toHaveBeenCalledTimes(1);
+      expect(removed).not.toHaveBeenCalled();
+    });
+
+    it('does not throw when called with an unregistered function', () => {
+      const ctx = makeEditorContext();
+      expect(() => ctx.removeGraphChangeListener(jest.fn())).not.toThrow();
+    });
+  });
+
   // ── updateGraph listeners ───────────────────────────────────────────────────
 
   describe('updateGraph', () => {
