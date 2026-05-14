@@ -18,7 +18,6 @@ export default async function executeCodeCell(
   let code = '';
 
   const currentKernel: any = sessionContext.session?.kernel;
-  console.log('[chaldene] executeCodeCell called, kernel:', currentKernel?.id ?? 'NULL');
   // Ensure the comm target is registered on every execution — this is the
   // reliable fallback for cases where panel-level registration fires too late.
   registerCommTargetOnKernel(currentKernel);

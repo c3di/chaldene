@@ -31,11 +31,9 @@ export function registerCommTargetOnKernel(kernel: any): void {
   }
   if (_registeredKernels.has(kernel)) return;
   _registeredKernels.add(kernel);
-  console.log('[chaldene] registering chaldene:api comm target on kernel', kernel.id);
 
   const service = _service;
   kernel.registerCommTarget('chaldene:api', (comm: any, _openMsg: any) => {
-    console.log('[chaldene] comm_open received, ready cells:', service.getReadyCellIds());
     comm.send({ type: 'init', cellIds: service.getReadyCellIds() });
 
     const onCellReady = (_: any, cellId: string) => {

@@ -21,8 +21,6 @@ import { IChaldeneService } from './tokens';
 import { ChaldeneService } from './ChaldeneService';
 import { initChaldeneService, registerCommTargetOnKernel } from './serviceRegistry';
 
-console.log('[chaldene] module loading');
-
 const chaldeneVPCell: JupyterFrontEndPlugin<IChaldeneService> = {
   id: 'Chaldene: Add VP Cell',
   description: 'Visual Programming in JupyterLab for Image Processing',
@@ -46,7 +44,6 @@ function activateChaldeneVPCell(
   notebookTracker: INotebookTracker,
   fileBrowserFactory: IFileBrowserFactory
 ): IChaldeneService {
-  console.log('[chaldene] plugin activating');
   const service = new ChaldeneService();
   initChaldeneService(service);
   // Expose for notebook %%javascript cells and browser console debugging.
@@ -63,7 +60,6 @@ function activateChaldeneVPCell(
   });
 
   CodeCell.execute = executeCodeCell;
-  console.log('[chaldene] CodeCell.execute patched:', CodeCell.execute === executeCodeCell);
 
   NotebookActions.insertBelow = insertBelow;
   NotebookActions.insertAbove = insertAbove;
@@ -89,7 +85,6 @@ function activateChaldeneVPCell(
   const attachFromPanel = (panel: any) => {
     const tryNow = () => {
       const kernel = (panel.sessionContext.session as any)?.kernel;
-      console.log('[chaldene] tryNow kernel:', kernel?.id ?? 'NULL');
       if (kernel) registerCommTargetOnKernel(kernel);
     };
     tryNow();
