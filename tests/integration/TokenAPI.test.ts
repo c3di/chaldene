@@ -1,9 +1,3 @@
-/**
- * Integration: ChaldeneService registration lifecycle.
- *
- * Tests the complete round-trip: register → interact → deregister,
- * using realistic mock contexts rather than mounting React components.
- */
 import { ChaldeneService } from '../../src/ChaldeneService';
 import {
   makeMockContext,

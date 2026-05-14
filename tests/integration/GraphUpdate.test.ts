@@ -1,9 +1,3 @@
-/**
- * Integration: graph update semantics.
- *
- * Verifies that setGraph uses the newGraphInput path (which does NOT arm
- * live execution) rather than the applyGraphChanges path (which does).
- */
 import { ChaldeneService } from '../../src/ChaldeneService';
 import {
   makeMockContext,

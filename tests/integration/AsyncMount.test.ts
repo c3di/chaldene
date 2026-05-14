@@ -1,12 +1,3 @@
-/**
- * Integration: async registration timing.
- *
- * VPWidget.setContext (which calls service.register) is invoked after an
- * async React render cycle initiated by a requestAnimationFrame in
- * createVPWidget. These tests verify the service's behaviour before and
- * after registration completes, and the recommended pattern for callers
- * that may arrive before the cell is ready.
- */
 import { ChaldeneService } from '../../src/ChaldeneService';
 import {
   makeMockContext,

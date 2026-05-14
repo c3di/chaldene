@@ -13,8 +13,6 @@ describe('ChaldeneService', () => {
     service = new ChaldeneService();
   });
 
-  // ── Registration ────────────────────────────────────────────────────────────
-
   describe('registration', () => {
     it('isCellReady returns false for an unknown cell', () => {
       expect(service.isCellReady('unknown')).toBe(false);
@@ -94,8 +92,6 @@ describe('ChaldeneService', () => {
     });
   });
 
-  // ── getGraph ────────────────────────────────────────────────────────────────
-
   describe('getGraph', () => {
     it('returns undefined for an unknown cell', () => {
       expect(service.getGraph('unknown')).toBeUndefined();
@@ -141,8 +137,6 @@ describe('ChaldeneService', () => {
     });
   });
 
-  // ── setGraph ────────────────────────────────────────────────────────────────
-
   describe('setGraph', () => {
     it('returns false for an unknown cell', () => {
       expect(service.setGraph('unknown', makeMinimalGraph())).toBe(false);
@@ -174,8 +168,6 @@ describe('ChaldeneService', () => {
       expect(ctx2.newGraphInput).not.toHaveBeenCalled();
     });
   });
-
-  // ── setInputValue ───────────────────────────────────────────────────────────
 
   describe('setInputValue', () => {
     it('returns false for an unknown cell', () => {
@@ -213,8 +205,6 @@ describe('ChaldeneService', () => {
     });
   });
 
-  // ── run ─────────────────────────────────────────────────────────────────────
-
   describe('run', () => {
     it('calls the registered runner for a known cell', () => {
       const runner = jest.fn();
@@ -241,8 +231,6 @@ describe('ChaldeneService', () => {
       expect(runner2).not.toHaveBeenCalled();
     });
   });
-
-  // ── graphChanged signal ─────────────────────────────────────────────────────
 
   describe('graphChanged signal', () => {
     it('fires when a context graph-change listener is triggered', async () => {

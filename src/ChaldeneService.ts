@@ -18,8 +18,6 @@ export class ChaldeneService implements IChaldeneService {
   private readonly _cellDisposed = new Signal<this, string>(this);
   private readonly _graphChanged = new Signal<this, IGraphChangedArgs>(this);
 
-  // ── Internal registration (called by VPWidget) ──────────────────────────────
-
   register(cellId: string, context: any, run: () => void): void {
     const existing = this._cells.get(cellId);
     if (existing) existing.context.removeGraphChangeListener(existing.graphListener);
@@ -42,8 +40,6 @@ export class ChaldeneService implements IChaldeneService {
     this._cells.delete(cellId);
     this._cellDisposed.emit(cellId);
   }
-
-  // ── IChaldeneService ────────────────────────────────────────────────────────
 
   isCellReady(cellId: string): boolean {
     return this._cells.has(cellId);

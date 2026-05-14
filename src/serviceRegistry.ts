@@ -14,12 +14,8 @@ export function getChaldeneService(): ChaldeneService | null {
   return _service;
 }
 
-/**
- * Register the 'chaldene:api' comm target on a kernel if not already done.
- * Called both from the plugin activation path (index.ts) and from every cell
- * execution (ExecuteCodeCell.ts) so the target is guaranteed to be present
- * before Python code runs ChaldeneClient().
- */
+// Called from both activation (index.ts) and every cell execution (ExecuteCodeCell.ts)
+// so the target is guaranteed present before Python code runs ChaldeneClient().
 export function registerCommTargetOnKernel(kernel: any): void {
   if (!_service) {
     console.warn('[chaldene] registerCommTargetOnKernel: service not initialised');

@@ -1,7 +1,6 @@
 import { Token } from '@lumino/coreutils';
 import { type ISignal } from '@lumino/signaling';
 
-// ── Public graph types ────────────────────────────────────────────────────────
 // Self-contained — no @xyflow/react dependency so external extensions can
 // import this file without pulling in ReactFlow.
 
@@ -34,17 +33,12 @@ export interface IGraphChangedArgs {
   graph: IGraph;
 }
 
-// ── Service interface ─────────────────────────────────────────────────────────
-
 export interface IChaldeneService {
-  // Discovery
   isCellReady(cellId: string): boolean;
   getReadyCellIds(): string[];
 
-  // Read
   getGraph(cellId: string): IGraph | undefined;
 
-  // Write
   setGraph(cellId: string, graph: IGraph): boolean;
   setInputValue(
     cellId: string,
@@ -53,10 +47,8 @@ export interface IChaldeneService {
     value: unknown
   ): boolean;
 
-  // Execution
   run(cellId: string): void;
 
-  // Observation
   readonly cellReady: ISignal<IChaldeneService, string>;
   readonly cellDisposed: ISignal<IChaldeneService, string>;
   readonly graphChanged: ISignal<IChaldeneService, IGraphChangedArgs>;

@@ -37,8 +37,6 @@ describe('serviceRegistry', () => {
     initChaldeneService(service);
   });
 
-  // ── Kernel registration ─────────────────────────────────────────────────────
-
   describe('registerCommTargetOnKernel', () => {
     it('registers the chaldene:api target on the kernel', () => {
       const kernel = makeMockKernel();
@@ -76,8 +74,6 @@ describe('serviceRegistry', () => {
     });
   });
 
-  // ── comm_open: init message ─────────────────────────────────────────────────
-
   describe('comm_open', () => {
     it('sends init with empty cellIds when no cells are registered', () => {
       const kernel = makeMockKernel();
@@ -94,8 +90,6 @@ describe('serviceRegistry', () => {
       expect(comm.send).toHaveBeenCalledWith({ type: 'init', cellIds: ['cell-1'] });
     });
   });
-
-  // ── Push events ─────────────────────────────────────────────────────────────
 
   describe('push events', () => {
     it('sends cell_ready when a cell registers after comm_open', () => {
@@ -133,8 +127,6 @@ describe('serviceRegistry', () => {
       expect(comm.send).not.toHaveBeenCalled();
     });
   });
-
-  // ── Incoming actions ────────────────────────────────────────────────────────
 
   describe('incoming actions', () => {
     it('run action calls service.run with the cell ID', () => {

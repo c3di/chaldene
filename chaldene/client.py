@@ -29,8 +29,6 @@ class ChaldeneClient:
         self._comm.on_msg(self._handle_msg)
         self._comm.open()
 
-    # ── Internal ────────────────────────────────────────────────────────────────
-
     def _handle_msg(self, msg: dict) -> None:
         data = msg['content']['data']
         t = data.get('type')
@@ -46,13 +44,9 @@ class ChaldeneClient:
             except ValueError:
                 pass
 
-    # ── Discovery ───────────────────────────────────────────────────────────────
-
     def get_ready_cell_ids(self) -> list[str]:
         """Return the IDs of all VP cells currently rendered in the notebook."""
         return list(self._ready_cells)
-
-    # ── Write ───────────────────────────────────────────────────────────────────
 
     def set_input(
         self,
@@ -74,13 +68,9 @@ class ChaldeneClient:
         """Replace the entire graph of a VP cell."""
         self._comm.send({'action': 'setGraph', 'cellId': cell_id, 'graph': graph})
 
-    # ── Execution ───────────────────────────────────────────────────────────────
-
     def run(self, cell_id: str) -> None:
         """Trigger execution of a VP cell."""
         self._comm.send({'action': 'run', 'cellId': cell_id})
-
-    # ── Lifecycle ───────────────────────────────────────────────────────────────
 
     def close(self) -> None:
         """Close the comm channel."""
