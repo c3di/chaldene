@@ -18,9 +18,9 @@ export default async function executeCodeCell(
   let code = '';
 
   const currentKernel: any = sessionContext.session?.kernel;
-  // Ensure the comm target is registered on every execution — this is the
-  // reliable fallback for cases where panel-level registration fires too late.
-  registerCommTargetOnKernel(currentKernel);
+  // Ensure the comm target is registered on every execution — reliable
+  // fallback for cases where panel-level registration fires too late.
+  if (currentKernel) registerCommTargetOnKernel(currentKernel);
   if (currentKernel && isVisualCode) {
     (cell.editor as any).editor.listenToInspectResult(currentKernel);
   }

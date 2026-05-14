@@ -272,14 +272,7 @@ describe('ChaldeneService', () => {
 
       ctx._triggerGraphChange(makeMinimalGraph());
 
-      // The listener was added before deregister so it still lives in
-      // ctx's listener array, but graphChanged should not fire because
-      // ctx is no longer in _cells. Note: the listener on ctx is still
-      // registered (we don't remove it); if the real context were to call
-      // its listeners it would still emit. This test verifies the listener
-      // was wired so that the signal fires — the isolation boundary is the
-      // cell map, not the listener itself.
-      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).not.toHaveBeenCalled();
     });
   });
 });

@@ -6,9 +6,14 @@ import {
 } from './tokens';
 import { graphWithoutEditorContext } from './ReactVP/Utils';
 
+interface CellEntry {
+  context: any;
+  run: () => void;
+  graphListener: (graph: any) => void;
+}
+
 export class ChaldeneService implements IChaldeneService {
-  private readonly _cells = new Map<string, any>();
-  private readonly _runners = new Map<string, () => void>();
+  private readonly _cells = new Map<string, CellEntry>();
   private readonly _cellReady = new Signal<this, string>(this);
   private readonly _cellDisposed = new Signal<this, string>(this);
   private readonly _graphChanged = new Signal<this, IGraphChangedArgs>(this);
@@ -16,22 +21,23 @@ export class ChaldeneService implements IChaldeneService {
   // ── Internal registration (called by VPWidget) ──────────────────────────────
 
   register(cellId: string, context: any, run: () => void): void {
-    this._cells.set(cellId, context);
-    this._runners.set(cellId, run);
-
-    context.addGraphChangeListener((graph: any) => {
+    const graphListener = (graph: any) => {
       this._graphChanged.emit({
         cellId,
         graph: graphWithoutEditorContext(graph) as unknown as IGraph
       });
-    });
-
+    };
+    this._cells.set(cellId, { context, run, graphListener });
+    context.addGraphChangeListener(graphListener);
     this._cellReady.emit(cellId);
   }
 
   deregister(cellId: string): void {
-    this._cells.delete(cellId);
-    this._runners.delete(cellId);
+    const entry = this._cells.get(cellId);
+    if (entry) {
+      entry.context.removeGraphChangeListener(entry.graphListener);
+      this._cells.delete(cellId);
+    }
     this._cellDisposed.emit(cellId);
   }
 
@@ -46,19 +52,19 @@ export class ChaldeneService implements IChaldeneService {
   }
 
   getGraph(cellId: string): IGraph | undefined {
-    const context = this._cells.get(cellId);
-    if (!context?.graph) {
+    const entry = this._cells.get(cellId);
+    if (!entry?.context.graph) {
       return undefined;
     }
-    return graphWithoutEditorContext(context.graph) as unknown as IGraph;
+    return graphWithoutEditorContext(entry.context.graph) as unknown as IGraph;
   }
 
   setGraph(cellId: string, graph: IGraph): boolean {
-    const context = this._cells.get(cellId);
-    if (!context) {
+    const entry = this._cells.get(cellId);
+    if (!entry) {
       return false;
     }
-    context.newGraphInput(graph);
+    entry.context.newGraphInput(graph);
     return true;
   }
 
@@ -68,16 +74,16 @@ export class ChaldeneService implements IChaldeneService {
     handleId: string,
     value: unknown
   ): boolean {
-    const context = this._cells.get(cellId);
-    if (!context) {
+    const entry = this._cells.get(cellId);
+    if (!entry) {
       return false;
     }
-    context.action('graph').setValue('inputs', { nodeID: nodeId, id: handleId }, value);
+    entry.context.action('graph').setValue('inputs', { nodeID: nodeId, id: handleId }, value);
     return true;
   }
 
   run(cellId: string): void {
-    this._runners.get(cellId)?.();
+    this._cells.get(cellId)?.run();
   }
 
   get cellReady(): Signal<this, string> {

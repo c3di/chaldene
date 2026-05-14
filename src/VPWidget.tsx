@@ -175,7 +175,7 @@ export class VPWidget extends ReactWidget {
     // NotebookActions.run, which runs whatever cell happens to be active and
     // would re-run an unrelated cell (e.g. the caller's slider cell).
     for (const cell of content.widgets) {
-      if ((cell.model.sharedModel as any).getId?.() === this._cellId) {
+      if ((cell.model.sharedModel as ISharedBaseCell).getId() === this._cellId) {
         this.onStartRun();
         CodeCell.execute(cell as any, context.sessionContext)
           .catch((error: Error) => {

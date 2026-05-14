@@ -38,6 +38,7 @@ export function makeTwoNodeGraph(): IGraph {
 export interface IMockContext {
   graph: IGraph;
   addGraphChangeListener: jest.Mock;
+  removeGraphChangeListener: jest.Mock;
   newGraphInput: jest.Mock;
   action: jest.Mock;
   blockTriggerRunCode: boolean;
@@ -61,6 +62,11 @@ export function makeMockContext(graph?: IGraph): IMockContext {
 
     addGraphChangeListener: jest.fn((fn: (g: IGraph) => void) => {
       graphListeners.push(fn);
+    }),
+
+    removeGraphChangeListener: jest.fn((fn: (g: IGraph) => void) => {
+      const i = graphListeners.indexOf(fn);
+      if (i !== -1) graphListeners.splice(i, 1);
     }),
 
     newGraphInput: jest.fn((g: IGraph) => {

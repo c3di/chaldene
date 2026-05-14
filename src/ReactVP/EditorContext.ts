@@ -152,6 +152,11 @@ export default class EditorContext {
     this.graphChangeListeners.push(listener);
   };
 
+  public removeGraphChangeListener = (listener: (graph: Graph) => void): void => {
+    const i = this.graphChangeListeners.indexOf(listener);
+    if (i !== -1) this.graphChangeListeners.splice(i, 1);
+  };
+
   /*
    * @param identifier: string - editorID_nodeID_handleID
    */

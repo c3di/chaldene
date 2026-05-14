@@ -25,11 +25,7 @@ export function registerCommTargetOnKernel(kernel: any): void {
     console.warn('[chaldene] registerCommTargetOnKernel: service not initialised');
     return;
   }
-  if (!kernel) {
-    console.warn('[chaldene] registerCommTargetOnKernel: kernel is null');
-    return;
-  }
-  if (_registeredKernels.has(kernel)) return;
+  if (!kernel || _registeredKernels.has(kernel)) return;
   _registeredKernels.add(kernel);
 
   const service = _service;
