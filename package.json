@@ -29,10 +29,11 @@
         "url": "https://github.com/c3di/chaldene.git.git"
     },
     "scripts": {
-        "build": "jlpm build:lib && jlpm build:labextension:dev",
-        "build:prod": "jlpm clean && jlpm build:lib:prod && jlpm build:labextension",
+        "build": "jlpm build:lib && jlpm build:labextension:dev && jlpm fix:labextension:paths",
+        "build:prod": "jlpm clean && jlpm build:lib:prod && jlpm build:labextension && jlpm fix:labextension:paths",
         "build:labextension": "jupyter labextension build .",
         "build:labextension:dev": "jupyter labextension build --development True .",
+        "fix:labextension:paths": "node scripts/fix-labextension-paths.js",
         "build:lib": "tsc --sourceMap",
         "build:lib:prod": "tsc",
         "clean": "jlpm clean:lib",

@@ -7,8 +7,8 @@
 import { Widget } from '@lumino/widgets';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { CodeEditor } from '@jupyterlab/codeeditor';
+import { CodeCell } from '@jupyterlab/cells';
 import { VPEditor, type Graph, type EditorContext } from './ReactVP';
-import { NotebookActions } from '@jupyterlab/notebook';
 import { PathExt } from '@jupyterlab/coreutils';
 import { getChaldeneService } from './serviceRegistry';
 import type { ISharedBaseCell } from '@jupyter/ydoc';
@@ -165,37 +165,29 @@ export class VPWidget extends ReactWidget {
   }
 
   run(): void {
-    if (this._hostNotebookPanel) {
-      const { content, context, sessionDialogs, translator } =
-        this._hostNotebookPanel;
-      this.onStartRun();
-      // avoid jump to edit mode of cell
-      Object.defineProperty(this._hostNotebookPanel.content, 'mode', {
-        get: function () {
-          return this._mode;
-        },
-        set: function () {
-          // no-op
-        },
-        configurable: true
-      });
-      NotebookActions.run(
-        content,
-        context.sessionContext,
-        sessionDialogs,
-        translator
-      )
-        .catch((error: Error) => {
-          console.error('Error while running cell:', error);
-        })
-        .finally(() => {
-          this.onEndRun();
-          // back to original mode setting
-          delete this._hostNotebookPanel.content.mode;
-        });
-    } else {
+    if (!this._hostNotebookPanel) {
       console.error('No active notebook panel found');
+      return;
     }
+    const { content, context } = this._hostNotebookPanel;
+
+    // Execute this specific VP cell directly rather than via
+    // NotebookActions.run, which runs whatever cell happens to be active and
+    // would re-run an unrelated cell (e.g. the caller's slider cell).
+    for (const cell of content.widgets) {
+      if ((cell.model.sharedModel as any).getId?.() === this._cellId) {
+        this.onStartRun();
+        CodeCell.execute(cell as any, context.sessionContext)
+          .catch((error: Error) => {
+            console.error('Error while running cell:', error);
+          })
+          .finally(() => {
+            this.onEndRun();
+          });
+        return;
+      }
+    }
+    console.error('VP cell not found in notebook, id:', this._cellId);
   }
 
   render(): JSX.Element {

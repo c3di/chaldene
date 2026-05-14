@@ -30,6 +30,7 @@ dependencies = [
      "scikit-image==0.25.2",
      "scipy==1.15.2",
      "comm==0.2.2",
+     "ipywidgets>=7.0.0",
      "opencv-python-headless==4.11.0.86",
      "matplotlib==3.10.1",
      "chaldene-super-resolution",

@@ -108,7 +108,7 @@ import ipywidgets as widgets
     lower=widgets.FloatSlider(
         min=0.0, max=0.85, step=0.05, value=0.2,
         description='lower:',
-        continuous_update=False,
+        continuous_update=True,
     )
 )
 def on_threshold_change(lower):

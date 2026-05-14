@@ -19,7 +19,9 @@ import { defaultNodeSpecs } from './NodeSpec';
 import { insertAbove, insertBelow } from './Action';
 import { IChaldeneService } from './tokens';
 import { ChaldeneService } from './ChaldeneService';
-import { initChaldeneService } from './serviceRegistry';
+import { initChaldeneService, registerCommTargetOnKernel } from './serviceRegistry';
+
+console.log('[chaldene] module loading');
 
 const chaldeneVPCell: JupyterFrontEndPlugin<IChaldeneService> = {
   id: 'Chaldene: Add VP Cell',
@@ -44,6 +46,7 @@ function activateChaldeneVPCell(
   notebookTracker: INotebookTracker,
   fileBrowserFactory: IFileBrowserFactory
 ): IChaldeneService {
+  console.log('[chaldene] plugin activating');
   const service = new ChaldeneService();
   initChaldeneService(service);
   // Expose for notebook %%javascript cells and browser console debugging.
@@ -60,6 +63,7 @@ function activateChaldeneVPCell(
   });
 
   CodeCell.execute = executeCodeCell;
+  console.log('[chaldene] CodeCell.execute patched:', CodeCell.execute === executeCodeCell);
 
   NotebookActions.insertBelow = insertBelow;
   NotebookActions.insertAbove = insertAbove;
@@ -81,62 +85,27 @@ function activateChaldeneVPCell(
 
   // Register a comm target so Python code can call the service directly
   // via ChaldeneClient without display(Javascript).
-  const attachComm = (kernel: any) => registerCommTarget(kernel, service);
-  notebookTracker.widgetAdded.connect((_, panel) => {
+  // Use a WeakSet to avoid double-registering the same kernel instance.
+  const attachFromPanel = (panel: any) => {
+    const tryNow = () => {
+      const kernel = (panel.sessionContext.session as any)?.kernel;
+      console.log('[chaldene] tryNow kernel:', kernel?.id ?? 'NULL');
+      if (kernel) registerCommTargetOnKernel(kernel);
+    };
+    tryNow();
+    // sessionContext.ready resolves once the kernel is fully connected —
+    // more reliable than checking session?.kernel at widgetAdded time.
+    void (panel.sessionContext.ready as Promise<void>).then(tryNow);
     panel.sessionContext.kernelChanged.connect((_: any, args: any) => {
-      if (args.newValue) {
-        attachComm(args.newValue);
-      }
+      if (args.newValue) registerCommTargetOnKernel(args.newValue);
     });
-    const kernel = (panel.sessionContext.session as any)?.kernel;
-    if (kernel) {
-      attachComm(kernel);
-    }
-  });
-  notebookTracker.forEach(panel => {
-    const kernel = (panel.sessionContext.session as any)?.kernel;
-    if (kernel) {
-      attachComm(kernel);
-    }
-  });
+  };
+  notebookTracker.widgetAdded.connect((_, panel) => attachFromPanel(panel));
+  notebookTracker.forEach((panel: any) => attachFromPanel(panel));
 
   return service;
 }
 
-function registerCommTarget(kernel: any, service: ChaldeneService): void {
-  kernel.registerCommTarget('chaldene:api', (comm: any, _openMsg: any) => {
-    comm.send({ type: 'init', cellIds: service.getReadyCellIds() });
-
-    const onCellReady = (_: any, cellId: string) => {
-      comm.send({ type: 'cell_ready', cellId });
-    };
-    const onCellDisposed = (_: any, cellId: string) => {
-      comm.send({ type: 'cell_disposed', cellId });
-    };
-    service.cellReady.connect(onCellReady);
-    service.cellDisposed.connect(onCellDisposed);
-
-    comm.onMsg = (msg: any) => {
-      const d = msg.content.data;
-      switch (d.action) {
-        case 'run':
-          service.run(d.cellId);
-          break;
-        case 'setInputValue':
-          service.setInputValue(d.cellId, d.nodeId, d.handleId, d.value);
-          break;
-        case 'setGraph':
-          service.setGraph(d.cellId, d.graph);
-          break;
-      }
-    };
-
-    comm.onClose = () => {
-      service.cellReady.disconnect(onCellReady);
-      service.cellDisposed.disconnect(onCellDisposed);
-    };
-  });
-}
 
 const plugins: Array<JupyterFrontEndPlugin<any>> = [chaldeneVPCell];
 
