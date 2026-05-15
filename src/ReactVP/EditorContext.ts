@@ -209,6 +209,16 @@ export default class EditorContext {
     return codes;
   };
 
+  public PWD = () => {
+    const graphToBeExecuted = this.getGraphToBeExecuted(false);
+    if (!graphToBeExecuted) {
+      return null;
+    }
+    this.codeGeneratorRegistry
+      .get('PWD')
+      .codeFromGraph(this.editorID, graphToBeExecuted, false);
+  };
+
   public focus = (): void => {
     this.action('focusTracker').setFocused(true);
   };
