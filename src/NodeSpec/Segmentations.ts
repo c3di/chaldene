@@ -101,7 +101,6 @@ export const regionpropsNodeSpec: computeNodeSpec = {
     ) => {
       return `from skimage import measure
 import pandas as pd
-from IPython.display import display
 ${outputs.summary} = measure.regionprops_table(${inputs.segments}, properties=['label', 'centroid', 'num_pixels'])
 data = pd.DataFrame(${outputs.summary})
 total_labels = len(data['label'])
