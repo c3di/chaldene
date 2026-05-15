@@ -86,6 +86,17 @@ export class ChaldeneService implements IChaldeneService {
     return entry !== undefined;
   }
 
+  // handle_id format: "editorID_nodeID_handleID" — editorID matches context.editorID
+  routeInspection(handle_id: string, data: any): void {
+    const editorID = handle_id.split('_')[0];
+    for (const entry of this._cells.values()) {
+      if (entry.context.editorID === editorID) {
+        entry.context.action('graph').updateInspection(handle_id, data);
+        return;
+      }
+    }
+  }
+
   get cellReady(): Signal<this, string> {
     return this._cellReady;
   }

@@ -39,11 +39,17 @@ describe('serviceRegistry', () => {
       expect(kernel.registerCommTarget).toHaveBeenCalledWith('chaldene:api', expect.any(Function));
     });
 
+    it('registers the inspection target on the kernel', () => {
+      const kernel = makeMockKernel();
+      registerCommTargetOnKernel(kernel);
+      expect(kernel.registerCommTarget).toHaveBeenCalledWith('inspection', expect.any(Function));
+    });
+
     it('does not register the same kernel twice', () => {
       const kernel = makeMockKernel();
       registerCommTargetOnKernel(kernel);
       registerCommTargetOnKernel(kernel);
-      expect(kernel.registerCommTarget).toHaveBeenCalledTimes(1);
+      expect(kernel.registerCommTarget).toHaveBeenCalledTimes(2); // inspection + chaldene:api
     });
 
     it('registers two different kernel objects independently', () => {
@@ -51,8 +57,8 @@ describe('serviceRegistry', () => {
       const kernel2 = makeMockKernel();
       registerCommTargetOnKernel(kernel1);
       registerCommTargetOnKernel(kernel2);
-      expect(kernel1.registerCommTarget).toHaveBeenCalledTimes(1);
-      expect(kernel2.registerCommTarget).toHaveBeenCalledTimes(1);
+      expect(kernel1.registerCommTarget).toHaveBeenCalledTimes(2); // inspection + chaldene:api
+      expect(kernel2.registerCommTarget).toHaveBeenCalledTimes(2); // inspection + chaldene:api
     });
 
     it('does nothing when kernel is null', () => {

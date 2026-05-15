@@ -25,6 +25,13 @@ export function registerCommTargetOnKernel(kernel: any): void {
   _registeredKernels.add(kernel);
 
   const service = _service;
+  kernel.registerCommTarget('inspection', (comm: any, _openMsg: any) => {
+    comm.onMsg = (msg: any) => {
+      const { handle_id, ...data } = msg.content.data;
+      if (handle_id) service.routeInspection(handle_id, data);
+    };
+  });
+
   kernel.registerCommTarget('chaldene:api', (comm: any, _openMsg: any) => {
     comm.send({ type: 'init', cellIds: service.getReadyCellIds() });
 
