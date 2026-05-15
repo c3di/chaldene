@@ -171,6 +171,10 @@ export class VPWidget extends ReactWidget {
       return;
     }
     const { content, context } = this._hostNotebookPanel;
+    const currentKernel = context.sessionContext.session?.kernel;
+    if (currentKernel) {
+      this.listenToInspectResult(currentKernel);
+    }
 
     // Execute this specific VP cell directly rather than via
     // NotebookActions.run, which runs whatever cell happens to be active and
