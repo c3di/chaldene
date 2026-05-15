@@ -147,6 +147,7 @@ export const saveImageNodeSpec: computeNodeSpec = {
     ) => {
       return `from skimage import io
 from os.path import join
+from im2im import im2im
 in_im = im2im(${inputs.image}, 'numpy.uint8')
 io.imsave(join(${inputs.destination}, ${inputs.name}), in_im.raw_image)`;
     }
