@@ -57,21 +57,24 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 /* Hide native range thumb inside Chaldene's own slider panels only */
-.slider-container input[type="range"]::-webkit-slider-thumb {
+.slider-container input[type="range"]::-webkit-slider-thumb,
+.range-slider input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 0;
   height: 0;
   background: transparent;
 }
 
-.slider-container input[type="range"]::-moz-range-thumb {
+.slider-container input[type="range"]::-moz-range-thumb,
+.range-slider input[type="range"]::-moz-range-thumb {
   appearance: none;
   width: 0;
   height: 0;
   background: transparent;
 }
 
-.slider-container input[type="range"]::-ms-thumb {
+.slider-container input[type="range"]::-ms-thumb,
+.range-slider input[type="range"]::-ms-thumb {
   appearance: none;
   width: 0;
   height: 0;
