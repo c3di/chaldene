@@ -507,7 +507,7 @@ nb = {
     "cells": cells
 }
 
-out = "token_api_tutorial.ipynb"
+out = "api_tutorials/token_api_tutorial.ipynb"
 with open(out, "w", encoding="utf-8") as f:
     json.dump(nb, f, indent=1, ensure_ascii=False)
 
