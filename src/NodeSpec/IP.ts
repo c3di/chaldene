@@ -90,7 +90,7 @@ export const denoiseBilateralNodeSpec: computeNodeSpec = {
       inputs: Record<string, string>,
       outputs: Record<string, string>
     ) => {
-      return `from im2im import Image as IM
+      return `from im2im import Image as IM, im2im
 from skimage import restoration
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.outputImage} = IM(restoration.denoise_bilateral(in_im.raw_image), in_im.metadata)`;
@@ -147,7 +147,7 @@ export const GaussianBlurNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       return `from skimage.filters import gaussian
-from im2im import Image as IM
+from im2im import Image as IM, im2im
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.image} = IM(gaussian(in_im.raw_image, sigma=${inputs.sigma}, mode = '${inputs.mode}', preserve_range=True), in_im.metadata)`;
     }
@@ -184,7 +184,7 @@ export const CLAHENodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       const import1 = 'from skimage.exposure import equalize_adapthist';
-      const import2 = 'from im2im import Image as IM';
+      const import2 = 'from im2im import Image as IM, im2im';
 
       return `${import1}
 ${import2}
@@ -222,7 +222,7 @@ export const CannyNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       const import1 = 'from skimage.feature import canny';
-      const import2 = 'from im2im import Image as IM';
+      const import2 = 'from im2im import Image as IM, im2im';
 
       return `${import1}
 ${import2}

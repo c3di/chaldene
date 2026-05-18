@@ -54,6 +54,7 @@ export const watershedNodeSpec: computeNodeSpec = {
       return `from skimage import segmentation, filters
 from scipy import ndimage as ndi
 from skimage.color import label2rgb
+from im2im import Image as IM, im2im
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 if in_im.raw_image.ndim == 2:
     region_of_interest = in_im.raw_image >=0.9

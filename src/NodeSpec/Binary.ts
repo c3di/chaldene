@@ -28,7 +28,7 @@ export const autoBinarizeNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       return `from skimage.filters import threshold_isodata
-from im2im import Image as IM
+from im2im import Image as IM, im2im
 from skimage.color import gray2rgb
 import numpy as np
  
@@ -80,7 +80,7 @@ export const thresholdNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       return `import numpy as np
-from im2im import Image as IM
+from im2im import Image as IM, im2im
 
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')\n
 
@@ -124,7 +124,7 @@ export const invertNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       const import1 = 'from skimage import util';
-      const import2 = 'from im2im import Image as IM';
+      const import2 = 'from im2im import Image as IM, im2im';
 
       return `${import1}
 ${import2}
@@ -163,7 +163,7 @@ export const binaryDilationNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       return `from skimage import morphology
-from im2im import Image as IM
+from im2im import Image as IM, im2im
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.image} = IM(morphology.binary_dilation(in_im.raw_image), in_im.metadata)`;
     }
@@ -200,7 +200,7 @@ export const binaryErosionNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       return `from skimage import morphology
-from im2im import Image as IM
+from im2im import Image as IM, im2im
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.image} = IM(morphology.binary_erosion(in_im.raw_image), in_im.metadata)`;
     }
@@ -237,7 +237,7 @@ export const binaryOpeningNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       return `from skimage import morphology
-from im2im import Image as IM
+from im2im import Image as IM, im2im
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.image} = IM(morphology.binary_opening(in_im.raw_image), in_im.metadata)`;
     }
@@ -274,7 +274,7 @@ export const binaryClosingNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       return `from skimage import morphology
-from im2im import Image as IM
+from im2im import Image as IM, im2im
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.image} = IM(morphology.binary_closing(in_im.raw_image), in_im.metadata)`;
     }
@@ -323,7 +323,7 @@ export const removeSmallHolesNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       return `from skimage import morphology
-from im2im import Image as IM
+from im2im import Image as IM, im2im
 from numpy import float64
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.image} = IM(morphology.remove_small_holes(in_im.raw_image.astype(bool), area_threshold=${inputs.area_threshold}).astype(float64), in_im.metadata)`;
@@ -371,7 +371,7 @@ export const removeSmallObjectsNodeSpec: computeNodeSpec = {
       outputs: Record<string, string>
     ) => {
       return `from skimage import morphology
-from im2im import Image as IM
+from im2im import Image as IM, im2im
 from numpy import float64
 in_im = im2im(${inputs.image}, 'numpy.gray_float64(0to1)')
 ${outputs.image} = IM(morphology.remove_small_objects(in_im.raw_image.astype(bool), min_size=${inputs.min_size}).astype(float64), in_im.metadata)`;
@@ -427,7 +427,7 @@ from skimage.measure import label
 from skimage.segmentation import watershed
 from skimage.morphology import binary_opening
 from numpy import float64
-from im2im import Image as IM
+from im2im import Image as IM, im2im
 
 def split_touching_objects(binary, sigma: float = 3.5):
     """
