@@ -101,6 +101,17 @@ export default function PanelContextMenu({
             void navigator.clipboard.writeText(code);
           }
         }
+      },
+      {
+        icon: <CodeIcon />,
+        displayLabel: 'Export PWD',
+        description: 'Download files for Python workflow definition (PWD)',
+        onClick: () => {
+          const code = editorContext?.PWD();
+          if (code) {
+            void navigator.clipboard.writeText(code);
+          }
+        }
       }
     ];
   }, [editorContext, forWhom]);

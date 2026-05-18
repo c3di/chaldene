@@ -1,4 +1,5 @@
 import CodeGeneratorRegistry from './CodeGeneratorRegistry';
+import PWDGenerator from './PWDGenerator';
 import PythonCodeGenerator from './PythonCodeGenerator';
 
 export type {
@@ -16,4 +17,7 @@ export function registerCodeGenerator(
 }
 
 const pythonCodeGenerator = new PythonCodeGenerator();
+const pwdGenerator = new PWDGenerator();
+
+registerCodeGenerator('PWD', pwdGenerator);
 registerCodeGenerator('Python', pythonCodeGenerator);

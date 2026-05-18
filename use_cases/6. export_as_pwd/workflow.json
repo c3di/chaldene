@@ -1,0 +1,269 @@
+{
+  "version": "0.1.0",
+  "nodes": [
+    {
+      "id": 0,
+      "type": "function",
+      "value": "workflow.read_image"
+    },
+    {
+      "id": 1,
+      "type": "function",
+      "value": "workflow.remove_small_objects"
+    },
+    {
+      "id": 2,
+      "type": "function",
+      "value": "workflow.invert"
+    },
+    {
+      "id": 3,
+      "type": "function",
+      "value": "workflow.split_touching_objects"
+    },
+    {
+      "id": 4,
+      "type": "function",
+      "value": "workflow.remove_small_objects"
+    },
+    {
+      "id": 5,
+      "type": "function",
+      "value": "workflow.summary"
+    },
+    {
+      "id": 6,
+      "type": "function",
+      "value": "workflow.save_image"
+    },
+    {
+      "id": 7,
+      "type": "function",
+      "value": "workflow.save_to_csv"
+    },
+    {
+      "id": 8,
+      "type": "function",
+      "value": "workflow.threshold"
+    },
+    {
+      "id": 9,
+      "type": "function",
+      "value": "workflow.watershed_segmentation"
+    },
+    {
+      "id": 10,
+      "type": "input",
+      "value": "grain.png",
+      "name": "path"
+    },
+    {
+      "id": 11,
+      "type": "input",
+      "value": "GRAY",
+      "name": "mode"
+    },
+    {
+      "id": 12,
+      "type": "input",
+      "value": 72,
+      "name": "min_size"
+    },
+    {
+      "id": 13,
+      "type": "input",
+      "value": 4,
+      "name": "sigma"
+    },
+    {
+      "id": 14,
+      "type": "input",
+      "value": 68,
+      "name": "min_size"
+    },
+    {
+      "id": 15,
+      "type": "input",
+      "value": "result.png",
+      "name": "name"
+    },
+    {
+      "id": 16,
+      "type": "input",
+      "value": "",
+      "name": "destination"
+    },
+    {
+      "id": 17,
+      "type": "input",
+      "value": "export.csv",
+      "name": "name"
+    },
+    {
+      "id": 18,
+      "type": "input",
+      "value": "",
+      "name": "destination"
+    },
+    {
+      "id": 19,
+      "type": "input",
+      "value": [
+        0.06,
+        0.71
+      ],
+      "name": "range"
+    },
+    {
+      "id": 20,
+      "type": "input",
+      "value": null,
+      "name": "underlay_image"
+    },
+    {
+      "id": 21,
+      "type": "input",
+      "value": 0.1,
+      "name": "granularity"
+    },
+    {
+      "id": 22,
+      "type": "output",
+      "name": "result"
+    }
+  ],
+  "edges": [
+    {
+      "target": 0,
+      "targetPort": "path",
+      "source": 10,
+      "sourcePort": null
+    },
+    {
+      "target": 0,
+      "targetPort": "mode",
+      "source": 11,
+      "sourcePort": null
+    },
+    {
+      "target": 1,
+      "targetPort": "min_size",
+      "source": 12,
+      "sourcePort": null
+    },
+    {
+      "target": 3,
+      "targetPort": "sigma",
+      "source": 13,
+      "sourcePort": null
+    },
+    {
+      "target": 4,
+      "targetPort": "min_size",
+      "source": 14,
+      "sourcePort": null
+    },
+    {
+      "target": 6,
+      "targetPort": "name",
+      "source": 15,
+      "sourcePort": null
+    },
+    {
+      "target": 6,
+      "targetPort": "destination",
+      "source": 16,
+      "sourcePort": null
+    },
+    {
+      "target": 7,
+      "targetPort": "name",
+      "source": 17,
+      "sourcePort": null
+    },
+    {
+      "target": 7,
+      "targetPort": "destination",
+      "source": 18,
+      "sourcePort": null
+    },
+    {
+      "target": 8,
+      "targetPort": "range",
+      "source": 19,
+      "sourcePort": null
+    },
+    {
+      "target": 9,
+      "targetPort": "underlay_image",
+      "source": 20,
+      "sourcePort": null
+    },
+    {
+      "target": 9,
+      "targetPort": "granularity",
+      "source": 21,
+      "sourcePort": null
+    },
+    {
+      "target": 22,
+      "targetPort": null,
+      "source": 9,
+      "sourcePort": null
+    },
+    {
+      "target": 2,
+      "targetPort": "image",
+      "source": 1,
+      "sourcePort": null
+    },
+    {
+      "target": 3,
+      "targetPort": "image",
+      "source": 2,
+      "sourcePort": null
+    },
+    {
+      "target": 4,
+      "targetPort": "image",
+      "source": 3,
+      "sourcePort": null
+    },
+    {
+      "target": 7,
+      "targetPort": "data",
+      "source": 5,
+      "sourcePort": null
+    },
+    {
+      "target": 8,
+      "targetPort": "image",
+      "source": 0,
+      "sourcePort": null
+    },
+    {
+      "target": 1,
+      "targetPort": "image",
+      "source": 8,
+      "sourcePort": null
+    },
+    {
+      "target": 9,
+      "targetPort": "image",
+      "source": 4,
+      "sourcePort": null
+    },
+    {
+      "target": 5,
+      "targetPort": "segments",
+      "source": 9,
+      "sourcePort": "segments"
+    },
+    {
+      "target": 6,
+      "targetPort": "image",
+      "source": 9,
+      "sourcePort": "vis"
+    }
+  ]
+}
