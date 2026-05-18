@@ -1,0 +1,245 @@
+{
+  "version": "0.1.0",
+  "nodes": [
+    {
+      "id": 0,
+      "type": "function",
+      "value": "workflow.read_image"
+    },
+    {
+      "id": 1,
+      "type": "function",
+      "value": "workflow.remove_small_holes"
+    },
+    {
+      "id": 2,
+      "type": "function",
+      "value": "workflow.remove_small_objects"
+    },
+    {
+      "id": 3,
+      "type": "function",
+      "value": "workflow.split_touching_objects"
+    },
+    {
+      "id": 4,
+      "type": "function",
+      "value": "workflow.binary_erosion"
+    },
+    {
+      "id": 5,
+      "type": "function",
+      "value": "workflow.binary_erosion"
+    },
+    {
+      "id": 6,
+      "type": "function",
+      "value": "workflow.summary"
+    },
+    {
+      "id": 7,
+      "type": "function",
+      "value": "workflow.watershed_segmentation"
+    },
+    {
+      "id": 8,
+      "type": "function",
+      "value": "workflow.watershed_segmentation"
+    },
+    {
+      "id": 9,
+      "type": "function",
+      "value": "workflow.threshold"
+    },
+    {
+      "id": 10,
+      "type": "input",
+      "value": "particle.png",
+      "name": "path"
+    },
+    {
+      "id": 11,
+      "type": "input",
+      "value": "GRAY",
+      "name": "mode"
+    },
+    {
+      "id": 12,
+      "type": "input",
+      "value": 76,
+      "name": "area_threshold"
+    },
+    {
+      "id": 13,
+      "type": "input",
+      "value": 64,
+      "name": "min_size"
+    },
+    {
+      "id": 14,
+      "type": "input",
+      "value": 3,
+      "name": "sigma"
+    },
+    {
+      "id": 15,
+      "type": "input",
+      "value": null,
+      "name": "underlay_image"
+    },
+    {
+      "id": 16,
+      "type": "input",
+      "value": 0.1,
+      "name": "granularity"
+    },
+    {
+      "id": 17,
+      "type": "input",
+      "value": null,
+      "name": "underlay_image"
+    },
+    {
+      "id": 18,
+      "type": "input",
+      "value": 0.1,
+      "name": "granularity"
+    },
+    {
+      "id": 19,
+      "type": "input",
+      "value": [
+        0.31,
+        0.91
+      ],
+      "name": "range"
+    },
+    {
+      "id": 20,
+      "type": "output",
+      "name": "result"
+    }
+  ],
+  "edges": [
+    {
+      "target": 0,
+      "targetPort": "path",
+      "source": 10,
+      "sourcePort": null
+    },
+    {
+      "target": 0,
+      "targetPort": "mode",
+      "source": 11,
+      "sourcePort": null
+    },
+    {
+      "target": 1,
+      "targetPort": "area_threshold",
+      "source": 12,
+      "sourcePort": null
+    },
+    {
+      "target": 2,
+      "targetPort": "min_size",
+      "source": 13,
+      "sourcePort": null
+    },
+    {
+      "target": 3,
+      "targetPort": "sigma",
+      "source": 14,
+      "sourcePort": null
+    },
+    {
+      "target": 7,
+      "targetPort": "underlay_image",
+      "source": 15,
+      "sourcePort": null
+    },
+    {
+      "target": 7,
+      "targetPort": "granularity",
+      "source": 16,
+      "sourcePort": null
+    },
+    {
+      "target": 8,
+      "targetPort": "underlay_image",
+      "source": 17,
+      "sourcePort": null
+    },
+    {
+      "target": 8,
+      "targetPort": "granularity",
+      "source": 18,
+      "sourcePort": null
+    },
+    {
+      "target": 9,
+      "targetPort": "range",
+      "source": 19,
+      "sourcePort": null
+    },
+    {
+      "target": 20,
+      "targetPort": null,
+      "source": 9,
+      "sourcePort": null
+    },
+    {
+      "target": 1,
+      "targetPort": "image",
+      "source": 2,
+      "sourcePort": null
+    },
+    {
+      "target": 3,
+      "targetPort": "image",
+      "source": 1,
+      "sourcePort": null
+    },
+    {
+      "target": 4,
+      "targetPort": "image",
+      "source": 3,
+      "sourcePort": null
+    },
+    {
+      "target": 5,
+      "targetPort": "image",
+      "source": 4,
+      "sourcePort": null
+    },
+    {
+      "target": 7,
+      "targetPort": "image",
+      "source": 5,
+      "sourcePort": null
+    },
+    {
+      "target": 6,
+      "targetPort": "segments",
+      "source": 7,
+      "sourcePort": "segments"
+    },
+    {
+      "target": 8,
+      "targetPort": "image",
+      "source": 4,
+      "sourcePort": null
+    },
+    {
+      "target": 9,
+      "targetPort": "image",
+      "source": 0,
+      "sourcePort": null
+    },
+    {
+      "target": 2,
+      "targetPort": "image",
+      "source": 9,
+      "sourcePort": null
+    }
+  ]
+}

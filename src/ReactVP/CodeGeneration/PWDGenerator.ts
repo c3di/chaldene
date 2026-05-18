@@ -144,7 +144,10 @@ export default class PWDGenerator extends CodeGenerator {
           pwdNodes.push({
             id: pwdId,
             type: 'input',
-            value: input.defaultValue === 'None' ? null : (input.defaultValue ?? null),
+            value:
+              input.defaultValue === 'None'
+                ? null
+                : (input.defaultValue ?? null),
             name: input.name
           });
           pwdEdges.push({
@@ -157,28 +160,10 @@ export default class PWDGenerator extends CodeGenerator {
       });
     }
 
-    // Output nodes — one per unconnected output handle
-    for (const node of nodes) {
-      node.data.outputs?.forEach(output => {
-        const connected = edges.some(
-          e => e.source === node.id && e.sourceHandle === output.id
-        );
-        if (!connected) {
-          const pwdId = nextId++;
-          pwdNodes.push({ id: pwdId, type: 'output', name: output.name });
-          pwdEdges.push({
-            target: pwdId,
-            targetPort: null,
-            source: funcIdMap.get(node.id),
-            sourcePort: output.name
-          });
-        }
-      });
-    }
-
-    // If no output nodes were created, add a dummy one connected to the last function node
-    const hasOutputNode = pwdNodes.some((n: any) => n.type === 'output');
-    if (!hasOutputNode && nodes.length > 0) {
+    // load_workflow_json's remove_result expects exactly one output node —
+    // it strips it and its edge before processing. Emit one sentinel connected
+    // to the last function node.
+    if (nodes.length > 0) {
       const lastNode = nodes[nodes.length - 1];
       const lastPwdId = funcIdMap.get(lastNode.id)!;
       const outputId = nextId++;
@@ -191,15 +176,9 @@ export default class PWDGenerator extends CodeGenerator {
       });
     }
 
-    // Count how many function-to-function edges leave each source node
-    // to decide whether sourcePort should be named or null
     const funcEdges = edges.filter(
       e => funcIdMap.has(e.source) && funcIdMap.has(e.target)
     );
-    const sourceEdgeCount = new Map<string, number>();
-    for (const e of funcEdges) {
-      sourceEdgeCount.set(e.source, (sourceEdgeCount.get(e.source) ?? 0) + 1);
-    }
 
     // Edges between function nodes
     for (const edge of funcEdges) {
@@ -213,7 +192,7 @@ export default class PWDGenerator extends CodeGenerator {
       const targetHandle = targetNode?.data.inputs?.find(
         h => h.id === edge.targetHandle
       );
-      const multipleOutputs = (sourceEdgeCount.get(edge.source) ?? 1) > 1;
+      const multipleOutputs = (sourceNode?.data.outputs?.length ?? 1) > 1;
       pwdEdges.push({
         target: targetPwdId,
         targetPort: targetHandle?.name ?? edge.targetHandle,

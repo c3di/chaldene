@@ -129,3 +129,5 @@ package-lock.json
 yarn.lock
 
 .venv/
+
+*.h5
