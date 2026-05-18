@@ -38,6 +38,7 @@ export default class PWDGenerator extends CodeGenerator {
   public pythonModule(nodes: any[]): string {
     const moduleImports = new Set<string>();
     const functionBlocks: string[] = [];
+    const emittedFunctions = new Set<string>();
 
     for (const node of nodes) {
       const { specName, inputs, outputs, displayLabel } = node.data;
@@ -80,11 +81,20 @@ export default class PWDGenerator extends CodeGenerator {
       const params = (inputs ?? []).map((h: any) => h.name).join(', ');
       const returnVars = (outputs ?? []).map((h: any) => h.name);
       const returnStatement =
-        returnVars.length > 0 ? `    return ${returnVars.join(', ')}` : '';
+        returnVars.length === 0
+          ? ''
+          : returnVars.length === 1
+            ? `    return ${returnVars[0]}`
+            : `    return {${returnVars.map((v: string) => `"${v}": ${v}`).join(', ')}}`;
 
       const funcName = (displayLabel ?? specName ?? 'node')
         .replace(/[^a-zA-Z0-9]+/g, '_')
         .toLowerCase();
+
+      if (emittedFunctions.has(funcName)) {
+        continue;
+      }
+      emittedFunctions.add(funcName);
 
       const indentedBody = bodyLines.map(l => `    ${l}`).join('\n');
 
@@ -134,7 +144,7 @@ export default class PWDGenerator extends CodeGenerator {
           pwdNodes.push({
             id: pwdId,
             type: 'input',
-            value: input.defaultValue ?? null,
+            value: input.defaultValue === 'None' ? null : (input.defaultValue ?? null),
             name: input.name
           });
           pwdEdges.push({
@@ -166,13 +176,35 @@ export default class PWDGenerator extends CodeGenerator {
       });
     }
 
+    // If no output nodes were created, add a dummy one connected to the last function node
+    const hasOutputNode = pwdNodes.some((n: any) => n.type === 'output');
+    if (!hasOutputNode && nodes.length > 0) {
+      const lastNode = nodes[nodes.length - 1];
+      const lastPwdId = funcIdMap.get(lastNode.id)!;
+      const outputId = nextId++;
+      pwdNodes.push({ id: outputId, type: 'output', name: 'result' });
+      pwdEdges.push({
+        target: outputId,
+        targetPort: null,
+        source: lastPwdId,
+        sourcePort: null
+      });
+    }
+
+    // Count how many function-to-function edges leave each source node
+    // to decide whether sourcePort should be named or null
+    const funcEdges = edges.filter(
+      e => funcIdMap.has(e.source) && funcIdMap.has(e.target)
+    );
+    const sourceEdgeCount = new Map<string, number>();
+    for (const e of funcEdges) {
+      sourceEdgeCount.set(e.source, (sourceEdgeCount.get(e.source) ?? 0) + 1);
+    }
+
     // Edges between function nodes
-    for (const edge of edges) {
-      const sourcePwdId = funcIdMap.get(edge.source);
-      const targetPwdId = funcIdMap.get(edge.target);
-      if (sourcePwdId === undefined || targetPwdId === undefined) {
-        continue;
-      }
+    for (const edge of funcEdges) {
+      const sourcePwdId = funcIdMap.get(edge.source)!;
+      const targetPwdId = funcIdMap.get(edge.target)!;
       const sourceNode = nodes.find(n => n.id === edge.source);
       const targetNode = nodes.find(n => n.id === edge.target);
       const sourceHandle = sourceNode?.data.outputs?.find(
@@ -181,11 +213,14 @@ export default class PWDGenerator extends CodeGenerator {
       const targetHandle = targetNode?.data.inputs?.find(
         h => h.id === edge.targetHandle
       );
+      const multipleOutputs = (sourceEdgeCount.get(edge.source) ?? 1) > 1;
       pwdEdges.push({
         target: targetPwdId,
         targetPort: targetHandle?.name ?? edge.targetHandle,
         source: sourcePwdId,
-        sourcePort: sourceHandle?.name ?? edge.sourceHandle
+        sourcePort: multipleOutputs
+          ? (sourceHandle?.name ?? edge.sourceHandle)
+          : null
       });
     }
 
