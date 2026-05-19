@@ -72,7 +72,8 @@ READ_IMAGE_NODE = node(
                widget={"type": "Dropdown", "options": ["GRAY", "RGB"]}),
     ],
     outputs=[handle("out0", "image", "image", "image",
-                    desc="The loaded image.")],
+                    desc="The loaded image.",
+                    widget={"type": "ImageViewer", "showDiff": False, "isBinary": False})],
     desc="Reads a JPEG or PNG image from disk.",
     x=100, y=150)
 
@@ -81,7 +82,8 @@ BINARIZE_NODE = node(
     inputs=[handle("in0", "image", "image", "image",
                    desc="Grayscale input image.")],
     outputs=[handle("out0", "image", "binary image", "image",
-                    desc="Binary output image.")],
+                    desc="Binary output image.",
+                    widget={"type": "ImageViewer", "showDiff": False, "isBinary": True})],
     desc="Automatically binarizes using Otsu thresholding.",
     x=550, y=150)
 
@@ -95,8 +97,9 @@ THRESHOLD_NODE = node(
                desc="Lower and upper threshold bounds.",
                widget={"type": "HistogramRange", "min": 0, "max": 1, "step": 0.01}),
     ],
-    outputs=[handle("out0", "image", "binary image", label="binary image",
-                    desc="Binary result of thresholding.")],
+    outputs=[handle("out0", "image", "binary image",
+                    desc="Binary result of thresholding.",
+                    widget={"type": "ImageViewer", "showDiff": False, "isBinary": True})],
     desc="Binarizes by keeping pixels within [lower, upper].",
     x=550, y=150)
 
@@ -138,6 +141,24 @@ cells.append(md("""\
 
 The `%%javascript` cells call the `IChaldeneService` API directly via `window.__chaldene`,
 which Chaldene exposes for notebook interaction and browser console debugging.
+"""))
+
+# ── Sample image creation ────────────────────────────────────────────────────
+cells.append(md("""\
+---
+## Setup — Create sample image
+
+Run this cell once to create `sample.png`, the grayscale test image used throughout
+this tutorial. Re-run it any time you need to reset the file.
+"""))
+
+cells.append(code("""\
+from PIL import Image
+import numpy as np
+
+arr = np.random.default_rng(42).integers(0, 256, (256, 256), dtype=np.uint8)
+Image.fromarray(arr, mode="L").save("sample.png")
+print("sample.png ready (256x256 grayscale)")
 """))
 
 # ── Setup check ──────────────────────────────────────────────────────────────
@@ -255,7 +276,8 @@ const newGraph = {
                     { id: 'in1', name: 'mode', displayLabel: 'mode', defaultValue: 'GRAY',
                       widget: { type: 'Dropdown', options: ['GRAY', 'RGB'] } }
                 ],
-                outputs: [{ id: 'out0', name: 'image', type: 'image', displayLabel: 'image' }]
+                outputs: [{ id: 'out0', name: 'image', type: 'image', displayLabel: 'image',
+                            widget: { type: 'ImageViewer', showDiff: false, isBinary: false } }]
             }
         },
         {
@@ -266,7 +288,8 @@ const newGraph = {
                 description: 'Automatically binarizes using Otsu thresholding.',
                 inputs: [{ id: 'in0', name: 'image', type: 'image', displayLabel: 'image' }],
                 outputs: [{ id: 'out0', name: 'image', type: 'binary image',
-                            displayLabel: 'image' }]
+                            displayLabel: 'image',
+                            widget: { type: 'ImageViewer', showDiff: false, isBinary: true } }]
             }
         }
     ],
