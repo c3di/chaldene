@@ -55,8 +55,6 @@ conda install -c conda-forge "openjdk=11"
    - Connect nodes to build workflows
    - Adjust parameters and inspect the outputs to refine the workflows
 
-**New to Chaldene?** Watch our [tutorial video](https://youtu.be/SYRBdU8mQMw).
-
 ## Examples
 
 📂 **Examples are available in the `use_cases/` folder**
