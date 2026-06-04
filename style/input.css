@@ -56,24 +56,25 @@ input[type="number"]::-webkit-inner-spin-button {
   font-weight: 300 !important;
 }
 
-/* Hide the thumb on WebKit browsers (e.g., Chrome, Safari) */
-input[type="range"]::-webkit-slider-thumb {
+/* Hide native range thumb inside Chaldene's own slider panels only */
+.slider-container input[type="range"]::-webkit-slider-thumb,
+.range-slider input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 0;
   height: 0;
   background: transparent;
 }
 
-/* Hide the thumb on Mozilla browsers (e.g., Firefox) */
-input[type="range"]::-moz-range-thumb {
+.slider-container input[type="range"]::-moz-range-thumb,
+.range-slider input[type="range"]::-moz-range-thumb {
   appearance: none;
   width: 0;
   height: 0;
   background: transparent;
 }
 
-/* Hide the thumb on Microsoft browsers (e.g., IE, Edge) */
-input[type="range"]::-ms-thumb {
+.slider-container input[type="range"]::-ms-thumb,
+.range-slider input[type="range"]::-ms-thumb {
   appearance: none;
   width: 0;
   height: 0;
@@ -91,6 +92,40 @@ input[type="range"]::-ms-thumb {
   height: 20px;
   margin-right: 5px;
   position: relative;
+}
+
+/* ipywidgets FloatSlider: .widget-slider > .slider-container
+   Our display:flex collapses noUiSlider's track to zero width — reset it. */
+.widget-slider .slider-container {
+  display: block;
+  height: auto;
+  align-items: unset;
+  gap: unset;
+  padding: unset;
+  width: auto;
+  margin-right: unset;
+  position: unset;
+}
+
+.widget-slider .slider-container input[type="range"]::-webkit-slider-thumb {
+  appearance: unset;
+  width: unset;
+  height: unset;
+  background: unset;
+}
+
+.widget-slider .slider-container input[type="range"]::-moz-range-thumb {
+  appearance: unset;
+  width: unset;
+  height: unset;
+  background: unset;
+}
+
+.widget-slider .slider-container input[type="range"]::-ms-thumb {
+  appearance: unset;
+  width: unset;
+  height: unset;
+  background: unset;
 }
 
 .file-input-container {

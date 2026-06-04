@@ -17,11 +17,15 @@ import createCellTypeItem from './CreateCellTypeItem';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { defaultNodeSpecs } from './NodeSpec';
 import { insertAbove, insertBelow } from './Action';
+import { IChaldeneService } from './tokens';
+import { ChaldeneService } from './ChaldeneService';
+import { initChaldeneService, registerCommTargetOnKernel } from './serviceRegistry';
 
-const chaldeneVPCell: JupyterFrontEndPlugin<void> = {
+const chaldeneVPCell: JupyterFrontEndPlugin<IChaldeneService> = {
   id: 'Chaldene: Add VP Cell',
   description: 'Visual Programming in JupyterLab for Image Processing',
   autoStart: true,
+  provides: IChaldeneService,
   requires: [
     IToolbarWidgetRegistry,
     IEditorServices,
@@ -39,8 +43,11 @@ function activateChaldeneVPCell(
   notebookWidgetFactory: any,
   notebookTracker: INotebookTracker,
   fileBrowserFactory: IFileBrowserFactory
-) {
-  // Add a new cell type to the toolbar
+): IChaldeneService {
+  const service = new ChaldeneService();
+  initChaldeneService(service);
+  // Expose for notebook %%javascript cells and browser console debugging.
+  (window as any).__chaldene = service;
   const FACTORY = 'Notebook';
   toolbarRegistry.addFactory<NotebookPanel>(FACTORY, 'cellType', panel =>
     createCellTypeItem(panel)
@@ -70,7 +77,24 @@ function activateChaldeneVPCell(
   };
 
   defaultNodeSpecs();
+
+  const attachFromPanel = (panel: any) => {
+    const tryNow = () => {
+      const kernel = (panel.sessionContext.session as any)?.kernel;
+      if (kernel) registerCommTargetOnKernel(kernel);
+    };
+    tryNow();
+    void (panel.sessionContext.ready as Promise<void>).then(tryNow);
+    panel.sessionContext.kernelChanged.connect((_: any, args: any) => {
+      if (args.newValue) registerCommTargetOnKernel(args.newValue);
+    });
+  };
+  notebookTracker.widgetAdded.connect((_, panel) => attachFromPanel(panel));
+  notebookTracker.forEach((panel: any) => attachFromPanel(panel));
+
+  return service;
 }
+
 
 const plugins: Array<JupyterFrontEndPlugin<any>> = [chaldeneVPCell];
 

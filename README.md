@@ -69,6 +69,42 @@ Below are two representative workflows created by users, demonstrating Chaldene'
 <img src="docs/assets/task2.png" alt="Workflow 2: Processing Chain" width="70%">
 </p>
 
+## Python API
+
+`ChaldeneClient` lets you control VP cells from Python — useful for driving
+parameters with `ipywidgets`, running parameter sweeps, or integrating VP
+cells into larger notebook workflows.
+
+```python
+from chaldene import ChaldeneClient
+
+client = ChaldeneClient()
+```
+
+Once a VP cell is visible in the notebook, `client.get_ready_cell_ids()`
+returns its ID. From there you can update node inputs and re-run the cell:
+
+```python
+cell_id = client.get_ready_cell_ids()[-1]
+client.set_input(cell_id, node_id='1', handle_id='in1', value=[0.2, 0.8])
+client.run(cell_id)
+```
+
+Combine with `ipywidgets.interact` for live parameter control:
+
+```python
+import ipywidgets as widgets
+
+@widgets.interact(threshold=widgets.FloatSlider(min=0.0, max=1.0, step=0.05))
+def update(threshold):
+    ids = client.get_ready_cell_ids()
+    if ids:
+        client.set_input(ids[-1], '1', 'in1', [threshold, 0.9])
+        client.run(ids[-1])
+```
+
+See [`api_tutorials/`](api_tutorials/) for full working examples.
+
 ## Development
 
 - 📖 [Developer Guide](docs/README_DEVELOP.md) - Setup and development instructions
