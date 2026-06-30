@@ -8,6 +8,7 @@ import {
   AutoLayoutIcon,
   CheckReadinessIcon,
   CodeIcon,
+  FileUploadIcon,
   FitViewIcon,
   PasteIcon,
   SelectAllIcon
@@ -111,6 +112,16 @@ export default function PanelContextMenu({
           if (code) {
             void navigator.clipboard.writeText(code);
           }
+        }
+      },
+      {
+        icon: <FileUploadIcon />,
+        displayLabel: 'Import PWD',
+        description:
+          'Import a Python workflow definition (workflow.json + workflow.py)',
+        disabled: !editorContext?.parentContext?.importPwd,
+        onClick: () => {
+          void editorContext?.importPWD();
         }
       }
     ];

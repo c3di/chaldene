@@ -10,6 +10,11 @@
   margin-bottom: 8px;
   width: 100%;
   position: relative;
+
+  /* Reserve at least the handle's height so rows never collapse and stack
+     their absolutely-positioned ports on top of each other (e.g. handles
+     without a label/widget). */
+  min-height: 20px;
 }
 
 .label {
