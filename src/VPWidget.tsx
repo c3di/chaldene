@@ -132,6 +132,11 @@ export class VPWidget extends ReactWidget {
           this._fileBrowser,
           PathExt.dirname(this._hostNotebookPanel.context.path),
           fileExtensions
+        ),
+      importPwd: () =>
+        importPwdFiles(
+          this._fileBrowser,
+          PathExt.dirname(this._hostNotebookPanel.context.path)
         )
     };
   }
@@ -253,6 +258,58 @@ async function openFileDialog(
     return relativePath;
   }
   return null;
+}
+
+/**
+ * Open a dialog to pick a PWD `workflow.json`, then read both it and the sibling
+ * `workflow.py` from the same folder. Returns their text content, or null if the
+ * user cancels.
+ */
+async function importPwdFiles(
+  fileBrowser: any,
+  defaultPath: string = ''
+): Promise<{ jsonText: string; pyText: string } | null> {
+  await fileBrowser.model.refresh();
+
+  const dialog = FileDialog.getOpenFiles({
+    defaultPath,
+    manager: fileBrowser.model.manager,
+    title: 'Select workflow.json',
+    filter: (value: any) =>
+      value.type === 'directory' || value.path.endsWith('.json')
+        ? { score: 1 }
+        : null
+  });
+
+  const observer = preventItemDoubleClickInFileBrowser();
+  observer.observe(document.body, { childList: true, subtree: true });
+  const result = await dialog;
+  observer.disconnect();
+
+  if (!result.button.accept || !result.value) {
+    return null;
+  }
+
+  // Absolute server path (the contents API needs the server path, not the
+  // notebook-relative one).
+  const jsonPath = result.value[0].path;
+  const pyPath = PathExt.join(PathExt.dirname(jsonPath), 'workflow.py');
+  const contents = fileBrowser.model.manager.services.contents;
+
+  const jsonModel = await contents.get(jsonPath, { content: true });
+  let pyModel;
+  try {
+    pyModel = await contents.get(pyPath, { content: true });
+  } catch (error) {
+    throw new Error(
+      `Could not find "workflow.py" next to the selected workflow.json (${pyPath}).`
+    );
+  }
+
+  return {
+    jsonText: String(jsonModel.content),
+    pyText: String(pyModel.content)
+  };
 }
 
 function preventItemDoubleClickInFileBrowser(): MutationObserver {
