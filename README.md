@@ -69,6 +69,21 @@ Below are two representative workflows created by users, demonstrating Chaldene'
 <img src="docs/assets/task2.png" alt="Workflow 2: Processing Chain" width="70%">
 </p>
 
+## Publish to Zenodo
+
+Archive your workflow files or results to [Zenodo](https://zenodo.org) and mint a citable **DOI**, directly from JupyterLab.
+
+1. Create a Zenodo [personal access token](https://zenodo.org/account/settings/applications/tokens/new/) with the `deposit:write` and `deposit:actions` scopes. Optionally set it once on the server so you are not prompted each time:
+   ```bash
+   export ZENODO_TOKEN=<your-token>   # or set c.ZenodoConfig.token in jupyter_server_config.py
+   ```
+2. In the JupyterLab file browser, **right-click the empty area** and choose **Publish to Zenodo**.
+3. In the dialog, select one or more files/folders to publish (folders are zipped automatically).
+4. Enter your access token (leave blank to use the server-configured one), then a title, author(s), and description.
+5. All selected items are uploaded to a single Zenodo record and the minted **DOI** is shown when publishing completes.
+
+> Note: publishing targets production `zenodo.org` and creates a permanent record — test with a throwaway file first.
+
 ## Development
 
 - 📖 [Developer Guide](docs/README_DEVELOP.md) - Setup and development instructions
