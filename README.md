@@ -55,6 +55,16 @@ conda install -c conda-forge "openjdk=11"
    - Connect nodes to build workflows
    - Adjust parameters and inspect the outputs to refine the workflows
 
+## Use Without Local Installation
+
+Chaldene targets practitioners with limited programming experience, so it is
+not intended to require manual installation and configuration by each end
+user. Instead, it can be provided through preconfigured environments, such as
+[Binder](https://mybinder.org/v2/gh/c3di/chaldene/HEAD), managed
+JupyterHub/JupyterLab servers, or lab-maintained software images, allowing
+practitioners to focus on workflow authoring rather than software
+administration.
+
 ## Examples
 
 📂 **Examples are available in the `use_cases/` folder**
