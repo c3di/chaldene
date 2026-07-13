@@ -3,6 +3,7 @@ import { CodeCell } from '@jupyterlab/cells';
 import { OutputArea } from '@jupyterlab/outputarea';
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 import { JSONObject } from '@lumino/coreutils';
+import { registerCommTargetOnKernel } from './serviceRegistry';
 
 /**
  * Execute a cell given a client session.
@@ -17,9 +18,9 @@ export default async function executeCodeCell(
   let code = '';
 
   const currentKernel: any = sessionContext.session?.kernel;
-  if (currentKernel && isVisualCode) {
-    (cell.editor as any).editor.listenToInspectResult(currentKernel);
-  }
+  // Ensure the comm target is registered on every execution — reliable
+  // fallback for cases where panel-level registration fires too late.
+  if (currentKernel) registerCommTargetOnKernel(currentKernel);
 
   if (isVisualCode && cell.editor) {
     code = (cell.editor as any).getCode();

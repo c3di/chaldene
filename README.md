@@ -55,6 +55,16 @@ conda install -c conda-forge "openjdk=11"
    - Connect nodes to build workflows
    - Adjust parameters and inspect the outputs to refine the workflows
 
+## Use Without Local Installation
+
+Chaldene targets practitioners with limited programming experience, so it is
+not intended to require manual installation and configuration by each end
+user. Instead, it can be provided through preconfigured environments, such as
+[Binder](https://mybinder.org/v2/gh/c3di/chaldene/HEAD), managed
+JupyterHub/JupyterLab servers, or lab-maintained software images, allowing
+practitioners to focus on workflow authoring rather than software
+administration.
+
 ## Examples
 
 📂 **Examples are available in the `use_cases/` folder**
@@ -78,6 +88,42 @@ Archive your workflow files or results to [Zenodo](https://zenodo.org) and mint 
 3. In the dialog, select one or more files/folders to publish (folders are zipped automatically).
 4. Enter your access token, then a title, author(s), and description.
 5. All selected items are uploaded to a single Zenodo record and the minted **DOI** is shown when publishing completes.
+
+## Python API
+
+`ChaldeneClient` lets you control VP cells from Python — useful for driving
+parameters with `ipywidgets`, running parameter sweeps, or integrating VP
+cells into larger notebook workflows.
+
+```python
+from chaldene import ChaldeneClient
+
+client = ChaldeneClient()
+```
+
+Once a VP cell is visible in the notebook, `client.get_ready_cell_ids()`
+returns its ID. From there you can update node inputs and re-run the cell:
+
+```python
+cell_id = client.get_ready_cell_ids()[-1]
+client.set_input(cell_id, node_id='1', handle_id='in1', value=[0.2, 0.8])
+client.run(cell_id)
+```
+
+Combine with `ipywidgets.interact` for live parameter control:
+
+```python
+import ipywidgets as widgets
+
+@widgets.interact(threshold=widgets.FloatSlider(min=0.0, max=1.0, step=0.05))
+def update(threshold):
+    ids = client.get_ready_cell_ids()
+    if ids:
+        client.set_input(ids[-1], '1', 'in1', [threshold, 0.9])
+        client.run(ids[-1])
+```
+
+See [`api_tutorials/`](api_tutorials/) for full working examples.
 
 ## Development
 

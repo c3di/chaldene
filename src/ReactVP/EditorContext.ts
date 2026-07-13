@@ -6,6 +6,7 @@ import type { NodeSpecConfigRegistry } from './Spec/NodeSpecRegistry';
 import { type Graph, findCodeChangedGraph } from './Type';
 import { ActionRegistry } from './Actions';
 import { graphWithoutEditorContext } from './Utils';
+import { importPWDToGraph } from './CodeGeneration/PWDImporter';
 
 export default class EditorContext {
   public readonly editorRef: React.MutableRefObject<any>;
@@ -152,6 +153,11 @@ export default class EditorContext {
     this.graphChangeListeners.push(listener);
   };
 
+  public removeGraphChangeListener = (listener: (graph: Graph) => void): void => {
+    const i = this.graphChangeListeners.indexOf(listener);
+    if (i !== -1) this.graphChangeListeners.splice(i, 1);
+  };
+
   /*
    * @param identifier: string - editorID_nodeID_handleID
    */
@@ -217,6 +223,32 @@ export default class EditorContext {
     this.codeGeneratorRegistry
       .get('PWD')
       .codeFromGraph(this.editorID, graphToBeExecuted, false);
+  };
+
+  public importPWD = async (): Promise<void> => {
+    const importer = this.parentContext?.importPwd;
+    if (!importer) {
+      return;
+    }
+    try {
+      const files = await importer();
+      if (!files) {
+        return;
+      }
+      const { jsonText, pyText } = files;
+      const graph = importPWDToGraph(jsonText, pyText, this);
+      this.newGraphInput(graph);
+      // autoLayout reads measured node sizes, which are only available after the
+      // nodes have rendered; wait two frames before laying out. The nodes also
+      // carry sensible fallback positions in case measurement is not ready.
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          void this.action('scene').autoLayout();
+        });
+      });
+    } catch (error) {
+      console.error('Failed to import PWD workflow:', error);
+    }
   };
 
   public focus = (): void => {

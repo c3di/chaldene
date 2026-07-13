@@ -87,6 +87,7 @@ export class VPEditor implements CodeEditor.IEditor {
       return;
     }
     this._isDisposed = true;
+    this._editor.dispose();
     this.host.removeEventListener('focus', this, true);
     this.host.removeEventListener('blur', this, true);
     this.host.removeEventListener('scroll', this, true);

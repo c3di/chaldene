@@ -7,9 +7,11 @@
 import { Widget } from '@lumino/widgets';
 import { ReactWidget } from '@jupyterlab/apputils';
 import { CodeEditor } from '@jupyterlab/codeeditor';
+import { CodeCell } from '@jupyterlab/cells';
 import { VPEditor, type Graph, type EditorContext } from './ReactVP';
-import { NotebookActions } from '@jupyterlab/notebook';
 import { PathExt } from '@jupyterlab/coreutils';
+import { getChaldeneService } from './serviceRegistry';
+import type { ISharedBaseCell } from '@jupyter/ydoc';
 
 type ISharedText = any;
 
@@ -95,6 +97,13 @@ export class VPWidget extends ReactWidget {
     return this._context?.code() ?? '';
   }
 
+  dispose(): void {
+    if (this._cellId) {
+      getChaldeneService()?.deregister(this._cellId);
+    }
+    super.dispose();
+  }
+
   setContext(context: EditorContext): void {
     this._context = context;
 
@@ -102,7 +111,12 @@ export class VPWidget extends ReactWidget {
       this.setContent(JSON.stringify(new_graph));
     });
 
-    this._context.onLiveExecution = this.run.bind(this);
+    const run = this.run.bind(this);
+    this._context.onLiveExecution = run;
+
+    const cellId = (this._model.sharedModel as ISharedBaseCell).getId();
+    this._cellId = cellId;
+    getChaldeneService()?.register(cellId, context, run);
 
     // Update the focus state from the inner editor
     this._context.onFocus = () => {
@@ -118,6 +132,11 @@ export class VPWidget extends ReactWidget {
           this._fileBrowser,
           PathExt.dirname(this._hostNotebookPanel.context.path),
           fileExtensions
+        ),
+      importPwd: () =>
+        importPwdFiles(
+          this._fileBrowser,
+          PathExt.dirname(this._hostNotebookPanel.context.path)
         )
     };
   }
@@ -134,55 +153,30 @@ export class VPWidget extends ReactWidget {
     }
   }
 
-  updateInspection(id: string, data: any) {
-    this._context?.action('graph').updateInspection(id, data);
-  }
-
-  listenToInspectResult(currentKernel: any): void {
-    currentKernel?.registerCommTarget('inspection', (comm: any, msg: any) => {
-      comm.onMsg = (msg: any) => {
-        const data = msg.content.data;
-        if (data.handle_id) {
-          const { handle_id, ...inspectionData } = data;
-
-          this?.updateInspection(handle_id, inspectionData);
-        }
-      };
-    });
-  }
-
   run(): void {
-    if (this._hostNotebookPanel) {
-      const { content, context, sessionDialogs, translator } =
-        this._hostNotebookPanel;
-      this.onStartRun();
-      // avoid jump to edit mode of cell
-      Object.defineProperty(this._hostNotebookPanel.content, 'mode', {
-        get: function () {
-          return this._mode;
-        },
-        set: function () {
-          // no-op
-        },
-        configurable: true
-      });
-      NotebookActions.run(
-        content,
-        context.sessionContext,
-        sessionDialogs,
-        translator
-      )
-        .catch((error: Error) => {
-          console.error('Error while running cell:', error);
-        })
-        .finally(() => {
-          this.onEndRun();
-          // back to original mode setting
-          delete this._hostNotebookPanel.content.mode;
-        });
-    } else {
+    if (!this._hostNotebookPanel) {
       console.error('No active notebook panel found');
+      return;
     }
+    const { content, context } = this._hostNotebookPanel;
+
+    // Execute this specific VP cell directly rather than via
+    // NotebookActions.run, which runs whatever cell happens to be active and
+    // would re-run an unrelated cell (e.g. the caller's slider cell).
+    for (const cell of content.widgets) {
+      if ((cell.model.sharedModel as ISharedBaseCell).getId() === this._cellId) {
+        this.onStartRun();
+        CodeCell.execute(cell as any, context.sessionContext)
+          .catch((error: Error) => {
+            console.error('Error while running cell:', error);
+          })
+          .finally(() => {
+            this.onEndRun();
+          });
+        return;
+      }
+    }
+    console.error('VP cell not found in notebook, id:', this._cellId);
   }
 
   render(): JSX.Element {
@@ -196,6 +190,7 @@ export class VPWidget extends ReactWidget {
   }
   private _fileBrowser: any;
   private _focused = false;
+  private _cellId: string | undefined = undefined;
   private _model: CodeEditor.IModel;
   private _context: EditorContext | null = null;
   private _hostNotebookPanel: any;
@@ -263,6 +258,58 @@ async function openFileDialog(
     return relativePath;
   }
   return null;
+}
+
+/**
+ * Open a dialog to pick a PWD `workflow.json`, then read both it and the sibling
+ * `workflow.py` from the same folder. Returns their text content, or null if the
+ * user cancels.
+ */
+async function importPwdFiles(
+  fileBrowser: any,
+  defaultPath: string = ''
+): Promise<{ jsonText: string; pyText: string } | null> {
+  await fileBrowser.model.refresh();
+
+  const dialog = FileDialog.getOpenFiles({
+    defaultPath,
+    manager: fileBrowser.model.manager,
+    title: 'Select workflow.json',
+    filter: (value: any) =>
+      value.type === 'directory' || value.path.endsWith('.json')
+        ? { score: 1 }
+        : null
+  });
+
+  const observer = preventItemDoubleClickInFileBrowser();
+  observer.observe(document.body, { childList: true, subtree: true });
+  const result = await dialog;
+  observer.disconnect();
+
+  if (!result.button.accept || !result.value) {
+    return null;
+  }
+
+  // Absolute server path (the contents API needs the server path, not the
+  // notebook-relative one).
+  const jsonPath = result.value[0].path;
+  const pyPath = PathExt.join(PathExt.dirname(jsonPath), 'workflow.py');
+  const contents = fileBrowser.model.manager.services.contents;
+
+  const jsonModel = await contents.get(jsonPath, { content: true });
+  let pyModel;
+  try {
+    pyModel = await contents.get(pyPath, { content: true });
+  } catch (error) {
+    throw new Error(
+      `Could not find "workflow.py" next to the selected workflow.json (${pyPath}).`
+    );
+  }
+
+  return {
+    jsonText: String(jsonModel.content),
+    pyText: String(pyModel.content)
+  };
 }
 
 function preventItemDoubleClickInFileBrowser(): MutationObserver {

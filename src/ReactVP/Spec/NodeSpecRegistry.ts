@@ -27,13 +27,6 @@ export class NodeSpecConfigRegistry extends Registry<INodeSpecConfig> {
   }
 
   private registVisualNodeType(name: string, node: any): string {
-    for (const key in this.visualNodetypes) {
-      if (this.visualNodetypes[key] === node) {
-        return key;
-      }
-    }
-    // todo: give unique name and type id, keep consistent with extension
-
     this.visualNodetypes[name] = node;
     return name;
   }
