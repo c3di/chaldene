@@ -19,43 +19,29 @@
 
 ## Key Features
 
-- Drag-and-drop node-based programming for image processing
-- Image-specific inspection and comparison support, including branching, stepwise views, synchronized viewing, cursor linking, and difference overlays
+- Low-barrier, drag-and-drop node-based authoring with an explicit, reusable workflow representation
+- Image-specific inspection and comparison support, including branching, stepwise views, synchronized viewing, cursor linking, and difference overlays, with intermediate images captured as a visual trace
 - Co-locates workflow structure, parameter settings, outputs, and narrative context within a single notebook artifact during authoring
 
-## Requirements
+## Installation
 
-- **JupyterLab** ≥ 4.0.0  
-- **OpenJDK 11** (required for PyImageJ)
+### Local Installation
 
-For example, with Conda:
+The only external requirement is **OpenJDK 11** (required for
+PyImageJ), for example with Conda:
 
 ```bash
 conda install -c conda-forge "openjdk=11"
 ```
 
-## Quick Start
+Then install Chaldene and launch JupyterLab:
 
-1. **Install Chaldene**
-   ```bash
-   pip install chaldene
-   ```
+```bash
+pip install chaldene
+jupyter lab
+```
 
-2. **Launch JupyterLab**
-   ```bash
-   jupyter lab
-   ```
-
-3. **Create a new notebook**
-   - Click "+" to create a new notebook
-   - Add a Visual Code cell from the cell toolbar
-
-4. **Start building workflows**
-   - Drag and drop nodes to create your image processing workflows
-   - Connect nodes to build workflows
-   - Adjust parameters and inspect the outputs to refine the workflows
-
-## Use Without Local Installation
+### Use Without Local Installation
 
 Chaldene targets practitioners with limited programming experience, so it is
 not intended to require manual installation and configuration by each end
@@ -64,6 +50,17 @@ user. Instead, it can be provided through preconfigured environments, such as
 JupyterHub/JupyterLab servers, or lab-maintained software images, allowing
 practitioners to focus on workflow authoring rather than software
 administration.
+
+## Quick Start
+
+1. **Create a new notebook**
+   - Click "+" to create a new notebook
+   - Add a Visual Code cell from the cell toolbar
+
+2. **Start building workflows**
+   - Drag and drop nodes to create your image processing workflows
+   - Connect nodes to build workflows
+   - Adjust parameters and inspect the outputs to refine the workflows
 
 ## Examples
 
@@ -79,17 +76,19 @@ Below are two representative workflows created by users, demonstrating Chaldene'
 <img src="docs/assets/task2.png" alt="Workflow 2: Processing Chain" width="70%">
 </p>
 
-## Publish to Zenodo
+## More Features
+
+### Publish to Zenodo
 
 Archive your workflow files or results to [Zenodo](https://zenodo.org) and mint a citable **DOI**, directly from JupyterLab.
 
-1. Create a Zenodo [personal access token](https://zenodo.org/account/settings/applications/tokens/new/) with the `deposit:write` and `deposit:actions` scopes. 
+1. Create a Zenodo [personal access token](https://zenodo.org/account/settings/applications/tokens/new/) with the `deposit:write` and `deposit:actions` scopes.
 2. In the JupyterLab file browser, **right-click the empty area** and choose **Publish to Zenodo**.
 3. In the dialog, select one or more files/folders to publish (folders are zipped automatically).
 4. Enter your access token, then a title, author(s), and description.
 5. All selected items are uploaded to a single Zenodo record and the minted **DOI** is shown when publishing completes.
 
-## Python API
+### Python API
 
 `ChaldeneClient` lets you control VP cells from Python — useful for driving
 parameters with `ipywidgets`, running parameter sweeps, or integrating VP
@@ -128,7 +127,7 @@ See [`api_tutorials/`](api_tutorials/) for full working examples.
 ## Development
 
 - 📖 [Developer Guide](docs/README_DEVELOP.md) - Setup and development instructions
-- 🚀 [Release Guide](docs/RELEASE.md) - Package Build and Releae
+- 🚀 [Release Guide](docs/RELEASE.md) - Package Build and Release
 
 <!--
 ## Cite
