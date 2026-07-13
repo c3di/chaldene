@@ -18,3 +18,15 @@ def _jupyter_labextension_paths():
         "src": "labextension",
         "dest": "chaldene"
     }]
+
+
+def _jupyter_server_extension_points():
+    return [{"module": "chaldene"}]
+
+
+def _load_jupyter_server_extension(server_app):
+    """Register the Chaldene server-extension handlers (e.g. Zenodo publish)."""
+    from .handlers import setup_handlers
+
+    setup_handlers(server_app.web_app)
+    server_app.log.info("Registered chaldene server extension")
