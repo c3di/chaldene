@@ -14,7 +14,8 @@ dependencies:
   - python >=3.10,<3.11.0a0
   - jupyterlab >=4.0.0,<5
   # labextension build dependencies
-  - nodejs >=18,<19
+  # @jupyterlab/builder 4.5+ requires Node.js ^20.19.0 || >=22.12.0
+  - nodejs >=22.12,<23
   - openjdk=11
   - pyimagej
   - pip
