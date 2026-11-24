@@ -2,6 +2,18 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## Unreleased
+
+### Changed
+
+- Pinned `im2im==0.0.6` and `chaldene-super-resolution==0.1.0` in `pyproject.toml`, and pinned the Binder demo environment (`binder/environment.yml`) to the same versions as `pyproject.toml`.
+- Added `docs/NODES.md`, a reference of all registered nodes with their purpose and the library function each one calls.
+
+### Fixed
+
+- The `auto binarize` description now matches its implementation (isodata threshold).
+- The `blobDoH` node is registered, so it appears in the node menu.
+
 ## 0.2.0
 
 ### Added

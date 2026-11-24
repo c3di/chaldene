@@ -4,7 +4,7 @@ export const autoBinarizeNodeSpec: computeNodeSpec = {
   name: 'auto binarize',
   displayLabel: 'auto binarize',
   description:
-    'Automatically binarize the input image using Otsu thresholding.',
+    'Automatically binarize the input image using the isodata (iterative selection) threshold.',
   category: 'binary',
   inputs: [
     {

@@ -35,8 +35,8 @@ dependencies = [
      "ipywidgets>=7.0.0",
      "opencv-python-headless==4.11.0.86",
      "matplotlib==3.10.1",
-     "chaldene-super-resolution",
-     "im2im",
+     "chaldene-super-resolution==0.1.0",
+     "im2im==0.0.6",
      "pyimagej==1.7.0",
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
