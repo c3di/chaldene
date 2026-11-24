@@ -17,19 +17,19 @@ dependencies:
   # @jupyterlab/builder 4.5+ requires Node.js ^20.19.0 || >=22.12.0
   - nodejs >=22.12,<23
   - openjdk=11
-  - pyimagej
+  - pyimagej=1.7.0
   - pip
   - wheel
   - pip:
-      - numpy
-      - pillow
-      - pandas
-      - scikit-image
-      - scipy
-      - comm
-      - opencv-python-headless
-      - matplotlib
-      - chaldene-super-resolution
-      - im2im
+      - numpy==2.2.4
+      - pillow==11.1.0
+      - pandas==2.2.3
+      - scikit-image==0.25.2
+      - scipy==1.15.2
+      - comm==0.2.2
+      - opencv-python-headless==4.11.0.86
+      - matplotlib==3.10.1
+      - chaldene-super-resolution==0.1.0
+      - im2im==0.0.6
   # additional packages for demos
   # - ipywidgets
