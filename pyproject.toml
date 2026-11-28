@@ -33,13 +33,23 @@ dependencies = [
      "scipy==1.15.2",
      "comm==0.2.2",
      "ipywidgets>=7.0.0",
-     "opencv-python-headless==4.11.0.86",
      "matplotlib==3.10.1",
+]
+dynamic = ["version", "description", "authors", "urls", "keywords"]
+
+[project.optional-dependencies]
+# Needed for the ImageJ-, OpenCV- and super-resolution-based node
+# categories (src/NodeSpec/ImageJ*.ts, Binary.ts, IP.ts, Segmentations.ts,
+# Comparison.ts, skimage.ts, super_resolution.ts) and their generated code's
+# use of im2im for format conversion. Not required for the editor itself,
+# generic/custom-code nodes, or the Python Workflow Definition import/export
+# use case. chaldene-super-resolution pulls in PyTorch transitively.
+image = [
+     "opencv-python-headless==4.11.0.86",
      "chaldene-super-resolution",
      "im2im",
      "pyimagej==1.7.0",
 ]
-dynamic = ["version", "description", "authors", "urls", "keywords"]
 
 [tool.hatch.metadata]
 allow-direct-references = true

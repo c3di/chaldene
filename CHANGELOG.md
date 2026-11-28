@@ -2,6 +2,19 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## Unreleased
+
+### Changed
+
+- **Decoupled image-analysis dependencies**: `opencv-python-headless`,
+  `pyimagej`, `im2im`, and `chaldene-super-resolution` (which pulls in
+  PyTorch) moved from core `dependencies` to a new optional `image` extra.
+  `pip install chaldene` now installs a lean core (editor, generic/custom
+  code nodes, Python Workflow Definition import/export); the ImageJ-,
+  OpenCV- and super-resolution-based node categories require
+  `pip install "chaldene[image]"`. No source changes, since none of the
+  core Python package's modules import these at module load time.
+
 ## 0.2.0
 
 ### Added
