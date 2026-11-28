@@ -1,10 +1,5 @@
 import { type Graph, type Node, type Edge } from '../Type';
-import {
-  registerNodeSpec,
-  Spec2Node,
-  nodeSpecRegistry,
-  type computeNodeSpec
-} from '../Spec';
+import { registerNodeSpec, Spec2Node, type computeNodeSpec } from '../Spec';
 import { MarkerType } from '@xyflow/react';
 import type EditorContext from '../EditorContext';
 
@@ -159,18 +154,11 @@ let importCounter = 0;
 
 /**
  * Build and register a ComputeNode spec for a parsed function. Returns the
- * spec name it was registered under.
- *
- * `existingSpecName` is used to re-register a spec under a name a node
- * already references (see `rehydratePWDNodeSpecs`) instead of minting a new
- * one; otherwise a fresh, unique name is generated.
+ * unique spec name to instantiate it with.
  */
-function registerFunctionSpec(
-  fn: IParsedFunction,
-  existingSpecName?: string
-): string {
+function registerFunctionSpec(fn: IParsedFunction): string {
   // Namespace to avoid clobbering built-in specs; keep it stable-ish but unique.
-  const specName = existingSpecName ?? `pwd_${fn.funcName}_${importCounter++}`;
+  const specName = `pwd_${fn.funcName}_${importCounter++}`;
 
   const returnVars = fn.outputs;
   const codeGenerator = (
@@ -283,12 +271,6 @@ export function importPWDToGraph(
       { x: column * 320, y: (column % 2) * 120 },
       editorContext
     );
-    // The registered spec (and its code generator closure) lives only in the
-    // in-memory nodeSpecRegistry, which is empty again after a page reload.
-    // Persist what's needed to rebuild it, so rehydratePWDNodeSpecs can
-    // re-register the same spec under the same name once the saved graph is
-    // loaded back in -- see that function for the other half of this.
-    node.data.pwdFunction = fn;
     column++;
     visualByPwdId.set(pwdNode.id, node);
   }
@@ -348,30 +330,4 @@ export function importPWDToGraph(
   }
 
   return { nodes: [...visualByPwdId.values()], edges };
-}
-
-/* --------------------------- graph rehydration --------------------------- */
-
-/**
- * Re-register the ComputeNode spec for every PWD-imported node in a loaded
- * graph whose spec isn't currently in the (in-memory, per-session)
- * nodeSpecRegistry -- e.g. after a page reload or reopening the notebook,
- * when the registration done at import time (registerFunctionSpec, above)
- * is long gone. Call this before handing a loaded graph to the editor.
- *
- * Without this, a reloaded PWD-imported node still has its own displayLabel/
- * inputs/outputs in `data`, but its `type` (== specName) no longer resolves
- * to a component in nodeTypes, so React Flow falls back to rendering a bare
- * box; and running the cell would silently regenerate no code for it, since
- * the code generator closure lived only in the registry.
- */
-export function rehydratePWDNodeSpecs(graph: Graph): void {
-  graph.nodes.forEach(node => {
-    const specName = node.data.specName;
-    const fn = node.data.pwdFunction as IParsedFunction | undefined;
-    if (!specName || !fn || nodeSpecRegistry.get(specName)) {
-      return;
-    }
-    registerFunctionSpec(fn, specName);
-  });
 }

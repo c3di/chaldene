@@ -6,10 +6,7 @@ import type { NodeSpecConfigRegistry } from './Spec/NodeSpecRegistry';
 import { type Graph, findCodeChangedGraph } from './Type';
 import { ActionRegistry } from './Actions';
 import { graphWithoutEditorContext } from './Utils';
-import {
-  importPWDToGraph,
-  rehydratePWDNodeSpecs
-} from './CodeGeneration/PWDImporter';
+import { importPWDToGraph } from './CodeGeneration/PWDImporter';
 
 export default class EditorContext {
   public readonly editorRef: React.MutableRefObject<any>;
@@ -102,10 +99,6 @@ export default class EditorContext {
   };
 
   public newGraphInput = (graph: Graph): void => {
-    // Re-register any PWD-imported node's spec that isn't in this session's
-    // nodeSpecRegistry yet -- true on first load of a saved graph, since
-    // that registration doesn't survive a page reload. No-op otherwise.
-    rehydratePWDNodeSpecs(graph);
     this.nextNodeId =
       1 + Math.max(0, ...graph.nodes.map(node => parseInt(node.id, 10)));
     if (Number.isNaN(this.nextNodeId)) {
