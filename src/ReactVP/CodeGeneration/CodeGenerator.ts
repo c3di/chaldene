@@ -195,6 +195,32 @@ export default class CodeGenerator {
     return graph.nodes.find(node => node.data.specName === 'batch_process');
   }
 
+  // Display, in the notebook's Out: area, the outputs that aren't consumed
+  // by any downstream node -- i.e. the workflow's actual results. Otherwise
+  // a VP cell's result is only a Python object the generated code assigns
+  // to a variable, and is invisible unless the user adds their own print.
+  public codeForTerminalOutputs(editorID: string, graph: Graph): string {
+    const consumedOutputs = new Set(
+      graph.edges.map(e => `${e.source}:${e.sourceHandle}`)
+    );
+
+    const displayLines: string[] = [];
+    topologicalSortDAG(graph).forEach(node => {
+      node.data.outputs?.forEach(output => {
+        if (!consumedOutputs.has(`${node.id}:${output.id}`)) {
+          displayLines.push(
+            `display(${uniqueHandleName(editorID, node.id, output.id)})`
+          );
+        }
+      });
+    });
+
+    if (displayLines.length === 0) {
+      return '';
+    }
+    return `from IPython.display import display\n${displayLines.join('\n')}`;
+  }
+
   public codeFromGraphConnectedToNode(
     editorID: string,
     graph: Graph,
@@ -313,6 +339,7 @@ ${out_loop_code}`;
       );
     } else {
       code = this.codeFromSubGraph(editorID, graph, inspect_included);
+      code += `\n${this.codeForTerminalOutputs(editorID, graph)}`;
     }
 
     if (!inspect_included) {
