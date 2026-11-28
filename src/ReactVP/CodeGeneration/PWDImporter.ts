@@ -202,6 +202,51 @@ function registerFunctionSpec(fn: IParsedFunction): string {
   return specName;
 }
 
+/**
+ * PWD's own `python_workflow_definition.shared` module ships two generic
+ * "glue" functions used to fan multiple edges into a single argument:
+ * `get_dict(**kwargs)` and `get_list(**kwargs)` (the latter keyed by
+ * stringified indices, e.g. "0", "1", ...). They're referenced as function
+ * nodes in workflow.json like any other, but aren't defined in workflow.py
+ * -- there's no Python source to parse, just the edges feeding them. Build
+ * their spec directly from the known semantics of whichever one it is,
+ * using `paramNames` (the target ports of its incoming edges) for its inputs.
+ */
+function registerSharedHelperSpec(
+  kind: 'get_dict' | 'get_list',
+  paramNames: string[]
+): string {
+  const specName = `pwd_${kind}_${importCounter++}`;
+  const params =
+    kind === 'get_list'
+      ? [...paramNames].sort((a, b) => Number(a) - Number(b))
+      : paramNames;
+
+  const codeGenerator = (
+    inputs: Record<string, string>,
+    outputs: Record<string, string>
+  ): string => {
+    const literal =
+      kind === 'get_dict'
+        ? `{${params.map(p => `"${p}": ${inputs[p]}`).join(', ')}}`
+        : `[${params.map(p => inputs[p]).join(', ')}]`;
+    return `${outputs.result} = ${literal}`;
+  };
+
+  const spec: computeNodeSpec = {
+    name: specName,
+    displayLabel: kind,
+    description: `Imported from PWD workflow.json: python_workflow_definition.shared.${kind}`,
+    category: 'imported (PWD)',
+    inputs: paramNames.map(name => ({ name, displayLabel: name })),
+    outputs: [{ name: 'result', displayLabel: 'result' }],
+    codeGenerators: { Python: codeGenerator }
+  };
+
+  registerNodeSpec(spec);
+  return specName;
+}
+
 /* ------------------------- value/widget inference ----------------------- */
 
 function inferWidget(
@@ -256,15 +301,32 @@ export function importPWDToGraph(
     if (pwdNode.type !== 'function') {
       continue;
     }
-    const funcName = String(pwdNode.value ?? '').replace(/^workflow\./, '');
-    const fn = functions.get(funcName);
-    if (!fn) {
-      console.warn(
-        `PWD import: no function "${funcName}" found in workflow.py`
+
+    const value = String(pwdNode.value ?? '');
+    const sharedHelperMatch =
+      /^python_workflow_definition\.shared\.(get_dict|get_list)$/.exec(value);
+
+    let specName: string;
+    if (sharedHelperMatch) {
+      const paramNames = pwdEdges
+        .filter(e => e.target === pwdNode.id && e.targetPort !== null)
+        .map(e => e.targetPort as string);
+      specName = registerSharedHelperSpec(
+        sharedHelperMatch[1] as 'get_dict' | 'get_list',
+        paramNames
       );
-      continue;
+    } else {
+      const funcName = value.replace(/^workflow\./, '');
+      const fn = functions.get(funcName);
+      if (!fn) {
+        console.warn(
+          `PWD import: no function "${funcName}" found in workflow.py`
+        );
+        continue;
+      }
+      specName = registerFunctionSpec(fn);
     }
-    const specName = registerFunctionSpec(fn);
+
     const node = Spec2Node(
       specName,
       editorContext.getNodeId(),
