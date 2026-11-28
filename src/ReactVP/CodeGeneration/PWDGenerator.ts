@@ -3,7 +3,7 @@ import PythonCodeGenerator from './PythonCodeGenerator';
 import { type Graph } from '../Type';
 import { topologicalSortDAG } from '../Type';
 import { getCodeGenerator } from '../Spec';
-import condaEnvironment from '../../condaEnvironment';
+import { condaEnvironmentFor } from '../../condaEnvironment';
 
 export default class PWDGenerator extends CodeGenerator {
   private pythonLiterals = new PythonCodeGenerator();
@@ -26,16 +26,19 @@ export default class PWDGenerator extends CodeGenerator {
     // a JSON file which defines the connections between the different Python functions
     // a conda environment file to define the software dependencies.
     const nodes = topologicalSortDAG(graph);
-    const pythonModule = this.pythonModule(nodes);
+    const { code: pythonModule, moduleImports } = this.pythonModule(nodes);
     const jsonDefinition = this.jsonDefinition(graph);
-    const condaEnv = this.condaEnv(graph);
+    const condaEnv = this.condaEnv(moduleImports);
     this.downloadFile('workflow.py', pythonModule);
     this.downloadFile('workflow.json', jsonDefinition);
     this.downloadFile('environment.yml', condaEnv);
 
     return `# Python Module:\n${pythonModule}\n\n# JSON Definition:\n${jsonDefinition}\n\n# Conda Environment:\n${condaEnv}`;
   }
-  public pythonModule(nodes: any[]): string {
+  public pythonModule(nodes: any[]): {
+    code: string;
+    moduleImports: Set<string>;
+  } {
     const moduleImports = new Set<string>();
     const functionBlocks: string[] = [];
     const emittedFunctions = new Set<string>();
@@ -73,19 +76,17 @@ export default class PWDGenerator extends CodeGenerator {
         }
       }
 
-      // Trim trailing blank lines from the body
+      // Trim leading/trailing blank lines from the body (a codeGenerator
+      // with no imports leaves a blank line where they would've gone).
+      while (bodyLines.length && !bodyLines[0].trim()) {
+        bodyLines.shift();
+      }
       while (bodyLines.length && !bodyLines[bodyLines.length - 1].trim()) {
         bodyLines.pop();
       }
 
       const params = (inputs ?? []).map((h: any) => h.name).join(', ');
       const returnVars = (outputs ?? []).map((h: any) => h.name);
-      const returnStatement =
-        returnVars.length === 0
-          ? ''
-          : returnVars.length === 1
-            ? `    return ${returnVars[0]}`
-            : `    return {${returnVars.map((v: string) => `"${v}": ${v}`).join(', ')}}`;
 
       const funcName = (displayLabel ?? specName ?? 'node')
         .replace(/[^a-zA-Z0-9]+/g, '_')
@@ -96,6 +97,39 @@ export default class PWDGenerator extends CodeGenerator {
       }
       emittedFunctions.add(funcName);
 
+      // Some codeGenerators (e.g. a node re-imported from a PWD workflow.py,
+      // see PWDImporter.ts) already return a self-contained `def <funcName>(
+      // ...): ...` plus a call to it, rather than a flat body of statements
+      // -- the shape needed to run the node live in the notebook. Detect
+      // that nested, same-named def and re-emit it as-is: it already *is*
+      // the complete, correctly-shaped function. Otherwise, wrapping it in
+      // another def of the same name below would nest the original function
+      // inside a duplicate of itself (testing-chaldene#3).
+      const nestedDefLine = `def ${funcName}(${params}):`;
+      if (bodyLines[0] === nestedDefLine) {
+        let nestedBodyEnd = 1;
+        while (
+          nestedBodyEnd < bodyLines.length &&
+          (bodyLines[nestedBodyEnd].trim() === '' ||
+            /^\s/.test(bodyLines[nestedBodyEnd]))
+        ) {
+          nestedBodyEnd++;
+        }
+        const nestedDef = bodyLines.slice(0, nestedBodyEnd);
+        while (nestedDef.length && !nestedDef[nestedDef.length - 1].trim()) {
+          nestedDef.pop();
+        }
+        functionBlocks.push(nestedDef.join('\n'));
+        continue;
+      }
+
+      const returnStatement =
+        returnVars.length === 0
+          ? ''
+          : returnVars.length === 1
+            ? `    return ${returnVars[0]}`
+            : `    return {${returnVars.map((v: string) => `"${v}": ${v}`).join(', ')}}`;
+
       const indentedBody = bodyLines.map(l => `    ${l}`).join('\n');
 
       functionBlocks.push(
@@ -105,7 +139,10 @@ export default class PWDGenerator extends CodeGenerator {
 
     const importsSection = [...moduleImports].join('\n');
     const functionsSection = functionBlocks.join('\n\n\n');
-    return `${importsSection}\n\n\n${functionsSection}\n`.trimStart();
+    return {
+      code: `${importsSection}\n\n\n${functionsSection}\n`.trimStart(),
+      moduleImports
+    };
   }
 
   public jsonDefinition(graph: Graph): string {
@@ -210,8 +247,15 @@ export default class PWDGenerator extends CodeGenerator {
     );
   }
 
-  public condaEnv(_graph: Graph): string {
-    return condaEnvironment;
+  public condaEnv(moduleImports: Set<string>): string {
+    const topLevelModules = new Set<string>();
+    moduleImports.forEach(line => {
+      const match = /^(?:from|import)\s+([A-Za-z_][A-Za-z0-9_]*)/.exec(line);
+      if (match) {
+        topLevelModules.add(match[1]);
+      }
+    });
+    return condaEnvironmentFor(topLevelModules);
   }
 
   private downloadFile(filename: string, content: string): void {
