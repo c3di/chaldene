@@ -27,18 +27,29 @@
 
 ### Local Installation
 
-The only external requirement is **OpenJDK 11** (required for
-PyImageJ), for example with Conda:
-
-```bash
-conda install -c conda-forge "openjdk=11"
-```
-
-Then install Chaldene and launch JupyterLab:
-
 ```bash
 pip install chaldene
 jupyter lab
+```
+
+This installs the editor and generic/custom-code nodes, including the
+[Python Workflow Definition](https://github.com/pythonworkflow/python-workflow-definition)
+import/export use case. It does not include the ImageJ-, OpenCV- and
+super-resolution-based node categories, which pull in heavier,
+application-specific dependencies (OpenCV, PyImageJ, PyTorch via
+`chaldene-super-resolution`).
+
+To use those node categories as well, install the `image` extra instead:
+
+```bash
+pip install "chaldene[image]"
+```
+
+This extra also requires **OpenJDK 11** (needed for PyImageJ), for example
+with Conda:
+
+```bash
+conda install -c conda-forge "openjdk=11"
 ```
 
 ### Use Without Local Installation
